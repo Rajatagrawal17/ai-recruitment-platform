@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import API from "../services/api";
+import AnimatedCard from "../components/AnimatedCard";
+import AnimatedStats from "../components/AnimatedStats";
+import LoadingAnimation from "../components/LoadingAnimation";
+import StatsChart from "../components/StatsChart";
 import Achievements from "../components/Achievements";
 
 const UserDashboard = () => {
@@ -136,12 +141,7 @@ const UserDashboard = () => {
 
   function renderContent() {
     if (loading) {
-      return (
-        <div style={{ textAlign: "center", padding: "2rem" }}>
-          <div className="loading"></div>
-          <p>Loading...</p>
-        </div>
-      );
+      return <LoadingAnimation fullScreen={false} />;
     }
 
     if (activeTab === "applications") {

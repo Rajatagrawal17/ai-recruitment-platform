@@ -25,10 +25,13 @@
 /* ==================== LOGO ==================== */
 
 .navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: 'Clash Display', sans-serif;
   font-size: 24px;
   font-weight: 700;
-  background: linear-gradient(135deg, #4f46e5, #06b6d4, #f59e0b);
+  background: linear-gradient(135deg, #0D5A6D, #B8956A, #9C6ED3);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

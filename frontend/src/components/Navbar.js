@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import NotificationCenter from "./NotificationCenter";
+import CognifitLogo from "./CognifitLogo";
 import "./Navbar.css";
 
 const Navbar = () => {
@@ -53,7 +54,8 @@ const Navbar = () => {
         <div className="navbar-container">
           {/* Logo */}
           <Link to="/" className="navbar-logo">
-            RecruitAI
+            <CognifitLogo size={35} />
+            <span>Cognifit</span>
           </Link>
 
           {/* Desktop Nav Links */}

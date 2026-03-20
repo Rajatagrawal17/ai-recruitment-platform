@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import API from "../services/api";
+import AnimatedStats from "../components/AnimatedStats";
+import AnimatedCard from "../components/AnimatedCard";
+import StatsChart from "../components/StatsChart";
+import LoadingAnimation from "../components/LoadingAnimation";
 import "./AdminDashboard.css";
 
 const AdminDashboard = () => {
@@ -131,7 +136,7 @@ const AdminDashboard = () => {
   };
 
   if (loading) {
-    return <AdminLoadingSkeleton />;
+    return <LoadingAnimation fullScreen={true} />;
   }
 
   return (
@@ -204,38 +209,63 @@ const AdminDashboard = () => {
           {activeTab === "overview" && (
             <div className="admin-overview">
               <div className="stats-grid">
-                <StatCard
+                <AnimatedStats
                   icon="📋"
                   label="Total Jobs"
                   value={stats.totalJobs}
-                  trend="+2 this month"
-                  trendUp={true}
+                  change={{ type: "up", value: 2, label: "this month" }}
+                  delay={0}
                 />
-                <StatCard
+                <AnimatedStats
                   icon="📝"
                   label="Applications"
                   value={stats.totalApplications}
-                  trend="+12 this week"
-                  trendUp={true}
+                  change={{ type: "up", value: 12, label: "this week" }}
+                  delay={1}
                 />
-                <StatCard
+                <AnimatedStats
                   icon="👥"
                   label="Total Candidates"
                   value={stats.totalCandidates}
-                  trend="3 hired"
-                  trendUp={true}
+                  change={{ type: "up", value: 3, label: "hired" }}
+                  delay={2}
                 />
-                <StatCard
+                <AnimatedStats
                   icon="🎯"
                   label="Open Positions"
                   value={stats.openPositions}
-                  trend={`${Math.round((stats.openPositions / stats.totalJobs) * 100)}% of total`}
-                  trendUp={false}
+                  change={{ type: "up", value: Math.round((stats.openPositions / Math.max(stats.totalJobs, 1)) * 100), label: "% of total" }}
+                  delay={3}
                 />
               </div>
 
+              {/* Charts Section */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+                style={{ marginTop: "2rem" }}
+              >
+                <StatsChart
+                  type="bar"
+                  title="Applications Trend"
+                  data={[
+                    { name: "Week 1", value: 12 },
+                    { name: "Week 2", value: 19 },
+                    { name: "Week 3", value: 15 },
+                    { name: "Week 4", value: 24 }
+                  ]}
+                  delay={4}
+                />
+              </motion.div>
+
               {/* Candidate Pipeline */}
-              <div className="pipeline-section">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.7 }}
+                className="pipeline-section"
+              >
                 <h2>Candidate Pipeline</h2>
                 <div className="pipeline-stages">
                   <div className="pipeline-stage">
@@ -285,33 +315,40 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Recent Activity */}
-              <div className="activity-section">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.9 }}
+                className="activity-section"
+              >
                 <h2>Recent Activity</h2>
                 <div className="activity-list">
-                  {recentApplications.map((app) => (
-                    <div key={app.id} className="activity-item">
-                      <div className="activity-avatar">
-                        {app.candidateName.charAt(0)}
-                      </div>
-                      <div className="activity-details">
-                        <div className="activity-name">{app.candidateName}</div>
-                        <div className="activity-position">
-                          Applied for {app.position}
+                  {recentApplications.map((app, index) => (
+                    <AnimatedCard key={app.id} delay={index}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "1rem", width: "100%" }}>
+                        <div className="activity-avatar">
+                          {app.candidateName.charAt(0)}
+                        </div>
+                        <div className="activity-details" style={{ flex: 1 }}>
+                          <div className="activity-name">{app.candidateName}</div>
+                          <div className="activity-position">
+                            Applied for {app.position}
+                          </div>
+                        </div>
+                        <div className={`activity-status ${getStatusColor(app.status)}`}>
+                          {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                        </div>
+                        <div className="activity-date">
+                          {formatTimeAgo(app.date)}
                         </div>
                       </div>
-                      <div className={`activity-status ${getStatusColor(app.status)}`}>
-                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                      </div>
-                      <div className="activity-date">
-                        {formatTimeAgo(app.date)}
-                      </div>
-                    </div>
+                    </AnimatedCard>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             </div>
           )}
 
@@ -377,8 +414,8 @@ const AdminDashboard = () => {
 
               <div className="jobs-table">
                 {jobs.length > 0 ? (
-                  jobs.map((job) => (
-                    <div key={job._id} className="job-row">
+                  jobs.map((job, index) => (
+                    <AnimatedCard key={job._id} delay={index} className="job-row-animated">
                       <div className="job-info">
                         <div className="job-title">{job.title}</div>
                         <div className="job-company">{job.company}</div>
@@ -406,6 +443,22 @@ const AdminDashboard = () => {
                           Delete
                         </button>
                       </div>
+                    </AnimatedCard>
+                  ))
+                ) : (
+                  <div className="empty-state">No jobs found</div>
+                )}
+              </div>
+            </div>
+          )}
+                        </button>
+                        <button
+                          className="btn-delete"
+                          onClick={() => handleDeleteJob(job._id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   ))
                 ) : (
@@ -417,11 +470,16 @@ const AdminDashboard = () => {
 
           {/* Applications Tab */}
           {activeTab === "applications" && (
-            <div className="applications-management">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              className="applications-management"
+            >
               <h2>Recent Applications</h2>
               <div className="applications-list">
-                {recentApplications.map((app) => (
-                  <div key={app.id} className="app-card">
+                {recentApplications.map((app, index) => (
+                  <AnimatedCard key={app.id} delay={index}>
                     <div className="app-header">
                       <div className="app-info">
                         <div className="app-name">{app.candidateName}</div>
@@ -440,10 +498,10 @@ const AdminDashboard = () => {
                         <button className="btn-small">Message</button>
                       </div>
                     </div>
-                  </div>
+                  </AnimatedCard>
                 ))}
               </div>
-            </div>
+            </motion.div>
           )}
         </main>
       </div>
@@ -504,6 +562,21 @@ const formatTimeAgo = (date) => {
     }
   }
   return "Just now";
+};
+
+
+// Helper function to format time
+const formatTimeAgo = (date) => {
+  const now = new Date();
+  const seconds = Math.floor((now - date) / 1000);
+  
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 };
 
 export default AdminDashboard;
