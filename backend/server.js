@@ -20,6 +20,7 @@ const allowedOrigins = [
   "http://localhost:5000",
   "http://127.0.0.1:3000",
   "http://127.0.0.1:5000",
+  "https://cognifit-frontend-6coo.onrender.com",
 ];
 
 // Add production URLs if set via env var
