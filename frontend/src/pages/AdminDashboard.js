@@ -451,22 +451,6 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
-                        </button>
-                        <button
-                          className="btn-delete"
-                          onClick={() => handleDeleteJob(job._id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="empty-state">No jobs found</div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Applications Tab */}
           {activeTab === "applications" && (
@@ -562,21 +546,6 @@ const formatTimeAgo = (date) => {
     }
   }
   return "Just now";
-};
-
-
-// Helper function to format time
-const formatTimeAgo = (date) => {
-  const now = new Date();
-  const seconds = Math.floor((now - date) / 1000);
-  
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 };
 
 export default AdminDashboard;
