@@ -134,10 +134,19 @@ const Register = () => {
   const verifyMobileOTP = async () => {
     try {
       setVerifying(true);
-      const response = await API.post("/auth/verify-mobile-otp", {
-        phoneNumber: formData.phoneNumber,
-        otp: otpValue,
-      });
+
+      if (otpMethod === "email") {
+        await API.post("/auth/verify-email-otp", {
+          email: formData.email,
+          otp: otpValue,
+        });
+      } else {
+        await API.post("/auth/verify-mobile-otp", {
+          phoneNumber: formData.phoneNumber,
+          otp: otpValue,
+        });
+      }
+
       setError("");
       setVerificationStep(2);
       await sendEmailOTP();
