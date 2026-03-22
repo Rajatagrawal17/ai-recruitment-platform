@@ -33,6 +33,27 @@ const Register = () => {
     }
   }, [timer]);
 
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const postWithRetry = async (url, payload, retries = 2) => {
+    let lastError;
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        return await API.post(url, payload);
+      } catch (err) {
+        lastError = err;
+        const isNetworkIssue = err.code === "ERR_NETWORK" || err.code === "ECONNABORTED" || !err.response;
+        if (!isNetworkIssue || attempt === retries) {
+          throw err;
+        }
+        await sleep(1500 * (attempt + 1));
+      }
+    }
+
+    throw lastError;
+  };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setError("");
@@ -64,11 +85,12 @@ const Register = () => {
       setVerifying(true);
 
       if (otpMethod === "email") {
-        await API.post("/auth/send-email-otp", {
+        // Primary path for email mode
+        await postWithRetry("/auth/send-email-otp", {
           email: formData.email,
         });
       } else {
-        await API.post("/auth/send-mobile-otp", {
+        await postWithRetry("/auth/send-mobile-otp", {
           phoneNumber: formData.phoneNumber,
           method: otpMethod,
           email: formData.email,
@@ -81,9 +103,28 @@ const Register = () => {
       setOtpValue("");
       setVerifying(false);
     } catch (err) {
+      // Fallback: if email mode fails, try mobile endpoint with method=email
+      if (otpMethod === "email") {
+        try {
+          await postWithRetry("/auth/send-mobile-otp", {
+            phoneNumber: formData.phoneNumber,
+            method: "email",
+            email: formData.email,
+          });
+          setError("");
+          setAttempts(0);
+          setTimer(300);
+          setOtpValue("");
+          setVerifying(false);
+          return;
+        } catch (fallbackErr) {
+          err = fallbackErr;
+        }
+      }
+
       const apiMessage = err.response?.data?.message;
       const networkMessage = err.code === "ERR_NETWORK"
-        ? "Cannot reach server. Please wait 30 seconds and try again."
+        ? "Server is waking up. Please wait 30-60 seconds and try again."
         : null;
       setError(apiMessage || networkMessage || "Failed to send OTP");
       setVerifying(false);
@@ -116,7 +157,7 @@ const Register = () => {
   const sendEmailOTP = async () => {
     try {
       setVerifying(true);
-      await API.post("/auth/send-email-otp", { email: formData.email });
+      await postWithRetry("/auth/send-email-otp", { email: formData.email });
       setError("");
       setAttempts(0);
       setTimer(300);

@@ -9,7 +9,7 @@ const API_URL_CANDIDATES = [
 
 const API = axios.create({
   baseURL: API_URL_CANDIDATES[0],
-  timeout: 20000,
+  timeout: 45000,
 });
 
 API.interceptors.request.use((req) => {
