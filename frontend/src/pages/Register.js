@@ -62,18 +62,30 @@ const Register = () => {
   const sendMobileOTP = async () => {
     try {
       setVerifying(true);
-      const response = await API.post("/auth/send-mobile-otp", {
-        phoneNumber: formData.phoneNumber,
-        method: otpMethod,
-        email: formData.email,
-      });
+
+      if (otpMethod === "email") {
+        await API.post("/auth/send-email-otp", {
+          email: formData.email,
+        });
+      } else {
+        await API.post("/auth/send-mobile-otp", {
+          phoneNumber: formData.phoneNumber,
+          method: otpMethod,
+          email: formData.email,
+        });
+      }
+
       setError("");
       setAttempts(0);
       setTimer(300); // 5 minutes
       setOtpValue("");
       setVerifying(false);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to send OTP");
+      const apiMessage = err.response?.data?.message;
+      const networkMessage = err.code === "ERR_NETWORK"
+        ? "Cannot reach server. Please wait 30 seconds and try again."
+        : null;
+      setError(apiMessage || networkMessage || "Failed to send OTP");
       setVerifying(false);
     }
   };

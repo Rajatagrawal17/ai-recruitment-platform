@@ -23,6 +23,11 @@ const allowedOrigins = [
   "https://cognifit-frontend-6coo.onrender.com",
 ];
 
+const allowedOriginPatterns = [
+  /^https:\/\/cognifit-frontend-.*\.onrender\.com$/,
+  /^https:\/\/.*\.vercel\.app$/,
+];
+
 // Add production URLs if set via env var
 if (process.env.FRONTEND_URL) {
   allowedOrigins.push(process.env.FRONTEND_URL);
@@ -31,11 +36,24 @@ if (process.env.FRONTEND_URL) {
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl requests, etc)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
       callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+      return;
     }
+
+    const normalizedOrigin = origin.replace(/\/$/, "");
+    const isAllowedExplicit = allowedOrigins.includes(normalizedOrigin);
+    const isAllowedPattern = allowedOriginPatterns.some((pattern) =>
+      pattern.test(normalizedOrigin)
+    );
+
+    if (isAllowedExplicit || isAllowedPattern) {
+      callback(null, true);
+      return;
+    }
+
+    console.error(`CORS blocked origin: ${origin}`);
+    callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
