@@ -8,8 +8,12 @@ const sendSMSViatwilio = async (phoneNumber, otp) => {
     const authToken = process.env.TWILIO_AUTH_TOKEN;
     const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 
+    console.log(`📱 Attempting to send SMS to: ${phoneNumber}`);
+    console.log(`Twilio Config: ${accountSid ? "✅ SID found" : "❌ SID missing"} | ${authToken ? "✅ Token found" : "❌ Token missing"} | ${fromNumber ? "✅ Phone found" : "❌ Phone missing"}`);
+
     // If no credentials, use demo mode
     if (!accountSid || !authToken || !fromNumber) {
+      console.log(`⚠️  SMS running in DEMO MODE (credentials missing)`);
       console.log(`\n╔════════════════════════════════════════╗`);
       console.log(`║  📱 SMS OTP (DEMO MODE)                ║`);
       console.log(`║  Phone: ${phoneNumber.padEnd(30)}║`);
@@ -32,6 +36,7 @@ const sendSMSViatwilio = async (phoneNumber, otp) => {
 
   } catch (error) {
     console.error(`❌ SMS Error: ${error.message}`);
+    console.log(`⚠️  Falling back to DEMO MODE due to error`);
     // Fallback to console logging in demo mode
     console.log(`\n╔════════════════════════════════════════╗`);
     console.log(`║  📱 SMS OTP (FALLBACK)                 ║`);
@@ -49,8 +54,12 @@ const sendEmailViaNodemailer = async (email, otp, type = "otp") => {
     const serviceEmail = process.env.SMTP_USER || "your-email@gmail.com";
     const servicePassword = process.env.SMTP_PASSWORD;
 
+    console.log(`📧 Attempting to send Email OTP to: ${email}`);
+    console.log(`SMTP Config: ${serviceEmail ? "✅ Email found" : "❌ Email missing"} | ${servicePassword ? "✅ Password found" : "❌ Password missing"}`);
+
     // If no credentials, use demo mode
     if (!servicePassword) {
+      console.log(`⚠️  Email running in DEMO MODE (password missing)`);
       console.log(`\n╔════════════════════════════════════════╗`);
       console.log(`║  📧 EMAIL OTP (DEMO MODE)             ║`);
       console.log(`║  Email: ${email.substring(0, 28).padEnd(28)} ║`);
@@ -92,7 +101,7 @@ const sendEmailViaNodemailer = async (email, otp, type = "otp") => {
 
         <div style="text-align: center; color: #94a3b8; font-size: 12px;">
           <p style="margin: 0;">If you didn't request this code, please ignore this email.</p>
-          <p style="margin: 8px 0 0 0;">© 2026 AI Recruitment Platform. All rights reserved.</p>
+          <p style="margin: 8px 0 0 0;">© 2026 Cognifit - AI Recruitment Platform. All rights reserved.</p>
         </div>
       </div>
     `;
@@ -110,6 +119,7 @@ const sendEmailViaNodemailer = async (email, otp, type = "otp") => {
 
   } catch (error) {
     console.error(`❌ Email Error: ${error.message}`);
+    console.log(`⚠️  Falling back to DEMO MODE due to error`);
     // Fallback to console logging in demo mode
     console.log(`\n╔════════════════════════════════════════╗`);
     console.log(`║  📧 EMAIL OTP (FALLBACK)               ║`);
