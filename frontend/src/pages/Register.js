@@ -19,7 +19,6 @@ const Register = () => {
   const [showVerification, setShowVerification] = useState(false);
   const [verificationStep, setVerificationStep] = useState(1);
   const [otpValue, setOtpValue] = useState("");
-  const [otpMethod, setOtpMethod] = useState("email");
   const [timer, setTimer] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [captchaToken, setCaptchaToken] = useState(null);
@@ -34,6 +33,20 @@ const Register = () => {
   }, [timer]);
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const normalizeIndianPhone = (phone = "") => {
+    const digits = phone.replace(/\D/g, "");
+
+    if (digits.length === 10) {
+      return `+91${digits}`;
+    }
+
+    if (digits.length === 12 && digits.startsWith("91")) {
+      return `+${digits}`;
+    }
+
+    return null;
+  };
 
   const postWithRetry = async (url, payload, retries = 2) => {
     let lastError;
@@ -55,7 +68,15 @@ const Register = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    if (name === "phoneNumber") {
+      const cleaned = value.replace(/[^\d+]/g, "");
+      setFormData({ ...formData, phoneNumber: cleaned });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+
     setError("");
   };
 
@@ -63,7 +84,7 @@ const Register = () => {
     if (!formData.name.trim()) return "Name is required";
     if (!formData.email.trim()) return "Email is required";
     if (!formData.password || formData.password.length < 6) return "Password must be at least 6 characters";
-    if (!formData.phoneNumber || formData.phoneNumber.trim().length < 10) return "Valid phone number required";
+    if (!normalizeIndianPhone(formData.phoneNumber)) return "Enter a valid Indian phone number (+91XXXXXXXXXX or 10 digits)";
     return null;
   };
 
@@ -74,6 +95,10 @@ const Register = () => {
       setError(validationError);
       return;
     }
+
+    const normalizedPhone = normalizeIndianPhone(formData.phoneNumber);
+    setFormData((prev) => ({ ...prev, phoneNumber: normalizedPhone }));
+
     setShowVerification(true);
     setVerificationStep(1);
     setError("");
@@ -87,18 +112,12 @@ const Register = () => {
       // Render free instances can sleep; warm up backend before OTP request.
       await warmupBackend();
 
-      if (otpMethod === "email") {
-        // Primary path for email mode
-        await postWithRetry("/auth/send-email-otp", {
-          email: formData.email,
-        });
-      } else {
-        await postWithRetry("/auth/send-mobile-otp", {
-          phoneNumber: formData.phoneNumber,
-          method: otpMethod,
-          email: formData.email,
-        });
-      }
+      const normalizedPhone = normalizeIndianPhone(formData.phoneNumber);
+
+      await postWithRetry("/auth/send-mobile-otp", {
+        phoneNumber: normalizedPhone,
+        method: "sms",
+      });
 
       setError("");
       setAttempts(0);
@@ -106,25 +125,6 @@ const Register = () => {
       setOtpValue("");
       setVerifying(false);
     } catch (err) {
-      // Fallback: if email mode fails, try mobile endpoint with method=email
-      if (otpMethod === "email") {
-        try {
-          await postWithRetry("/auth/send-mobile-otp", {
-            phoneNumber: formData.phoneNumber,
-            method: "email",
-            email: formData.email,
-          });
-          setError("");
-          setAttempts(0);
-          setTimer(300);
-          setOtpValue("");
-          setVerifying(false);
-          return;
-        } catch (fallbackErr) {
-          err = fallbackErr;
-        }
-      }
-
       const apiMessage = err.response?.data?.message;
       const networkMessage = err.code === "ERR_NETWORK"
         ? "Server is still waking up. Please wait 60 seconds and tap Resend Code."
@@ -138,21 +138,14 @@ const Register = () => {
     try {
       setVerifying(true);
 
-      if (otpMethod === "email") {
-        await API.post("/auth/verify-email-otp", {
-          email: formData.email,
-          otp: otpValue,
-        });
-      } else {
-        await API.post("/auth/verify-mobile-otp", {
-          phoneNumber: formData.phoneNumber,
-          otp: otpValue,
-        });
-      }
+      const normalizedPhone = normalizeIndianPhone(formData.phoneNumber);
+      await API.post("/auth/verify-mobile-otp", {
+        phoneNumber: normalizedPhone,
+        otp: otpValue,
+      });
 
       setError("");
       setVerificationStep(2);
-      await sendEmailOTP();
       setVerifying(false);
     } catch (err) {
       setAttempts(attempts + 1);
@@ -160,44 +153,6 @@ const Register = () => {
       if (attempts + 1 >= 3) {
         setTimer(0);
         await sendMobileOTP();
-        setAttempts(0);
-      }
-      setVerifying(false);
-    }
-  };
-
-  const sendEmailOTP = async () => {
-    try {
-      setVerifying(true);
-      await warmupBackend();
-      await postWithRetry("/auth/send-email-otp", { email: formData.email });
-      setError("");
-      setAttempts(0);
-      setTimer(300);
-      setOtpValue("");
-      setVerifying(false);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to send email OTP");
-      setVerifying(false);
-    }
-  };
-
-  const verifyEmailOTP = async () => {
-    try {
-      setVerifying(true);
-      await API.post("/auth/verify-email-otp", {
-        email: formData.email,
-        otp: otpValue,
-      });
-      setError("");
-      setVerificationStep(3);
-      setVerifying(false);
-    } catch (err) {
-      setAttempts(attempts + 1);
-      setError(err.response?.data?.message || "Invalid OTP");
-      if (attempts + 1 >= 3) {
-        setTimer(0);
-        await sendEmailOTP();
         setAttempts(0);
       }
       setVerifying(false);
@@ -235,7 +190,7 @@ const Register = () => {
         ...formData,
         verified: true,
         mobileVerified: true,
-        emailVerified: true,
+        emailVerified: false,
       });
 
       setSuccess("✅ Account created successfully!");
@@ -292,11 +247,12 @@ const Register = () => {
               <input
                 type="tel"
                 name="phoneNumber"
-                placeholder="+1 (555) 123-4567"
+                placeholder="+919876543210"
                 value={formData.phoneNumber}
                 onChange={handleChange}
                 className="form-input"
               />
+              <small className="phone-helper">Use +91XXXXXXXXXX or 10 digits</small>
             </div>
 
             <div className="form-group">
@@ -348,22 +304,7 @@ const Register = () => {
             {verificationStep === 1 && (
               <div className="verification-step">
                 <h3>📱 Verify Your Phone</h3>
-                <p className="step-description">We've sent a verification code to <strong>{formData.phoneNumber}</strong></p>
-                
-                <div className="otp-method-selector">
-                  <button
-                    className={`method-btn ${otpMethod === "email" ? "active" : ""}`}
-                    onClick={() => setOtpMethod("email")}
-                  >
-                    📧 Email
-                  </button>
-                  <button
-                    className={`method-btn ${otpMethod === "sms" ? "active" : ""}`}
-                    onClick={() => setOtpMethod("sms")}
-                  >
-                    💬 SMS
-                  </button>
-                </div>
+                <p className="step-description">We've sent a verification code to <strong>{normalizeIndianPhone(formData.phoneNumber) || formData.phoneNumber}</strong></p>
 
                 {error && <div className="alert alert-error">{error}</div>}
 
@@ -399,48 +340,8 @@ const Register = () => {
               </div>
             )}
 
-            {/* Step 2: Email OTP */}
+            {/* Step 2: CAPTCHA */}
             {verificationStep === 2 && (
-              <div className="verification-step">
-                <h3>📧 Verify Your Email</h3>
-                <p className="step-description">We've sent a verification code to <strong>{formData.email}</strong></p>
-
-                {error && <div className="alert alert-error">{error}</div>}
-
-                <div className="otp-input">
-                  <input
-                    type="text"
-                    maxLength="6"
-                    placeholder="000000"
-                    value={otpValue}
-                    onChange={(e) => setOtpValue(e.target.value.replace(/[^0-9]/g, ""))}
-                    className="otp-field"
-                  />
-                </div>
-
-                <div className="timer-section">
-                  {timer > 0 ? (
-                    <p>Resend code in <strong>{Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}</strong></p>
-                  ) : (
-                    <button className="btn-resend" onClick={sendEmailOTP} disabled={verifying}>
-                      Resend Code
-                    </button>
-                  )}
-                  {attempts > 0 && <p className="attempts-left">Attempts remaining: {3 - attempts}</p>}
-                </div>
-
-                <button
-                  className="btn-verify"
-                  onClick={verifyEmailOTP}
-                  disabled={otpValue.length !== 6 || verifying}
-                >
-                  {verifying ? "Verifying..." : "Verify"}
-                </button>
-              </div>
-            )}
-
-            {/* Step 3: CAPTCHA */}
-            {verificationStep === 3 && (
               <div className="verification-step">
                 <h3>🤖 Complete Verification</h3>
                 <p className="step-description">Confirm you're human to complete registration</p>

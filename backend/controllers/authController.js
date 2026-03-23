@@ -9,6 +9,21 @@ const otpStorage = new Map();
 // Generate random 6-digit OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+// Normalize Indian phone numbers to +91XXXXXXXXXX
+const normalizeIndianPhoneNumber = (phoneNumber = "") => {
+  const digits = String(phoneNumber).replace(/\D/g, "");
+
+  if (digits.length === 10) {
+    return `+91${digits}`;
+  }
+
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return `+${digits}`;
+  }
+
+  return null;
+};
+
 // Store OTP with expiration (10 minutes = 600 seconds)
 const storeOTP = (key, otp) => {
   otpStorage.set(key, {
@@ -48,7 +63,11 @@ const verifyOTPCode = (key, otp) => {
 ========================= */
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, phoneNumber, verified, mobileVerified, emailVerified } = req.body;
+
+    const normalizedPhoneNumber = phoneNumber
+      ? normalizeIndianPhoneNumber(phoneNumber) || phoneNumber
+      : "";
 
     const existingUser = await User.findOne({ email });
 
@@ -64,6 +83,10 @@ exports.registerUser = async (req, res) => {
       email,
       password,
       role,
+      phoneNumber: normalizedPhoneNumber,
+      verified: Boolean(verified),
+      mobileVerified: Boolean(mobileVerified),
+      emailVerified: Boolean(emailVerified),
     });
 
     res.status(201).json({
@@ -139,10 +162,12 @@ exports.sendMobileOTP = async (req, res) => {
   try {
     const { phoneNumber, method, email } = req.body;
 
-    if (!phoneNumber || !method) {
+    const normalizedPhoneNumber = normalizeIndianPhoneNumber(phoneNumber);
+
+    if (!normalizedPhoneNumber || !method) {
       return res.status(400).json({
         success: false,
-        message: "Phone number and method (sms/email) are required",
+        message: "Enter a valid Indian phone number in +91 format",
       });
     }
 
@@ -154,12 +179,12 @@ exports.sendMobileOTP = async (req, res) => {
     }
 
     const otp = generateOTP();
-    const key = `mobile_${phoneNumber}`;
+    const key = `mobile_${normalizedPhoneNumber}`;
 
     // Send OTP using provider service. Even if provider fails, keep OTP flow alive in demo mode.
     let result;
     try {
-      result = await sendOTP(phoneNumber, otp, method, email);
+      result = await sendOTP(normalizedPhoneNumber, otp, method, email);
     } catch (providerError) {
       console.error("OTP provider failed in sendMobileOTP:", providerError.message);
       result = {
@@ -202,14 +227,16 @@ exports.verifyMobileOTP = async (req, res) => {
   try {
     const { phoneNumber, otp } = req.body;
 
-    if (!phoneNumber || !otp) {
+    const normalizedPhoneNumber = normalizeIndianPhoneNumber(phoneNumber);
+
+    if (!normalizedPhoneNumber || !otp) {
       return res.status(400).json({
         success: false,
-        message: "Phone number and OTP are required",
+        message: "Valid +91 phone number and OTP are required",
       });
     }
 
-    const key = `mobile_${phoneNumber}`;
+    const key = `mobile_${normalizedPhoneNumber}`;
     const result = verifyOTPCode(key, otp);
 
     if (!result.valid) {
