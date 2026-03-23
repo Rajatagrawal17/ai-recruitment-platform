@@ -10,7 +10,7 @@ const Register = () => {
     email: "", 
     password: "", 
     phoneNumber: "",
-    role: "user" 
+    role: "candidate" 
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -320,8 +320,8 @@ const Register = () => {
             <div className="form-group">
               <label>👥 Role</label>
               <select name="role" value={formData.role} onChange={handleChange} className="form-select">
-                <option value="user">👥 Job Seeker</option>
-                <option value="admin">⚙️ Admin</option>
+                <option value="candidate">👤 Candidate</option>
+                <option value="recruiter">🏢 Recruiter</option>
               </select>
             </div>
 

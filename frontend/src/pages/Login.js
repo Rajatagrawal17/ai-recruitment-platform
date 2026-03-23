@@ -54,10 +54,16 @@ const Login = () => {
     try {
       const res = await API.post("/auth/login", formData);
       localStorage.setItem("token", res.data.token);
-      localStorage.setItem("userName", res.data.userName || formData.email.split("@")[0]);
+      localStorage.setItem("userName", res.data.user?.name || formData.email.split("@")[0]);
+      localStorage.setItem("userRole", res.data.user?.role || "candidate");
       setSuccess(true);
       setTimeout(() => {
-        navigate("/jobs");
+        const role = res.data.user?.role;
+        if (role === "recruiter" || role === "admin") {
+          navigate("/recruiter");
+        } else {
+          navigate("/candidate");
+        }
       }, 500);
     } catch (error) {
       const errorMsg = error.response?.data?.message || "Login failed";

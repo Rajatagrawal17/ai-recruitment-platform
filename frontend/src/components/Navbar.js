@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import NotificationCenter from "./NotificationCenter";
 import CognifitLogo from "./CognifitLogo";
 import "./Navbar.css";
 
@@ -10,14 +9,19 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState("candidate");
   const token = localStorage.getItem("token");
   const userDropdownRef = useRef(null);
 
   // Fetch user name from localStorage or API
   useEffect(() => {
     const storedUser = localStorage.getItem("userName");
+    const storedRole = localStorage.getItem("userRole");
     if (storedUser) {
       setUserName(storedUser);
+    }
+    if (storedRole) {
+      setUserRole(storedRole);
     }
   }, []);
 
@@ -33,9 +37,16 @@ const Navbar = () => {
   }, []);
 
   const navLinks = [
-    { path: "/", label: "Jobs" },
-    ...(token ? [{ path: "/dashboard", label: "Dashboard" }] : []),
-    { path: "/admin", label: "Admin" }
+    { path: "/", label: "Home" },
+    { path: "/jobs", label: "Jobs" },
+    ...(token
+      ? [
+          {
+            path: userRole === "recruiter" || userRole === "admin" ? "/recruiter" : "/candidate",
+            label: "Dashboard",
+          },
+        ]
+      : []),
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -43,6 +54,7 @@ const Navbar = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
+    localStorage.removeItem("userRole");
     setUserDropdownOpen(false);
     setMobileMenuOpen(false);
     navigate("/login");
@@ -74,7 +86,6 @@ const Navbar = () => {
 
           {/* Right Section - Desktop */}
           <div className="navbar-right">
-            <NotificationCenter />
             {token && (
               <div className="user-avatar-container" ref={userDropdownRef}>
                 <button
@@ -88,17 +99,17 @@ const Navbar = () => {
                     <div className="user-dropdown-header">
                       Welcome, {userName || "User"}
                     </div>
-                    <Link to="/dashboard" className="user-dropdown-item">
-                      👤 Profile
-                    </Link>
-                    <Link to="/settings" className="user-dropdown-item">
-                      ⚙️ Settings
+                    <Link
+                      to={userRole === "recruiter" || userRole === "admin" ? "/recruiter" : "/candidate"}
+                      className="user-dropdown-item"
+                    >
+                      Dashboard
                     </Link>
                     <button
                       onClick={handleLogout}
                       className="user-dropdown-item logout"
                     >
-                      🚪 Logout
+                      Logout
                     </button>
                   </div>
                 )}
@@ -135,7 +146,7 @@ const Navbar = () => {
           <div className="mobile-menu">
             <div className="mobile-menu-header">
               <Link to="/" className="navbar-logo" onClick={() => setMobileMenuOpen(false)}>
-                RecruitAI
+                Cognifit
               </Link>
               <button
                 className={`hamburger ${mobileMenuOpen ? "open" : ""}`}
@@ -164,11 +175,11 @@ const Navbar = () => {
               {token ? (
                 <>
                   <Link
-                    to="/dashboard"
+                    to={userRole === "recruiter" || userRole === "admin" ? "/recruiter" : "/candidate"}
                     className="btn btn-secondary"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Profile
+                    Dashboard
                   </Link>
                   <button
                     onClick={handleLogout}
