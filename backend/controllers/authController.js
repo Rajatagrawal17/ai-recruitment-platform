@@ -208,8 +208,11 @@ exports.sendMobileOTP = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `OTP sent via ${method === "sms" ? "SMS" : "Email"}`,
+      message: result.demo
+        ? "SMS provider unavailable. Use the fallback OTP shown in app."
+        : `OTP sent via ${method === "sms" ? "SMS" : "Email"}`,
       demo: result.demo || false,
+      demoOtp: result.demo ? otp : undefined,
     });
 
   } catch (error) {

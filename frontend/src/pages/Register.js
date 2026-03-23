@@ -21,6 +21,7 @@ const Register = () => {
   const [otpValue, setOtpValue] = useState("");
   const [timer, setTimer] = useState(0);
   const [attempts, setAttempts] = useState(0);
+  const [fallbackOtp, setFallbackOtp] = useState("");
   const [captchaToken, setCaptchaToken] = useState(null);
   const [verifying, setVerifying] = useState(false);
   const navigate = useNavigate();
@@ -114,10 +115,12 @@ const Register = () => {
 
       const normalizedPhone = normalizeIndianPhone(formData.phoneNumber);
 
-      await postWithRetry("/auth/send-mobile-otp", {
+      const otpResponse = await postWithRetry("/auth/send-mobile-otp", {
         phoneNumber: normalizedPhone,
         method: "sms",
       });
+
+      setFallbackOtp(otpResponse?.data?.demoOtp || "");
 
       setError("");
       setAttempts(0);
@@ -130,6 +133,7 @@ const Register = () => {
         ? "Server is still waking up. Please wait 60 seconds and tap Resend Code."
         : null;
       setError(apiMessage || networkMessage || "Failed to send OTP");
+      setFallbackOtp("");
       setVerifying(false);
     }
   };
@@ -307,6 +311,12 @@ const Register = () => {
                 <p className="step-description">We've sent a verification code to <strong>{normalizeIndianPhone(formData.phoneNumber) || formData.phoneNumber}</strong></p>
 
                 {error && <div className="alert alert-error">{error}</div>}
+
+                {fallbackOtp && (
+                  <div className="alert alert-success">
+                    Fallback OTP: <strong>{fallbackOtp}</strong>
+                  </div>
+                )}
 
                 <div className="otp-input">
                   <input
