@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../services/api";
+import API, { warmupBackend } from "../services/api";
 import "./Register.css";
 import ReCAPTCHA from "react-google-recaptcha";
 
@@ -84,6 +84,9 @@ const Register = () => {
     try {
       setVerifying(true);
 
+      // Render free instances can sleep; warm up backend before OTP request.
+      await warmupBackend();
+
       if (otpMethod === "email") {
         // Primary path for email mode
         await postWithRetry("/auth/send-email-otp", {
@@ -124,7 +127,7 @@ const Register = () => {
 
       const apiMessage = err.response?.data?.message;
       const networkMessage = err.code === "ERR_NETWORK"
-        ? "Server is waking up. Please wait 30-60 seconds and try again."
+        ? "Server is still waking up. Please wait 60 seconds and tap Resend Code."
         : null;
       setError(apiMessage || networkMessage || "Failed to send OTP");
       setVerifying(false);
@@ -166,6 +169,7 @@ const Register = () => {
   const sendEmailOTP = async () => {
     try {
       setVerifying(true);
+      await warmupBackend();
       await postWithRetry("/auth/send-email-otp", { email: formData.email });
       setError("");
       setAttempts(0);

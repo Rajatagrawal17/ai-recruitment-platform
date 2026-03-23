@@ -1,10 +1,13 @@
 import axios from "axios";
 
+const isLocalHost =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+
 const API_URL_CANDIDATES = [
   process.env.REACT_APP_API_URL,
   "https://cognifit-backend.onrender.com/api",
-  "https://ai-recruitment-backend.onrender.com/api",
-  "http://localhost:5000/api",
+  ...(isLocalHost ? ["http://localhost:5000/api"] : []),
 ].filter((url, index, arr) => url && arr.indexOf(url) === index);
 
 const API = axios.create({
@@ -55,5 +58,33 @@ API.interceptors.response.use(
     return API.request(originalRequest);
   }
 );
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const wakeBaseUrl = async (baseUrl) => {
+  const healthUrl = `${baseUrl.replace(/\/api\/?$/, "")}/`;
+  await axios.get(healthUrl, { timeout: 30000 });
+};
+
+export const warmupBackend = async () => {
+  let lastError;
+
+  for (const baseUrl of API_URL_CANDIDATES) {
+    try {
+      await wakeBaseUrl(baseUrl);
+      API.defaults.baseURL = baseUrl;
+      return true;
+    } catch (err) {
+      lastError = err;
+      await sleep(1200);
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  return false;
+};
 
 export default API;
