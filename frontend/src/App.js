@@ -14,6 +14,7 @@ import JobDetailPage from "./pages/JobDetailPage";
 import ApplicationForm from "./pages/ApplicationForm";
 import RecruiterDashboard from "./pages/RecruiterDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
+import { useAuth } from "./context/AuthContext";
 
 const pageTransition = {
   initial: { opacity: 0, y: 16 },
@@ -41,14 +42,36 @@ const AnimatedPage = ({ children }) => {
   );
 };
 
+const roleHome = (role) => {
+  if (role === "candidate") return "/candidate/dashboard";
+  if (role === "recruiter" || role === "admin") return "/dashboard";
+  return "/";
+};
+
+const PublicOnlyRoute = ({ children }) => {
+  const { isAuthenticated, role } = useAuth();
+  if (isAuthenticated) {
+    return <Navigate to={roleHome(role)} replace />;
+  }
+  return children;
+};
+
 const AppRoutes = () => {
   const location = useLocation();
+  const { isAuthenticated, role } = useAuth();
 
   return (
     <AnimatePresence>
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<AnimatedPage><LandingPage /></AnimatedPage>} />
-        <Route path="/jobs" element={<AnimatedPage><JobsPage /></AnimatedPage>} />
+        <Route
+          path="/jobs"
+          element={
+            isAuthenticated && role === "candidate"
+              ? <Navigate to="/apply" replace />
+              : <AnimatedPage><JobsPage /></AnimatedPage>
+          }
+        />
         <Route path="/jobs/:id" element={<AnimatedPage><JobDetailPage /></AnimatedPage>} />
         <Route
           path="/jobs/:id/apply"
@@ -58,8 +81,22 @@ const AppRoutes = () => {
             </ProtectedRoute>
           )}
         />
-        <Route path="/login" element={<AnimatedPage><LoginPage /></AnimatedPage>} />
-        <Route path="/register" element={<AnimatedPage><RegisterPage /></AnimatedPage>} />
+        <Route
+          path="/login"
+          element={(
+            <PublicOnlyRoute>
+              <AnimatedPage><LoginPage /></AnimatedPage>
+            </PublicOnlyRoute>
+          )}
+        />
+        <Route
+          path="/register"
+          element={(
+            <PublicOnlyRoute>
+              <AnimatedPage><RegisterPage /></AnimatedPage>
+            </PublicOnlyRoute>
+          )}
+        />
 
         <Route
           path="/apply"
@@ -91,6 +128,15 @@ const AppRoutes = () => {
         <Route
           path="/recruiter/dashboard"
           element={<Navigate to="/dashboard" replace />}
+        />
+
+        <Route
+          path="/candidates"
+          element={(
+            <ProtectedRoute allowedRoles={["recruiter", "admin"]}>
+              <Navigate to="/dashboard#candidates" replace />
+            </ProtectedRoute>
+          )}
         />
 
         <Route path="/candidate" element={<Navigate to="/candidate/dashboard" replace />} />

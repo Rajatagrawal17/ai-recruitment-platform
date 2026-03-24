@@ -27,13 +27,14 @@ const Navbar = () => {
     if (role === "candidate") {
       return [
         { path: "/apply", label: "Apply Jobs", icon: BriefcaseBusiness },
-        { path: "/candidate/dashboard", label: "My Applications", icon: LayoutDashboard },
+        { path: "/candidate/dashboard", label: "Applications & Feedback", icon: LayoutDashboard },
       ];
     }
 
     return [
       { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { path: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
+      { path: "/candidates", label: "Candidates", icon: UserCircle2 },
     ];
   }, [token, role]);
 
@@ -64,7 +65,7 @@ const Navbar = () => {
 
         <nav className="hidden items-center gap-2 md:flex">
           {links.map((link) => {
-            const active = location.pathname === link.path;
+            const active = location.pathname === link.path || (link.path === "/candidates" && location.pathname === "/dashboard");
             return (
               <motion.div
                 key={link.path}

@@ -6,7 +6,10 @@ const ResumeUpload = ({ file, onFileChange }) => {
   const pickFile = (nextFile) => {
     if (!nextFile) return;
     const isPdf = nextFile.type === "application/pdf" || nextFile.name.toLowerCase().endsWith(".pdf");
-    if (!isPdf) return;
+    const isDocx =
+      nextFile.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      nextFile.name.toLowerCase().endsWith(".docx");
+    if (!isPdf && !isDocx) return;
     onFileChange(nextFile);
   };
 
@@ -27,14 +30,14 @@ const ResumeUpload = ({ file, onFileChange }) => {
           textAlign: "center",
         }}
       >
-        <p style={{ marginTop: 0 }}>Drag and drop a PDF resume here</p>
+        <p style={{ marginTop: 0 }}>Drag and drop a PDF or DOCX resume here</p>
         <button type="button" onClick={() => fileInputRef.current?.click()}>
-          Browse PDF
+          Browse Resume
         </button>
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,application/pdf"
+          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           style={{ display: "none" }}
           onChange={(event) => pickFile(event.target.files?.[0])}
         />

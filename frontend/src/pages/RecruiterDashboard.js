@@ -356,7 +356,7 @@ const RecruiterDashboard = () => {
         </motion.aside>
 
         <div className="space-y-5">
-          <section className="glass-card p-4">
+          <section id="candidates" className="glass-card p-4">
             <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <h2 className="text-lg font-semibold">Candidate Ranking</h2>
               <div className="flex flex-wrap items-center gap-2">
@@ -421,7 +421,7 @@ const RecruiterDashboard = () => {
             )}
           </section>
 
-          <section className="glass-card overflow-hidden">
+          <section id="jobs" className="glass-card overflow-hidden">
             <div className="border-b border-border px-4 py-3">
               <h2 className="text-lg font-semibold">All Jobs</h2>
             </div>
