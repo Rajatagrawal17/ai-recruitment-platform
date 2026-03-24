@@ -46,6 +46,54 @@ const applicationSchema = new mongoose.Schema(
     resumeText: {
       type: String,
     },
+    parsedResume: {
+      skills: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      experience: {
+        years: {
+          type: Number,
+          default: 0,
+        },
+        level: {
+          type: String,
+          default: "entry",
+        },
+      },
+      education: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+    },
+    resumeFeedback: {
+      summary: {
+        type: String,
+        default: "",
+      },
+      missingSkills: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      weakAreas: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      suggestions: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+    },
     resume: {
       type: String,
     },

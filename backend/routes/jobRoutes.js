@@ -1,7 +1,12 @@
 const express = require("express");
 const router = express.Router();
 
-const { createJob, getAllJobs, getJob } = require("../controllers/jobController");
+const {
+   createJob,
+   getAllJobs,
+   getJob,
+   getJobRecommendations,
+} = require("../controllers/jobController");
 const { applyJob } = require("../controllers/applicationController");
 const protect = require("../middleware/authMiddleware");
 const authorizeRoles = require("../middleware/roleMiddleware");
@@ -16,6 +21,11 @@ router.post("/create", protect, createJob);
    PUBLIC GET JOBS
 ========================= */
 router.get("/", getAllJobs);
+
+/* =========================
+   CANDIDATE JOB RECOMMENDATIONS
+========================= */
+router.get("/recommendations", protect, authorizeRoles("candidate"), getJobRecommendations);
 
 /* =========================
    PUBLIC GET SINGLE JOB

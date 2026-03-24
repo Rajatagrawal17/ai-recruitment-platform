@@ -96,6 +96,7 @@ export const verifyMobileOTP = (data) => API.post("/auth/verify-mobile-otp", dat
 export const verifyCaptcha = (data) => API.post("/auth/verify-captcha", data);
 
 export const getJobs = () => API.get("/jobs");
+export const getRecommendedJobs = () => API.get("/jobs/recommendations");
 export const getJobById = (jobId) => API.get(`/jobs/${jobId}`);
 export const createJob = (data) => API.post("/jobs/create", data);
 

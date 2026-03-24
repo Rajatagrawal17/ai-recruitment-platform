@@ -1,6 +1,12 @@
 const Application = require("../models/Application");
 const Job = require("../models/Job");
+const Candidate = require("../models/Candidate");
 const { calculateMatchScore } = require("../../ai-service/matcher");
+const {
+  parseResumeText,
+  parsePdfResume,
+  generateResumeFeedback,
+} = require("../utils/resumeIntelligence");
 
 /* =========================
    APPLY JOB (CANDIDATE)
@@ -44,14 +50,58 @@ exports.applyJob = async (req, res) => {
     }
 
     /* =========================
+       RESUME PARSING
+    ========================= */
+
+    let normalizedResumeText = String(resumeText || "").trim();
+    let parsedResume = parseResumeText(normalizedResumeText);
+
+    if (!normalizedResumeText && resumePath) {
+      try {
+        const parsedPdf = await parsePdfResume(resumePath);
+        normalizedResumeText = parsedPdf.text;
+        parsedResume = parsedPdf.parsed;
+      } catch (parseError) {
+        console.error("Resume parse fallback error:", parseError.message);
+      }
+    }
+
+    const parsedSkills = parsedResume?.skills || [];
+    const parsedExperienceYears =
+      Number(yearsExperience || 0) > 0
+        ? Number(yearsExperience)
+        : Number(parsedResume?.experience?.years || 0);
+
+    // Keep candidate profile in sync with latest parsed resume insights.
+    await Candidate.updateOne(
+      { email: req.user.email },
+      {
+        $set: {
+          user: req.user._id,
+          name: req.user.name,
+          email: req.user.email,
+          skills: parsedSkills,
+          experience: parsedExperienceYears,
+        },
+      },
+      { upsert: true }
+    );
+
+    /* =========================
        AI MATCH SCORE
     ========================= */
 
     let matchScore = 0;
 
-    if (resumeText && job.description) {
-      matchScore = calculateMatchScore(resumeText, job.description);
+    if (normalizedResumeText && job.description) {
+      matchScore = calculateMatchScore(normalizedResumeText, job.description, job.skills || []);
     }
+
+    const resumeFeedback = generateResumeFeedback({
+      parsedResume,
+      jobSkills: job.skills || [],
+      requiredExperience: Number(job.experience || job.yearsOfExperience || 0),
+    });
 
     /* =========================
        CREATE APPLICATION
@@ -60,14 +110,19 @@ exports.applyJob = async (req, res) => {
     const application = await Application.create({
       job: jobId,
       candidate: req.user._id,
+      candidateName: fullName || req.user.name || "",
+      jobTitle: job.title || "",
+      company: job.company || "",
       fullName: fullName || "",
       email: email || "",
       phone: phone || "",
       linkedinUrl: linkedinUrl || "",
       portfolioUrl: portfolioUrl || "",
-      yearsExperience: yearsExperience || 0,
+      yearsExperience: parsedExperienceYears,
       resume: resumePath,
-      resumeText,
+      resumeText: normalizedResumeText,
+      parsedResume,
+      resumeFeedback,
       coverLetter: coverLetter || "",
       matchScore,
       status: "pending",
