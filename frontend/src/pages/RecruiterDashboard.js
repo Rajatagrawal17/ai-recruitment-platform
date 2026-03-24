@@ -1,30 +1,38 @@
 import React, { useEffect, useMemo, useState } from "react";
-import API from "../services/api";
+import MatchScoreBadge from "../components/MatchScoreBadge";
+import {
+  createJob,
+  getJobs,
+  getJobCandidates,
+  updateApplicationStatus,
+} from "../services/api";
 import "./RecruitmentPages.css";
 
 const initialForm = {
   title: "",
   company: "",
   description: "",
+  location: "",
+  type: "full-time",
+  salary: "",
+  skills: "",
 };
 
 const RecruiterDashboard = () => {
   const [jobs, setJobs] = useState([]);
-  const [applications, setApplications] = useState([]);
+  const [jobCandidates, setJobCandidates] = useState({});
+  const [expandedJobId, setExpandedJobId] = useState("");
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
   const loadDashboard = async () => {
     try {
-      const [jobsRes, appsRes] = await Promise.all([
-        API.get("/jobs"),
-        API.get("/applications/all"),
-      ]);
+      const jobsRes = await getJobs();
       setJobs(jobsRes.data.jobs || []);
-      setApplications(appsRes.data.applications || []);
       setError("");
     } catch (err) {
       setError(err.response?.data?.message || "Recruiter data could not be loaded. Make sure your role is recruiter/admin.");
@@ -48,7 +56,13 @@ const RecruiterDashboard = () => {
     setError("");
 
     try {
-      await API.post("/jobs/create", form);
+      await createJob({
+        ...form,
+        skills: form.skills
+          .split(",")
+          .map((skill) => skill.trim())
+          .filter(Boolean),
+      });
       setMessage("Job posted successfully.");
       setForm(initialForm);
       loadDashboard();
@@ -59,9 +73,49 @@ const RecruiterDashboard = () => {
     }
   };
 
+  const handleExpandJob = async (jobId) => {
+    if (expandedJobId === jobId) {
+      setExpandedJobId("");
+      return;
+    }
+
+    setExpandedJobId(jobId);
+
+    if (jobCandidates[jobId]) {
+      return;
+    }
+
+    setLoadingCandidates(true);
+    try {
+      const res = await getJobCandidates(jobId);
+      setJobCandidates((prev) => ({
+        ...prev,
+        [jobId]: res.data.matchedCandidates || [],
+      }));
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to load candidates for this job.");
+    } finally {
+      setLoadingCandidates(false);
+    }
+  };
+
+  const handleStatusChange = async (applicationId, status, jobId) => {
+    try {
+      await updateApplicationStatus(applicationId, status);
+      const res = await getJobCandidates(jobId);
+      setJobCandidates((prev) => ({
+        ...prev,
+        [jobId]: res.data.matchedCandidates || [],
+      }));
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to update application status.");
+    }
+  };
+
   const ranking = useMemo(() => {
-    return [...applications].sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0)).slice(0, 8);
-  }, [applications]);
+    const merged = Object.values(jobCandidates).flat();
+    return [...merged].sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0)).slice(0, 8);
+  }, [jobCandidates]);
 
   return (
     <main className="recruit-page">
@@ -72,7 +126,7 @@ const RecruiterDashboard = () => {
 
       <section className="recruit-shell recruit-kpis">
         <div className="kpi"><strong>{jobs.length}</strong><span>Total Jobs</span></div>
-        <div className="kpi"><strong>{applications.length}</strong><span>Total Applicants</span></div>
+        <div className="kpi"><strong>{Object.values(jobCandidates).flat().length}</strong><span>Total Applicants Loaded</span></div>
         <div className="kpi"><strong>{ranking[0]?.matchScore || 0}%</strong><span>Top Match Score</span></div>
       </section>
 
@@ -82,6 +136,20 @@ const RecruiterDashboard = () => {
           <form className="recruit-form" onSubmit={handleCreateJob}>
             <input name="title" value={form.title} onChange={handleChange} placeholder="Job title" required />
             <input name="company" value={form.company} onChange={handleChange} placeholder="Company" required />
+            <input name="location" value={form.location} onChange={handleChange} placeholder="Location" required />
+            <select name="type" value={form.type} onChange={handleChange}>
+              <option value="full-time">full-time</option>
+              <option value="part-time">part-time</option>
+              <option value="remote">remote</option>
+            </select>
+            <input name="salary" value={form.salary} onChange={handleChange} placeholder="Salary range" required />
+            <input
+              name="skills"
+              value={form.skills}
+              onChange={handleChange}
+              placeholder="Skills (comma separated)"
+              required
+            />
             <textarea name="description" value={form.description} onChange={handleChange} placeholder="Job description" required />
             <button className="recruit-btn primary" type="submit" disabled={saving}>
               {saving ? "Posting..." : "Post Job"}
@@ -96,8 +164,9 @@ const RecruiterDashboard = () => {
           <p className="recruit-muted" style={{ marginBottom: 10 }}>Top applicants sorted by match score.</p>
           {ranking.map((app) => (
             <div key={app._id} style={{ marginBottom: 8 }}>
-              <strong>{app.fullName || app.candidate?.name || "Candidate"}</strong>
-              <span className="recruit-muted"> - {app.matchScore || 0}%</span>
+              <strong>{app.candidateName || app.fullName || "Candidate"}</strong>
+              <span className="recruit-muted"> - </span>
+              <MatchScoreBadge score={app.matchScore || 0} />
             </div>
           ))}
           {!ranking.length && <p className="recruit-muted">No applicants available.</p>}
@@ -115,17 +184,65 @@ const RecruiterDashboard = () => {
                   <th>Title</th>
                   <th>Company</th>
                   <th>Posted</th>
-                  <th>Applicants</th>
+                  <th>Candidates</th>
                 </tr>
               </thead>
               <tbody>
                 {jobs.map((job) => (
-                  <tr key={job._id}>
-                    <td>{job.title}</td>
-                    <td>{job.company}</td>
-                    <td>{new Date(job.createdAt).toLocaleDateString()}</td>
-                    <td>{applications.filter((a) => a.job?._id === job._id).length}</td>
-                  </tr>
+                  <React.Fragment key={job._id}>
+                    <tr>
+                      <td>{job.title}</td>
+                      <td>{job.company}</td>
+                      <td>{new Date(job.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <button className="recruit-btn secondary" onClick={() => handleExpandJob(job._id)}>
+                          {expandedJobId === job._id ? "Hide" : "View Ranked Candidates"}
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedJobId === job._id && (
+                      <tr>
+                        <td colSpan="4">
+                          {loadingCandidates ? (
+                            <p className="recruit-muted">Loading candidates...</p>
+                          ) : (jobCandidates[job._id] || []).length === 0 ? (
+                            <p className="recruit-muted">No applicants for this job yet.</p>
+                          ) : (
+                            <div style={{ display: "grid", gap: 10 }}>
+                              {jobCandidates[job._id].map((candidate) => (
+                                <div
+                                  key={candidate._id}
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    gap: 12,
+                                    alignItems: "center",
+                                    border: "1px solid rgba(148, 163, 184, 0.25)",
+                                    borderRadius: 8,
+                                    padding: 10,
+                                  }}
+                                >
+                                  <div>
+                                    <strong>{candidate.candidateName}</strong>
+                                    <p className="recruit-muted" style={{ margin: "4px 0" }}>{candidate.candidateEmail}</p>
+                                    <MatchScoreBadge score={candidate.matchScore || 0} />
+                                  </div>
+                                  <select
+                                    value={candidate.status || "pending"}
+                                    onChange={(event) => handleStatusChange(candidate._id, event.target.value, job._id)}
+                                  >
+                                    <option value="pending">pending</option>
+                                    <option value="accepted">accepted</option>
+                                    <option value="rejected">rejected</option>
+                                  </select>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
                 {jobs.length === 0 && (
                   <tr>

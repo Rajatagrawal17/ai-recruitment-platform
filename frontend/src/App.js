@@ -2,30 +2,16 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import LandingPage from "./pages/LandingPage";
-import JobListingsPage from "./pages/JobListingsPage";
-import ApplyJob from "./pages/ApplyJob";
+import JobsPage from "./pages/JobsPage";
+import JobDetailPage from "./pages/JobDetailPage";
+import ApplicationForm from "./pages/ApplicationForm";
 import RecruiterDashboard from "./pages/RecruiterDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
-
-const RequireAuth = ({ children, allowedRoles = [] }) => {
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("userRole");
-
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
-    const fallback = role === "recruiter" || role === "admin" ? "/recruiter" : "/candidate";
-    return <Navigate to={fallback} replace />;
-  }
-
-  return children;
-};
 
 function App() {
   return (
@@ -33,31 +19,34 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/jobs" element={<JobListingsPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/apply/:jobId" element={<ApplyJob />} />
+        <Route path="/jobs" element={<JobsPage />} />
+        <Route path="/jobs/:id" element={<JobDetailPage />} />
+        <Route path="/jobs/:id/apply" element={<ApplicationForm />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
         <Route
-          path="/candidate"
+          path="/candidate/dashboard"
           element={(
-            <RequireAuth allowedRoles={["candidate", "admin"]}>
+            <ProtectedRoute allowedRoles={["candidate"]}>
               <CandidateDashboard />
-            </RequireAuth>
+            </ProtectedRoute>
           )}
         />
 
         <Route
-          path="/recruiter"
+          path="/recruiter/dashboard"
           element={(
-            <RequireAuth allowedRoles={["recruiter", "admin"]}>
+            <ProtectedRoute allowedRoles={["recruiter", "admin"]}>
               <RecruiterDashboard />
-            </RequireAuth>
+            </ProtectedRoute>
           )}
         />
 
-        <Route path="/dashboard" element={<Navigate to="/candidate" replace />} />
-        <Route path="/admin" element={<Navigate to="/recruiter" replace />} />
+        <Route path="/candidate" element={<Navigate to="/candidate/dashboard" replace />} />
+        <Route path="/recruiter" element={<Navigate to="/recruiter/dashboard" replace />} />
+        <Route path="/dashboard" element={<Navigate to="/candidate/dashboard" replace />} />
+        <Route path="/admin" element={<Navigate to="/recruiter/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

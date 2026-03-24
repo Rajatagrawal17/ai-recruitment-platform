@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import API from "../services/api";
+import { useAuth } from "../context/AuthContext";
+import { loginUser } from "../services/api";
 import "./Login.css";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -52,17 +54,15 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const res = await API.post("/auth/login", formData);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("userName", res.data.user?.name || formData.email.split("@")[0]);
-      localStorage.setItem("userRole", res.data.user?.role || "candidate");
+      const res = await loginUser(formData);
+      login({ token: res.data.token, user: res.data.user });
       setSuccess(true);
       setTimeout(() => {
         const role = res.data.user?.role;
         if (role === "recruiter" || role === "admin") {
-          navigate("/recruiter");
+          navigate("/recruiter/dashboard");
         } else {
-          navigate("/candidate");
+          navigate("/candidate/dashboard");
         }
       }, 500);
     } catch (error) {

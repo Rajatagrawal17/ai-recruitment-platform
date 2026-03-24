@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import API from "../services/api";
 import AnimatedStats from "../components/AnimatedStats";
 import AnimatedCard from "../components/AnimatedCard";
@@ -154,12 +154,14 @@ const AdminDashboard = () => {
           <h1 className="admin-title">Admin Dashboard</h1>
           <p className="admin-subtitle">Manage jobs, candidates, and applications</p>
         </div>
-        <button
+        <motion.button
           className="btn btn-primary btn-add-job"
           onClick={() => setShowAddJob(!showAddJob)}
+          whileHover={{ scale: 1.05, boxShadow: "0 8px 20px rgba(79, 70, 229, 0.3)" }}
+          whileTap={{ scale: 0.95 }}
         >
           {showAddJob ? "Cancel" : "+ Add New Job"}
-        </button>
+        </motion.button>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
@@ -356,8 +358,15 @@ const AdminDashboard = () => {
           {activeTab === "jobs" && (
             <div className="jobs-management">
               <h2>Job Listings</h2>
+              <AnimatePresence>
               {showAddJob && (
-                <div className="add-job-form">
+                <motion.div 
+                  className="add-job-form"
+                  initial={{ opacity: 0, height: 0, overflow: "hidden" }}
+                  animate={{ opacity: 1, height: "auto", overflow: "visible" }}
+                  exit={{ opacity: 0, height: 0, overflow: "hidden" }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
                   <h3>Add New Job</h3>
                   <form onSubmit={handleAddJob}>
                     <div className="form-row">
@@ -409,13 +418,20 @@ const AdminDashboard = () => {
                       Create Job
                     </button>
                   </form>
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
 
               <div className="jobs-table">
+                <AnimatePresence>
                 {jobs.length > 0 ? (
                   jobs.map((job, index) => (
-                    <AnimatedCard key={job._id} delay={index} className="job-row-animated">
+                    <AnimatedCard 
+                      key={job._id} 
+                      delay={index} 
+                      className="job-row-animated"
+                      exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
+                    >
                       <div className="job-info">
                         <div className="job-title">{job.title}</div>
                         <div className="job-company">{job.company}</div>
@@ -428,26 +444,36 @@ const AdminDashboard = () => {
                         ${job.salary?.toLocaleString() || "N/A"}
                       </div>
                       <div className="job-actions">
-                        <button
+                        <motion.button
                           className="btn-edit"
-                          onClick={() =>
-                            navigate(`/jobs/${job._id}`)
-                          }
+                          onClick={() => navigate(`/jobs/${job._id}`)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                         >
                           Edit
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
                           className="btn-delete"
                           onClick={() => handleDeleteJob(job._id)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                         >
                           Delete
-                        </button>
+                        </motion.button>
                       </div>
                     </AnimatedCard>
                   ))
                 ) : (
-                  <div className="empty-state">No jobs found</div>
+                  <motion.div 
+                    className="empty-state"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    No jobs found
+                  </motion.div>
                 )}
+                </AnimatePresence>
               </div>
             </div>
           )}

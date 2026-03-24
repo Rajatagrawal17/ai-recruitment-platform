@@ -1,13 +1,8 @@
 import axios from "axios";
 
-const isLocalHost =
-  typeof window !== "undefined" &&
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
-
 const API_URL_CANDIDATES = [
   process.env.REACT_APP_API_URL,
-  "https://cognifit-backend.onrender.com/api",
-  ...(isLocalHost ? ["http://localhost:5000/api"] : []),
+  "http://localhost:5000/api",
 ].filter((url, index, arr) => url && arr.indexOf(url) === index);
 
 const API = axios.create({
@@ -86,5 +81,32 @@ export const warmupBackend = async () => {
 
   return false;
 };
+
+export const loginUser = (data) => API.post("/auth/login", data);
+export const registerUser = (data) => API.post("/auth/register", data);
+export const sendEmailOTP = (data) => API.post("/auth/send-email-otp", data);
+export const verifyEmailOTP = (data) => API.post("/auth/verify-email-otp", data);
+export const sendMobileOTP = (data) => API.post("/auth/send-mobile-otp", data);
+export const verifyMobileOTP = (data) => API.post("/auth/verify-mobile-otp", data);
+export const verifyCaptcha = (data) => API.post("/auth/verify-captcha", data);
+
+export const getJobs = () => API.get("/jobs");
+export const getJobById = (jobId) => API.get(`/jobs/${jobId}`);
+export const createJob = (data) => API.post("/jobs/create", data);
+
+export const applyToJob = (formData) =>
+  API.post("/applications/apply", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+export const getCandidateApplications = () => API.get("/applications/my");
+export const getAllApplications = () => API.get("/applications/all");
+export const updateApplicationStatus = (applicationId, status) =>
+  API.put(`/applications/status/${applicationId}`, { status });
+
+export const getJobCandidates = (jobId) => API.get(`/matching/job/${jobId}/candidates`);
+export const getCandidateJobMatches = (candidateId) => API.get(`/matching/candidate/${candidateId}/jobs`);
+export const analyzeResume = (data) => API.post("/matching/analyze-resume", data);
+export const scoreCandidate = (data) => API.post("/matching/score", data);
+export const getTopCandidates = () => API.get("/matching/top-candidates");
 
 export default API;

@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import "./AnimatedCard.css";
 
-const AnimatedCard = ({ children, delay = 0, onClick, className = "" }) => {
+const AnimatedCard = ({ children, delay = 0, onClick, className = "", ...props }) => {
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -32,6 +32,7 @@ const AnimatedCard = ({ children, delay = 0, onClick, className = "" }) => {
       animate="visible"
       whileHover="hover"
       onClick={onClick}
+      {...props}
     >
       {children}
     </motion.div>

@@ -88,7 +88,7 @@ const JobCard = ({ job, isApplied = false, matchScore = null }) => {
   const handleApplyClick = (e) => {
     e.stopPropagation();
     if (!isApplied) {
-      navigate(`/apply/${job._id}`);
+      navigate(`/jobs/${job._id}/apply`);
     }
   };
 

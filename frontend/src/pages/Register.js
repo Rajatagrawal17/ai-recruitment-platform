@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import API, { warmupBackend } from "../services/api";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  registerUser,
+  sendMobileOTP as requestMobileOtp,
+  verifyMobileOTP as requestVerifyMobileOtp,
+  verifyCaptcha,
+  warmupBackend,
+} from "../services/api";
 import "./Register.css";
 import ReCAPTCHA from "react-google-recaptcha";
 
@@ -25,6 +31,14 @@ const Register = () => {
   const [captchaToken, setCaptchaToken] = useState(null);
   const [verifying, setVerifying] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const roleFromQuery = searchParams.get("role");
+    if (roleFromQuery === "candidate" || roleFromQuery === "recruiter") {
+      setFormData((prev) => ({ ...prev, role: roleFromQuery }));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (timer > 0) {
@@ -49,12 +63,12 @@ const Register = () => {
     return null;
   };
 
-  const postWithRetry = async (url, payload, retries = 2) => {
+  const postWithRetry = async (payload, retries = 2) => {
     let lastError;
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        return await API.post(url, payload);
+        return await requestMobileOtp(payload);
       } catch (err) {
         lastError = err;
         const isNetworkIssue = err.code === "ERR_NETWORK" || err.code === "ECONNABORTED" || !err.response;
@@ -103,10 +117,10 @@ const Register = () => {
     setShowVerification(true);
     setVerificationStep(1);
     setError("");
-    await sendMobileOTP();
+    await handleSendMobileOTP();
   };
 
-  const sendMobileOTP = async () => {
+  const handleSendMobileOTP = async () => {
     try {
       setVerifying(true);
 
@@ -115,7 +129,7 @@ const Register = () => {
 
       const normalizedPhone = normalizeIndianPhone(formData.phoneNumber);
 
-      const otpResponse = await postWithRetry("/auth/send-mobile-otp", {
+      const otpResponse = await postWithRetry({
         phoneNumber: normalizedPhone,
         method: "sms",
       });
@@ -138,12 +152,12 @@ const Register = () => {
     }
   };
 
-  const verifyMobileOTP = async () => {
+  const handleVerifyMobileOTP = async () => {
     try {
       setVerifying(true);
 
       const normalizedPhone = normalizeIndianPhone(formData.phoneNumber);
-      await API.post("/auth/verify-mobile-otp", {
+      await requestVerifyMobileOtp({
         phoneNumber: normalizedPhone,
         otp: otpValue,
       });
@@ -156,7 +170,7 @@ const Register = () => {
       setError(err.response?.data?.message || "Invalid OTP");
       if (attempts + 1 >= 3) {
         setTimer(0);
-        await sendMobileOTP();
+        await handleSendMobileOTP();
         setAttempts(0);
       }
       setVerifying(false);
@@ -178,7 +192,7 @@ const Register = () => {
       setVerifying(true);
       
       // Verify CAPTCHA
-      const captchaResponse = await API.post("/auth/verify-captcha", {
+      const captchaResponse = await verifyCaptcha({
         token: captchaToken,
       });
 
@@ -190,7 +204,7 @@ const Register = () => {
       }
 
       // Create account
-      const registerResponse = await API.post("/auth/register", {
+      await registerUser({
         ...formData,
         verified: true,
         mobileVerified: true,
@@ -333,7 +347,7 @@ const Register = () => {
                   {timer > 0 ? (
                     <p>Resend code in <strong>{Math.floor(timer / 60)}:{(timer % 60).toString().padStart(2, "0")}</strong></p>
                   ) : (
-                    <button className="btn-resend" onClick={sendMobileOTP} disabled={verifying}>
+                    <button className="btn-resend" onClick={handleSendMobileOTP} disabled={verifying}>
                       Resend Code
                     </button>
                   )}
@@ -342,7 +356,7 @@ const Register = () => {
 
                 <button
                   className="btn-verify"
-                  onClick={verifyMobileOTP}
+                  onClick={handleVerifyMobileOTP}
                   disabled={otpValue.length !== 6 || verifying}
                 >
                   {verifying ? "Verifying..." : "Verify"}

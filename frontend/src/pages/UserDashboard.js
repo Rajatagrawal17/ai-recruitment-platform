@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import API from "../services/api";
 import AnimatedCard from "../components/AnimatedCard";
 import AnimatedStats from "../components/AnimatedStats";
@@ -47,16 +47,32 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="admin-container">
+    <motion.div 
+      className="admin-container"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <h1>👤 User Dashboard</h1>
-        <button onClick={handleLogout} style={{ width: "auto", padding: "0.6rem 1.5rem", maxWidth: "150px" }}>
+        <motion.button 
+          onClick={handleLogout} 
+          style={{ width: "auto", padding: "0.6rem 1.5rem", maxWidth: "150px" }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
           🚪 Logout
-        </button>
+        </motion.button>
       </div>
 
       {user && (
-        <div className="admin-section" style={{ marginBottom: "2rem" }}>
+        <motion.div 
+          className="admin-section" 
+          style={{ marginBottom: "2rem" }}
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
           <h3>📋 Profile Information</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
@@ -80,13 +96,20 @@ const UserDashboard = () => {
               </p>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
-      <div className="admin-section">
+      <motion.div 
+        className="admin-section"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
         <div style={{ marginBottom: "1.5rem", borderBottom: "2px solid #e1e8ed", paddingBottom: "1rem" }}>
-          <button
+          <motion.button
             onClick={() => setActiveTab("applications")}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             style={{
               padding: "0.6rem 1.5rem",
               marginRight: "0.5rem",
@@ -96,13 +119,15 @@ const UserDashboard = () => {
               borderRadius: "8px",
               cursor: "pointer",
               fontWeight: "600",
-              transition: "all 0.3s ease"
+              transition: "background 0.3s ease, color 0.3s ease"
             }}
           >
             📨 My Applications ({applications.length})
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={() => setActiveTab("stats")}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             style={{
               padding: "0.6rem 1.5rem",
               marginRight: "0.5rem",
@@ -112,13 +137,15 @@ const UserDashboard = () => {
               borderRadius: "8px",
               cursor: "pointer",
               fontWeight: "600",
-              transition: "all 0.3s ease"
+              transition: "background 0.3s ease, color 0.3s ease"
             }}
           >
             📊 Statistics
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={() => setActiveTab("achievements")}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             style={{
               padding: "0.6rem 1.5rem",
               background: activeTab === "achievements" ? "linear-gradient(135deg, #667eea, #764ba2)" : "#e1e8ed",
@@ -127,16 +154,23 @@ const UserDashboard = () => {
               borderRadius: "8px",
               cursor: "pointer",
               fontWeight: "600",
-              transition: "all 0.3s ease"
+              transition: "background 0.3s ease, color 0.3s ease"
             }}
           >
             🏅 Achievements
-          </button>
+          </motion.button>
         </div>
 
-        {renderContent()}
-      </div>
-    </div>
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          {renderContent()}
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 
   function renderContent() {
@@ -154,51 +188,63 @@ const UserDashboard = () => {
               No applications yet. Start applying to jobs!
             </p>
           ) : (
-            applications.map((app, index) => (
-              <div key={app._id} className="job-card" style={{ animationDelay: `${index * 0.1}s` }}>
-                <h3>{app.jobId?.title || "Job"}</h3>
-                <p className="job-company">🏭 {app.jobId?.company || "Company"}</p>
-                <p style={{ color: "#666", marginBottom: "0.5rem" }}>
-                  <strong>Status:</strong>
-                </p>
-                <div
-                  style={{
-                    display: "inline-block",
-                    padding: "0.4rem 1rem",
-                    borderRadius: "20px",
-                    fontSize: "0.9rem",
-                    fontWeight: "600",
-                    background:
-                      app.status === "accepted"
-                        ? "#d4edda"
+            <div style={{ display: "grid", gap: "1rem" }}>
+              <AnimatePresence>
+                {applications.map((app, index) => (
+                  <motion.div 
+                    key={app._id} 
+                    className="job-card" 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ delay: index * 0.1, duration: 0.4 }}
+                    whileHover={{ y: -5, boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}
+                  >
+                    <h3>{app.jobId?.title || "Job"}</h3>
+                    <p className="job-company">🏭 {app.jobId?.company || "Company"}</p>
+                    <p style={{ color: "#666", marginBottom: "0.5rem" }}>
+                      <strong>Status:</strong>
+                    </p>
+                    <div
+                      style={{
+                        display: "inline-block",
+                        padding: "0.4rem 1rem",
+                        borderRadius: "20px",
+                        fontSize: "0.9rem",
+                        fontWeight: "600",
+                        background:
+                          app.status === "accepted"
+                            ? "#d4edda"
+                            : app.status === "rejected"
+                            ? "#f8d7da"
+                            : "#fff3cd",
+                        color:
+                          app.status === "accepted"
+                            ? "#155724"
+                            : app.status === "rejected"
+                            ? "#721c24"
+                            : "#856404",
+                        marginBottom: "1rem"
+                      }}
+                    >
+                      {app.status === "accepted"
+                        ? "✅ Accepted"
                         : app.status === "rejected"
-                        ? "#f8d7da"
-                        : "#fff3cd",
-                    color:
-                      app.status === "accepted"
-                        ? "#155724"
-                        : app.status === "rejected"
-                        ? "#721c24"
-                        : "#856404",
-                    marginBottom: "1rem"
-                  }}
-                >
-                  {app.status === "accepted"
-                    ? "✅ Accepted"
-                    : app.status === "rejected"
-                    ? "❌ Rejected"
-                    : "⏳ Pending"}
-                </div>
-                {app.matchScore && (
-                  <p style={{ color: "#667eea", fontWeight: "600" }}>
-                    🎯 Match Score: {app.matchScore}%
-                  </p>
-                )}
-                <p style={{ color: "#999", fontSize: "0.9rem", marginTop: "1rem" }}>
-                  Applied on {new Date(app.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-            ))
+                        ? "❌ Rejected"
+                        : "⏳ Pending"}
+                    </div>
+                    {app.matchScore && (
+                      <p style={{ color: "#667eea", fontWeight: "600" }}>
+                        🎯 Match Score: {app.matchScore}%
+                      </p>
+                    )}
+                    <p style={{ color: "#999", fontSize: "0.9rem", marginTop: "1rem" }}>
+                      Applied on {new Date(app.createdAt).toLocaleDateString()}
+                    </p>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
           )}
         </div>
       );
@@ -209,46 +255,24 @@ const UserDashboard = () => {
         <div>
           <h3 style={{ marginBottom: "1.5rem" }}>📊 Your Statistics</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
-            <div
-              style={{
-                background: "linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1))",
-                padding: "1.5rem",
-                borderRadius: "12px",
-                textAlign: "center",
-                border: "2px solid #667eea"
-              }}
-            >
-              <p style={{ color: "#999", marginBottom: "0.5rem" }}>Total Applications</p>
-              <h2 style={{ color: "#667eea", margin: "0" }}>{applications.length}</h2>
-            </div>
-            <div
-              style={{
-                background: "linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.1))",
-                padding: "1.5rem",
-                borderRadius: "12px",
-                textAlign: "center",
-                border: "2px solid #28a745"
-              }}
-            >
-              <p style={{ color: "#999", marginBottom: "0.5rem" }}>Accepted</p>
-              <h2 style={{ color: "#28a745", margin: "0" }}>
-                {applications.filter((a) => a.status === "accepted").length}
-              </h2>
-            </div>
-            <div
-              style={{
-                background: "linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.1))",
-                padding: "1.5rem",
-                borderRadius: "12px",
-                textAlign: "center",
-                border: "2px solid #dc3545"
-              }}
-            >
-              <p style={{ color: "#999", marginBottom: "0.5rem" }}>Pending</p>
-              <h2 style={{ color: "#dc3545", margin: "0" }}>
-                {applications.filter((a) => a.status === "pending").length}
-              </h2>
-            </div>
+            <AnimatedStats
+              icon="📨"
+              label="Total Applications"
+              value={applications.length}
+              delay={0}
+            />
+            <AnimatedStats
+              icon="✅"
+              label="Accepted"
+              value={applications.filter((a) => a.status === "accepted").length}
+              delay={1}
+            />
+            <AnimatedStats
+              icon="⏳"
+              label="Pending"
+              value={applications.filter((a) => a.status === "pending").length}
+              delay={2}
+            />
           </div>
         </div>
       );

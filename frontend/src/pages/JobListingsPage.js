@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../services/api";
+import { getJobs } from "../services/api";
 import "./RecruitmentPages.css";
 
 const JobListingsPage = () => {
@@ -12,7 +12,7 @@ const JobListingsPage = () => {
   useEffect(() => {
     const loadJobs = async () => {
       try {
-        const res = await API.get("/jobs");
+        const res = await getJobs();
         setJobs(res.data.jobs || []);
       } catch (err) {
         setError(err.response?.data?.message || "Unable to load jobs right now.");
@@ -43,8 +43,8 @@ const JobListingsPage = () => {
                 <p className="recruit-muted" style={{ marginBottom: 10 }}>{job.company || "Company"}</p>
                 <p className="recruit-muted" style={{ marginBottom: 14 }}>{job.description}</p>
                 <div className="recruit-actions">
-                  <button className="recruit-btn primary" onClick={() => navigate(`/apply/${job._id}`)}>
-                    Apply
+                  <button className="recruit-btn primary" onClick={() => navigate(`/jobs/${job._id}`)}>
+                    View & Apply
                   </button>
                 </div>
               </article>

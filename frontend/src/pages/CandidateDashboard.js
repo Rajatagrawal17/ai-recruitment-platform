@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import API from "../services/api";
+import { Link } from "react-router-dom";
+import MatchScoreBadge from "../components/MatchScoreBadge";
+import { getCandidateApplications } from "../services/api";
 import "./RecruitmentPages.css";
 
 const CandidateDashboard = () => {
@@ -12,7 +14,7 @@ const CandidateDashboard = () => {
   useEffect(() => {
     const loadMyApplications = async () => {
       try {
-        const res = await API.get("/applications/my");
+        const res = await getCandidateApplications();
         setApplications(res.data.applications || []);
       } catch (err) {
         setError(err.response?.data?.message || "Could not load your applications.");
@@ -35,6 +37,9 @@ const CandidateDashboard = () => {
       <section className="recruit-shell recruit-hero">
         <h1 className="recruit-title">Candidate Dashboard</h1>
         <p className="recruit-subtitle">Track applications, monitor match scores, and keep your resume ready.</p>
+        <div className="recruit-actions" style={{ marginTop: 14 }}>
+          <Link to="/jobs" className="recruit-btn primary">Browse Jobs</Link>
+        </div>
       </section>
 
       <section className="recruit-shell recruit-kpis">
@@ -45,8 +50,8 @@ const CandidateDashboard = () => {
 
       <section className="recruit-shell recruit-grid" style={{ marginBottom: 18 }}>
         <article className="recruit-card">
-          <h3>Upload Resume</h3>
-          <p className="recruit-muted" style={{ marginBottom: 10 }}>PDF/DOCX upload UI is ready. Backend parsing connection can be plugged in next.</p>
+          <h3>Resume Snapshot</h3>
+          <p className="recruit-muted" style={{ marginBottom: 10 }}>Keep an updated PDF ready before you apply.</p>
           <input
             type="file"
             accept=".pdf,.doc,.docx"
@@ -59,14 +64,6 @@ const CandidateDashboard = () => {
             onChange={(e) => setResumeText(e.target.value)}
             style={{ marginTop: 12 }}
           />
-        </article>
-
-        <article className="recruit-card">
-          <h3>Profile Type</h3>
-          <span className="role-badge candidate">Candidate</span>
-          <p className="recruit-muted" style={{ marginTop: 10 }}>
-            Use the Jobs page to apply. Match scores appear automatically after each application.
-          </p>
         </article>
       </section>
 
@@ -81,6 +78,7 @@ const CandidateDashboard = () => {
                 <tr>
                   <th>Job</th>
                   <th>Company</th>
+                  <th>Applied On</th>
                   <th>Status</th>
                   <th>Match</th>
                 </tr>
@@ -90,13 +88,14 @@ const CandidateDashboard = () => {
                   <tr key={app._id}>
                     <td>{app.job?.title || "Role"}</td>
                     <td>{app.job?.company || "Company"}</td>
+                    <td>{new Date(app.createdAt).toLocaleDateString()}</td>
                     <td>{app.status || "pending"}</td>
-                    <td>{app.matchScore || 0}%</td>
+                    <td><MatchScoreBadge score={app.matchScore || 0} /></td>
                   </tr>
                 ))}
                 {applications.length === 0 && (
                   <tr>
-                    <td colSpan="4" className="recruit-muted">No applications yet.</td>
+                    <td colSpan="5" className="recruit-muted">No applications yet.</td>
                   </tr>
                 )}
               </tbody>

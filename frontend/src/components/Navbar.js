@@ -1,29 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import CognifitLogo from "./CognifitLogo";
+import { useAuth } from "../context/AuthContext";
 import "./Navbar.css";
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, token, role, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [userName, setUserName] = useState("");
-  const [userRole, setUserRole] = useState("candidate");
-  const token = localStorage.getItem("token");
   const userDropdownRef = useRef(null);
-
-  // Fetch user name from localStorage or API
-  useEffect(() => {
-    const storedUser = localStorage.getItem("userName");
-    const storedRole = localStorage.getItem("userRole");
-    if (storedUser) {
-      setUserName(storedUser);
-    }
-    if (storedRole) {
-      setUserRole(storedRole);
-    }
-  }, []);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -36,25 +22,26 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const navLinks = [
-    { path: "/", label: "Home" },
-    { path: "/jobs", label: "Jobs" },
-    ...(token
+  const navLinks = token
+    ? role === "candidate"
       ? [
-          {
-            path: userRole === "recruiter" || userRole === "admin" ? "/recruiter" : "/candidate",
-            label: "Dashboard",
-          },
+          { path: "/jobs", label: "Jobs" },
+          { path: "/candidate/dashboard", label: "My Applications" },
         ]
-      : []),
-  ];
+      : [
+          { path: "/jobs", label: "Jobs" },
+          { path: "/recruiter/dashboard", label: "Dashboard" },
+        ]
+    : [
+        { path: "/jobs", label: "Jobs" },
+        { path: "/login", label: "Login" },
+        { path: "/register", label: "Register" },
+      ];
 
   const isActive = (path) => location.pathname === path;
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userName");
-    localStorage.removeItem("userRole");
+    logout();
     setUserDropdownOpen(false);
     setMobileMenuOpen(false);
     navigate("/login");
@@ -66,8 +53,7 @@ const Navbar = () => {
         <div className="navbar-container">
           {/* Logo */}
           <Link to="/" className="navbar-logo">
-            <CognifitLogo size={35} />
-            <span>Cognifit</span>
+            <span>HireAI</span>
           </Link>
 
           {/* Desktop Nav Links */}
@@ -92,15 +78,15 @@ const Navbar = () => {
                   className="user-avatar"
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                 >
-                  {userName ? userName.charAt(0).toUpperCase() : "U"}
+                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
                 </button>
                 {userDropdownOpen && (
                   <div className="user-dropdown">
                     <div className="user-dropdown-header">
-                      Welcome, {userName || "User"}
+                      Welcome, {user?.name || "User"}
                     </div>
                     <Link
-                      to={userRole === "recruiter" || userRole === "admin" ? "/recruiter" : "/candidate"}
+                      to={role === "candidate" ? "/candidate/dashboard" : "/recruiter/dashboard"}
                       className="user-dropdown-item"
                     >
                       Dashboard
@@ -146,7 +132,7 @@ const Navbar = () => {
           <div className="mobile-menu">
             <div className="mobile-menu-header">
               <Link to="/" className="navbar-logo" onClick={() => setMobileMenuOpen(false)}>
-                Cognifit
+                HireAI
               </Link>
               <button
                 className={`hamburger ${mobileMenuOpen ? "open" : ""}`}
@@ -175,7 +161,7 @@ const Navbar = () => {
               {token ? (
                 <>
                   <Link
-                    to={userRole === "recruiter" || userRole === "admin" ? "/recruiter" : "/candidate"}
+                    to={role === "candidate" ? "/candidate/dashboard" : "/recruiter/dashboard"}
                     className="btn btn-secondary"
                     onClick={() => setMobileMenuOpen(false)}
                   >

@@ -6,14 +6,14 @@ const LandingPage = () => {
   return (
     <main className="recruit-page">
       <section className="recruit-shell recruit-hero">
-        <h1 className="recruit-title">AI Recruitment Platform for Faster, Better Hiring</h1>
+        <h1 className="recruit-title">Find the right talent. Find the right job.</h1>
         <p className="recruit-subtitle">
-          Cognifit now helps recruiters post jobs, screen resumes, and rank candidates using AI-powered match scoring.
-          Candidates can apply quickly and track application status from a personalized dashboard.
+          HireAI helps recruiters post jobs, screen resumes, and rank candidates with AI match scoring.
+          Candidates can apply instantly, track application status, and view their match scores in one dashboard.
         </p>
         <div className="recruit-actions">
-          <Link to="/jobs" className="recruit-btn primary">Browse Jobs</Link>
-          <Link to="/register" className="recruit-btn secondary">Create Account</Link>
+          <Link to="/register?role=candidate" className="recruit-btn primary">I'm a Candidate</Link>
+          <Link to="/register?role=recruiter" className="recruit-btn secondary">I'm a Recruiter</Link>
         </div>
       </section>
 
