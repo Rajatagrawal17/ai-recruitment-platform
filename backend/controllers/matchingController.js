@@ -40,6 +40,8 @@ exports.getMatchedCandidatesForJob = async (req, res) => {
       currentMatchScore: app.matchScore,
       status: app.status,
       appliedAt: app.createdAt,
+      matchExplanation: app.matchExplanation || {},
+      resumeFeedback: app.resumeFeedback || {},
       matchScore: calculateMatchScore(
         app.resumeText || app.resume || "",
         job.description,
@@ -192,6 +194,7 @@ exports.getTopCandidatesForAllJobs = async (req, res) => {
               job.skills || []
             ),
             status: app.status,
+            matchExplanation: app.matchExplanation || {},
           }))
           .sort((a, b) => b.matchScore - a.matchScore)
           .slice(0, 5); // Top 5 candidates per job

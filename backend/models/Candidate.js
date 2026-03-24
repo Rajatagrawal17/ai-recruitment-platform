@@ -20,10 +20,19 @@ const candidateSchema = new mongoose.Schema(
         trim: true,
       },
     ],
+    education: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     experience: {
       type: Number,
       default: 0,
       min: 0,
+    },
+    resumeParsedAt: {
+      type: Date,
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,

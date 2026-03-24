@@ -94,6 +94,36 @@ const applicationSchema = new mongoose.Schema(
         },
       ],
     },
+    matchExplanation: {
+      summary: {
+        type: String,
+        default: "",
+      },
+      matchedSkills: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      missingSkills: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      strengths: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      weaknesses: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+    },
     resume: {
       type: String,
     },

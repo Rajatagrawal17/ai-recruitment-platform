@@ -207,6 +207,17 @@ const CandidateDashboard = () => {
                 <p className="mt-2 text-xs text-text-muted">
                   Matched: {(job.matchedSkills || []).slice(0, 4).join(", ") || "No direct match yet"}
                 </p>
+                {(job.missingSkills || []).length > 0 && (
+                  <p className="mt-1 text-xs text-text-muted">
+                    Gaps: {job.missingSkills.slice(0, 3).join(", ")}
+                  </p>
+                )}
+                <p className="mt-2 text-xs text-text-muted">
+                  Readiness: <span className="font-semibold capitalize text-text">{job.readiness || "emerging"}</span>
+                </p>
+                <p className="mt-1 text-xs text-text-muted">
+                  {job.explanation?.summary || "AI explanation will appear here after profile analysis."}
+                </p>
                 <ScoreBar score={job.matchScore || 0} reduceMotion={reduceMotion} />
                 <Link to={`/jobs/${job._id}`} className="btn-secondary mt-4 w-full text-sm">
                   View Role
@@ -252,6 +263,7 @@ const CandidateDashboard = () => {
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Match</th>
                   <th className="px-5 py-3">Progress</th>
+                  <th className="px-5 py-3">AI Explanation</th>
                   <th className="px-5 py-3">AI Feedback</th>
                 </tr>
               </thead>
@@ -284,9 +296,31 @@ const CandidateDashboard = () => {
                         </div>
                       </td>
                       <td className="px-5 py-4">
+                        <div className="max-w-xs space-y-1 text-xs text-text-muted">
+                          <p className="font-medium text-text">
+                            {app.matchExplanation?.summary || "Explanation pending."}
+                          </p>
+                          {(app.matchExplanation?.matchedSkills || []).length > 0 && (
+                            <p>
+                              Matched: {app.matchExplanation.matchedSkills.slice(0, 3).join(", ")}
+                            </p>
+                          )}
+                          {(app.matchExplanation?.missingSkills || []).length > 0 && (
+                            <p>
+                              Missing: {app.matchExplanation.missingSkills.slice(0, 3).join(", ")}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
                         <p className="max-w-xs text-xs text-text-muted">
                           {app.resumeFeedback?.summary || "Feedback pending from AI analysis."}
                         </p>
+                        {(app.resumeFeedback?.suggestions || []).length > 0 && (
+                          <p className="mt-1 max-w-xs text-xs text-text-muted">
+                            Tip: {app.resumeFeedback.suggestions[0]}
+                          </p>
+                        )}
                       </td>
                     </motion.tr>
                   ))}

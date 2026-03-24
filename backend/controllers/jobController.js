@@ -10,26 +10,61 @@ const normalizeSkill = (skill = "") =>
     .replace(/\s+/g, " ")
     .trim();
 
-const getCandidateSkillSet = async (user) => {
+const toTitleCase = (value = "") =>
+  value
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ")
+    .replace("Nodejs", "Node.js")
+    .replace("Nextjs", "Next.js")
+    .replace("Aws", "AWS")
+    .replace("Gcp", "GCP");
+
+const getReadinessLabel = (score) => {
+  if (score >= 80) return "high";
+  if (score >= 60) return "medium";
+  return "emerging";
+};
+
+const getCandidateInsights = async (user) => {
   const profile = await Candidate.findOne({ user: user._id });
 
-  if (profile?.skills?.length) {
-    return profile.skills;
+  if (profile) {
+    return {
+      skills: profile.skills || [],
+      experience: Number(profile.experience || 0),
+      education: profile.education || [],
+    };
   }
 
   const latestApplication = await Application.findOne({ candidate: user._id })
     .sort({ createdAt: -1 })
-    .select("parsedResume resumeText");
+    .select("parsedResume resumeText yearsExperience");
 
   if (latestApplication?.parsedResume?.skills?.length) {
-    return latestApplication.parsedResume.skills;
+    return {
+      skills: latestApplication.parsedResume.skills,
+      experience: Number(
+        latestApplication.yearsExperience || latestApplication.parsedResume?.experience?.years || 0
+      ),
+      education: latestApplication.parsedResume?.education || [],
+    };
   }
 
   if (latestApplication?.resumeText) {
-    return extractSkillsFromText(latestApplication.resumeText);
+    return {
+      skills: extractSkillsFromText(latestApplication.resumeText),
+      experience: Number(latestApplication.yearsExperience || 0),
+      education: [],
+    };
   }
 
-  return [];
+  return {
+    skills: [],
+    experience: 0,
+    education: [],
+  };
 };
 
 /* =========================
@@ -111,7 +146,10 @@ exports.getAllJobs = async (req, res) => {
 ========================= */
 exports.getJobRecommendations = async (req, res) => {
   try {
-    const candidateSkills = await getCandidateSkillSet(req.user);
+    const candidateInsights = await getCandidateInsights(req.user);
+    const candidateSkills = candidateInsights.skills || [];
+    const candidateExperience = Number(candidateInsights.experience || 0);
+    const hasEducation = (candidateInsights.education || []).length > 0;
     const candidateSkillSet = new Set(candidateSkills.map((skill) => normalizeSkill(skill)));
 
     if (candidateSkillSet.size === 0) {
@@ -127,11 +165,36 @@ exports.getJobRecommendations = async (req, res) => {
 
     const recommendations = jobs
       .map((job) => {
-        const jobSkills = (job.skills || []).map((skill) => normalizeSkill(skill)).filter(Boolean);
-        const matchedSkills = jobSkills.filter((skill) => candidateSkillSet.has(skill));
-        const matchScore = jobSkills.length
-          ? Math.round((matchedSkills.length / jobSkills.length) * 100)
+        const jobSkillsOriginal = (job.skills || []).filter(Boolean);
+        const jobSkillsNormalized = jobSkillsOriginal.map((skill) => normalizeSkill(skill));
+
+        const matchedSkillsNormalized = jobSkillsNormalized.filter((skill) => candidateSkillSet.has(skill));
+        const missingSkillsNormalized = jobSkillsNormalized.filter((skill) => !candidateSkillSet.has(skill));
+
+        const matchedSkills = matchedSkillsNormalized.map((skill) => toTitleCase(skill));
+        const missingSkills = missingSkillsNormalized.map((skill) => toTitleCase(skill));
+
+        const skillMatchScore = jobSkillsNormalized.length
+          ? Math.round((matchedSkillsNormalized.length / jobSkillsNormalized.length) * 100)
           : 0;
+
+        const requiredExperience = Number(job.experience || job.yearsOfExperience || 0);
+        const experienceScore = requiredExperience > 0
+          ? Math.max(0, Math.min(100, Math.round((candidateExperience / requiredExperience) * 100)))
+          : 80;
+
+        const educationScore = hasEducation ? 100 : 65;
+
+        const matchScore = Math.round(
+          skillMatchScore * 0.75 + experienceScore * 0.2 + educationScore * 0.05
+        );
+
+        const readiness = getReadinessLabel(matchScore);
+        const summary = matchedSkills.length
+          ? `Matched ${matchedSkills.length}/${jobSkillsNormalized.length || matchedSkills.length} core skills${
+              missingSkills.length ? ` with gaps in ${missingSkills.slice(0, 3).join(", ")}` : " and strong readiness"
+            }.`
+          : "Limited direct overlap right now; improve targeted role skills to increase fit.";
 
         return {
           _id: job._id,
@@ -143,8 +206,23 @@ exports.getJobRecommendations = async (req, res) => {
           description: job.description,
           skills: job.skills || [],
           matchScore,
+          readiness,
+          scoreBreakdown: {
+            skillMatchScore,
+            experienceScore,
+            educationScore,
+          },
           matchedSkills,
-          missingSkills: jobSkills.filter((skill) => !candidateSkillSet.has(skill)),
+          missingSkills,
+          explanation: {
+            summary,
+            strengths: matchedSkills.length
+              ? [`Skill alignment: ${matchedSkills.slice(0, 4).join(", ")}`]
+              : [],
+            weaknesses: missingSkills.length
+              ? [`Missing skills: ${missingSkills.slice(0, 4).join(", ")}`]
+              : ["No major skill gaps identified"],
+          },
           createdAt: job.createdAt,
         };
       })

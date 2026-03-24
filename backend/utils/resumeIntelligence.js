@@ -1,5 +1,7 @@
 const fs = require("fs");
+const path = require("path");
 const pdfParse = require("pdf-parse");
+const mammoth = require("mammoth");
 
 const SKILL_KEYWORDS = [
   "javascript",
@@ -183,6 +185,44 @@ const parsePdfResume = async (filePath) => {
   };
 };
 
+const parseDocxResume = async (filePath) => {
+  if (!filePath) {
+    return { text: "", parsed: parseResumeText("") };
+  }
+
+  const result = await mammoth.extractRawText({ path: filePath });
+  const text = result?.value || "";
+
+  return {
+    text,
+    parsed: parseResumeText(text),
+  };
+};
+
+const parseResumeFile = async (filePath, mimeType = "") => {
+  if (!filePath) {
+    return { text: "", parsed: parseResumeText("") };
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+
+  if (
+    mimeType === "application/pdf" ||
+    ext === ".pdf"
+  ) {
+    return parsePdfResume(filePath);
+  }
+
+  if (
+    mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    ext === ".docx"
+  ) {
+    return parseDocxResume(filePath);
+  }
+
+  throw new Error("Unsupported resume format. Please upload PDF or DOCX.");
+};
+
 const generateResumeFeedback = ({ parsedResume, jobSkills = [], requiredExperience = 0 }) => {
   const candidateSkills = parsedResume?.skills || [];
   const normalizedCandidate = new Set(candidateSkills.map((skill) => normalizeSkill(skill)));
@@ -239,9 +279,63 @@ const generateResumeFeedback = ({ parsedResume, jobSkills = [], requiredExperien
   };
 };
 
+const generateMatchExplanation = ({ parsedResume, jobSkills = [], requiredExperience = 0 }) => {
+  const candidateSkills = uniqueSkills(parsedResume?.skills || []);
+  const jobSkillList = uniqueSkills(jobSkills || []);
+
+  const candidateSet = new Set(candidateSkills.map((skill) => normalizeSkill(skill)));
+  const matchedSkills = jobSkillList.filter((skill) => candidateSet.has(normalizeSkill(skill)));
+  const missingSkills = jobSkillList.filter((skill) => !candidateSet.has(normalizeSkill(skill)));
+
+  const strengths = [];
+  const weaknesses = [];
+
+  if (matchedSkills.length > 0) {
+    strengths.push(`Strong skill alignment in ${matchedSkills.slice(0, 4).join(", ")}`);
+  }
+
+  const candidateExperienceYears = Number(parsedResume?.experience?.years || 0);
+  if (requiredExperience > 0 && candidateExperienceYears >= requiredExperience) {
+    strengths.push(`Experience fit: ${candidateExperienceYears} years meets required ${requiredExperience}+ years`);
+  }
+
+  if ((parsedResume?.education || []).length > 0) {
+    strengths.push("Education details are present and readable");
+  }
+
+  if (missingSkills.length > 0) {
+    weaknesses.push(`Missing role skills: ${missingSkills.slice(0, 5).join(", ")}`);
+  }
+
+  if (requiredExperience > 0 && candidateExperienceYears < requiredExperience) {
+    weaknesses.push(`Experience gap: ${candidateExperienceYears} years vs required ${requiredExperience}+ years`);
+  }
+
+  if ((parsedResume?.education || []).length === 0) {
+    weaknesses.push("Education section is unclear or missing");
+  }
+
+  const summary = matchedSkills.length
+    ? `Matched ${matchedSkills.length}/${jobSkillList.length || matchedSkills.length} key skills${
+        missingSkills.length ? ` with gaps in ${missingSkills.slice(0, 3).join(", ")}` : " and shows strong overall fit"
+      }.`
+    : "Limited direct skill overlap with this role; review transferable experience and projects.";
+
+  return {
+    summary,
+    matchedSkills,
+    missingSkills,
+    strengths,
+    weaknesses,
+  };
+};
+
 module.exports = {
   parseResumeText,
   parsePdfResume,
+  parseDocxResume,
+  parseResumeFile,
+  generateMatchExplanation,
   generateResumeFeedback,
   extractSkillsFromText,
 };

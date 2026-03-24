@@ -4,7 +4,8 @@ const Candidate = require("../models/Candidate");
 const { calculateMatchScore } = require("../../ai-service/matcher");
 const {
   parseResumeText,
-  parsePdfResume,
+  parseResumeFile,
+  generateMatchExplanation,
   generateResumeFeedback,
 } = require("../utils/resumeIntelligence");
 
@@ -58,9 +59,9 @@ exports.applyJob = async (req, res) => {
 
     if (!normalizedResumeText && resumePath) {
       try {
-        const parsedPdf = await parsePdfResume(resumePath);
-        normalizedResumeText = parsedPdf.text;
-        parsedResume = parsedPdf.parsed;
+        const parsedFile = await parseResumeFile(resumePath, req.file?.mimetype);
+        normalizedResumeText = parsedFile.text;
+        parsedResume = parsedFile.parsed;
       } catch (parseError) {
         console.error("Resume parse fallback error:", parseError.message);
       }
@@ -82,6 +83,8 @@ exports.applyJob = async (req, res) => {
           email: req.user.email,
           skills: parsedSkills,
           experience: parsedExperienceYears,
+          education: parsedResume?.education || [],
+          resumeParsedAt: new Date(),
         },
       },
       { upsert: true }
@@ -98,6 +101,12 @@ exports.applyJob = async (req, res) => {
     }
 
     const resumeFeedback = generateResumeFeedback({
+      parsedResume,
+      jobSkills: job.skills || [],
+      requiredExperience: Number(job.experience || job.yearsOfExperience || 0),
+    });
+
+    const matchExplanation = generateMatchExplanation({
       parsedResume,
       jobSkills: job.skills || [],
       requiredExperience: Number(job.experience || job.yearsOfExperience || 0),
@@ -123,6 +132,7 @@ exports.applyJob = async (req, res) => {
       resumeText: normalizedResumeText,
       parsedResume,
       resumeFeedback,
+      matchExplanation,
       coverLetter: coverLetter || "",
       matchScore,
       status: "pending",

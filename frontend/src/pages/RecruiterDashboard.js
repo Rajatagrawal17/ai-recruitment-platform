@@ -390,25 +390,54 @@ const RecruiterDashboard = () => {
                                     <motion.div
                                       key={candidate._id}
                                       variants={item}
-                                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-3"
+                                      className="rounded-xl border border-border bg-surface p-3"
                                     >
-                                      <div>
-                                        <p className="text-sm font-semibold">{candidate.candidateName}</p>
-                                        <p className="text-xs text-text-muted">{candidate.candidateEmail}</p>
+                                      <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <div>
+                                          <p className="text-sm font-semibold">{candidate.candidateName}</p>
+                                          <p className="text-xs text-text-muted">{candidate.candidateEmail}</p>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                          <MatchScoreBadge score={candidate.matchScore || 0} />
+                                          <select
+                                            className="input-modern min-w-[130px]"
+                                            value={candidate.status || "pending"}
+                                            onChange={(event) => handleStatusChange(candidate._id, event.target.value, job._id)}
+                                          >
+                                            <option value="pending">pending</option>
+                                            <option value="shortlisted">shortlisted</option>
+                                            <option value="accepted">accepted</option>
+                                            <option value="rejected">rejected</option>
+                                          </select>
+                                        </div>
                                       </div>
 
-                                      <div className="flex items-center gap-2">
-                                        <MatchScoreBadge score={candidate.matchScore || 0} />
-                                        <select
-                                          className="input-modern min-w-[130px]"
-                                          value={candidate.status || "pending"}
-                                          onChange={(event) => handleStatusChange(candidate._id, event.target.value, job._id)}
-                                        >
-                                          <option value="pending">pending</option>
-                                          <option value="shortlisted">shortlisted</option>
-                                          <option value="accepted">accepted</option>
-                                          <option value="rejected">rejected</option>
-                                        </select>
+                                      <div className="mt-3 grid gap-2 text-xs text-text-muted md:grid-cols-2">
+                                        <div className="rounded-lg bg-surface-soft p-2">
+                                          <p className="font-semibold text-text">Why Good Match</p>
+                                          <p className="mt-1">
+                                            {candidate.matchExplanation?.summary || "AI explanation pending."}
+                                          </p>
+                                          {(candidate.matchExplanation?.matchedSkills || []).length > 0 && (
+                                            <p className="mt-1">
+                                              Matched: {candidate.matchExplanation.matchedSkills.slice(0, 4).join(", ")}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <div className="rounded-lg bg-surface-soft p-2">
+                                          <p className="font-semibold text-text">Weaknesses</p>
+                                          {(candidate.matchExplanation?.missingSkills || []).length > 0 ? (
+                                            <p className="mt-1">
+                                              Missing: {candidate.matchExplanation.missingSkills.slice(0, 4).join(", ")}
+                                            </p>
+                                          ) : (
+                                            <p className="mt-1">No major skill gaps detected.</p>
+                                          )}
+                                          {(candidate.resumeFeedback?.suggestions || []).length > 0 && (
+                                            <p className="mt-1">Tip: {candidate.resumeFeedback.suggestions[0]}</p>
+                                          )}
+                                        </div>
                                       </div>
                                     </motion.div>
                                   ))}
