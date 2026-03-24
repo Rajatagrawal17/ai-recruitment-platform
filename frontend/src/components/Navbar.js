@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -10,6 +10,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { user, token, role, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const reduceMotion = useReducedMotion();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -65,7 +66,11 @@ const Navbar = () => {
           {links.map((link) => {
             const active = location.pathname === link.path;
             return (
-              <motion.div key={link.path} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+              <motion.div
+                key={link.path}
+                whileHover={reduceMotion ? undefined : { y: -2 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+              >
                 <Link
                   to={link.path}
                   className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
@@ -83,8 +88,8 @@ const Navbar = () => {
 
         <div className="flex items-center gap-2">
           <motion.button
-            whileHover={{ rotate: isDark ? -20 : 20 }}
-            whileTap={{ scale: 0.9 }}
+            whileHover={reduceMotion ? undefined : { rotate: isDark ? -12 : 12 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.96 }}
             onClick={toggleTheme}
             className="rounded-lg border border-border bg-surface-elevated p-2 text-text-muted hover:text-text"
             title="Toggle theme"
@@ -108,9 +113,9 @@ const Navbar = () => {
               <AnimatePresence>
                 {profileOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                    initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 8, scale: 0.97 }}
+                    animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.97 }}
                     className="glass-card absolute right-0 mt-2 w-52 p-2"
                   >
                     <button
@@ -156,9 +161,9 @@ const Navbar = () => {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={reduceMotion ? { opacity: 1, height: "auto" } : { opacity: 0, height: 0 }}
+            animate={reduceMotion ? { opacity: 1, height: "auto" } : { opacity: 1, height: "auto" }}
+            exit={reduceMotion ? { opacity: 0, height: 0 } : { opacity: 0, height: 0 }}
             className="border-t border-border bg-surface-elevated/95 px-4 py-3 md:hidden"
           >
             <div className="space-y-2">

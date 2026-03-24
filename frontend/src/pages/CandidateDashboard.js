@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   BriefcaseBusiness,
   CircleAlert,
@@ -22,10 +22,10 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-const StatCard = ({ title, value, icon: Icon, hint, accent }) => (
+const StatCard = ({ title, value, icon: Icon, hint, accent, reduceMotion }) => (
   <motion.article
     variants={item}
-    whileHover={{ y: -4, scale: 1.01 }}
+    whileHover={reduceMotion ? undefined : { y: -4, scale: 1.01 }}
     className="glass-card p-5"
   >
     <div className="flex items-center justify-between">
@@ -39,12 +39,12 @@ const StatCard = ({ title, value, icon: Icon, hint, accent }) => (
   </motion.article>
 );
 
-const ScoreBar = ({ score }) => (
+const ScoreBar = ({ score, reduceMotion }) => (
   <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-soft">
     <motion.div
       initial={{ width: 0 }}
       animate={{ width: `${Math.max(4, score)}%` }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.45, ease: "easeOut" }}
       className={`h-full rounded-full ${
         score >= 80
           ? "bg-emerald-500"
@@ -57,6 +57,7 @@ const ScoreBar = ({ score }) => (
 );
 
 const CandidateDashboard = () => {
+  const reduceMotion = useReducedMotion();
   const [applications, setApplications] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,9 +98,9 @@ const CandidateDashboard = () => {
 
   return (
     <motion.main
-      initial={{ opacity: 0, y: 10 }}
+      initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.22 }}
       className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 md:px-6"
     >
       <section className="glass-card overflow-hidden p-6">
@@ -132,6 +133,7 @@ const CandidateDashboard = () => {
           hint="Every role you have applied for"
           icon={FileText}
           accent="bg-primary-soft text-primary"
+          reduceMotion={reduceMotion}
         />
         <StatCard
           title="Average Match"
@@ -139,6 +141,7 @@ const CandidateDashboard = () => {
           hint="AI fit score across all applications"
           icon={TrendingUp}
           accent="bg-emerald-500/15 text-emerald-500"
+          reduceMotion={reduceMotion}
         />
         <StatCard
           title="Pending"
@@ -146,6 +149,7 @@ const CandidateDashboard = () => {
           hint="Waiting for recruiter action"
           icon={CircleAlert}
           accent="bg-amber-500/15 text-amber-500"
+          reduceMotion={reduceMotion}
         />
         <StatCard
           title="Shortlisted"
@@ -153,6 +157,7 @@ const CandidateDashboard = () => {
           hint="Great progress toward interview"
           icon={Compass}
           accent="bg-cyan-500/15 text-cyan-500"
+          reduceMotion={reduceMotion}
         />
       </motion.section>
 
@@ -189,7 +194,7 @@ const CandidateDashboard = () => {
               <motion.article
                 key={job._id}
                 variants={item}
-                whileHover={{ y: -4 }}
+                whileHover={reduceMotion ? undefined : { y: -4 }}
                 className="rounded-2xl border border-border bg-surface-soft p-4"
               >
                 <div className="flex items-start justify-between gap-4">
@@ -202,7 +207,7 @@ const CandidateDashboard = () => {
                 <p className="mt-2 text-xs text-text-muted">
                   Matched: {(job.matchedSkills || []).slice(0, 4).join(", ") || "No direct match yet"}
                 </p>
-                <ScoreBar score={job.matchScore || 0} />
+                <ScoreBar score={job.matchScore || 0} reduceMotion={reduceMotion} />
                 <Link to={`/jobs/${job._id}`} className="btn-secondary mt-4 w-full text-sm">
                   View Role
                 </Link>
@@ -256,7 +261,6 @@ const CandidateDashboard = () => {
                     <motion.tr
                       key={app._id}
                       variants={item}
-                      layout
                       className="border-t border-border hover:bg-surface-soft/60"
                     >
                       <td className="px-5 py-4">
@@ -276,7 +280,7 @@ const CandidateDashboard = () => {
                       </td>
                       <td className="px-5 py-4">
                         <div className="w-28">
-                          <ScoreBar score={app.matchScore || 0} />
+                          <ScoreBar score={app.matchScore || 0} reduceMotion={reduceMotion} />
                         </div>
                       </td>
                       <td className="px-5 py-4">

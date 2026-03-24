@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   BriefcaseBusiness,
   ChevronDown,
@@ -42,6 +42,7 @@ const item = {
 };
 
 const RecruiterDashboard = () => {
+  const reduceMotion = useReducedMotion();
   const [jobs, setJobs] = useState([]);
   const [jobCandidates, setJobCandidates] = useState({});
   const [expandedJobId, setExpandedJobId] = useState("");
@@ -157,17 +158,17 @@ const RecruiterDashboard = () => {
 
   return (
     <motion.main
-      initial={{ opacity: 0, y: 10 }}
+      initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.22 }}
       className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 md:px-6"
     >
       <AnimatePresence>
         {toast && (
           <motion.div
-            initial={{ opacity: 0, y: -16 }}
+            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
             className={`fixed right-5 top-20 z-[70] rounded-xl px-4 py-3 text-sm font-medium shadow-card ${
               toast.type === "success"
                 ? "bg-emerald-500 text-white"
@@ -199,21 +200,21 @@ const RecruiterDashboard = () => {
         animate="show"
         className="grid gap-4 sm:grid-cols-3"
       >
-        <motion.article variants={item} whileHover={{ y: -4 }} className="glass-card p-5">
+        <motion.article variants={item} whileHover={reduceMotion ? undefined : { y: -4 }} className="glass-card p-5">
           <div className="flex items-center justify-between text-text-muted">
             <span className="text-sm">Total Jobs</span>
             <BriefcaseBusiness size={18} />
           </div>
           <p className="mt-3 text-3xl font-bold">{jobs.length}</p>
         </motion.article>
-        <motion.article variants={item} whileHover={{ y: -4 }} className="glass-card p-5">
+        <motion.article variants={item} whileHover={reduceMotion ? undefined : { y: -4 }} className="glass-card p-5">
           <div className="flex items-center justify-between text-text-muted">
             <span className="text-sm">Loaded Applicants</span>
             <Users size={18} />
           </div>
           <p className="mt-3 text-3xl font-bold">{totalApplicants}</p>
         </motion.article>
-        <motion.article variants={item} whileHover={{ y: -4 }} className="glass-card p-5">
+        <motion.article variants={item} whileHover={reduceMotion ? undefined : { y: -4 }} className="glass-card p-5">
           <div className="flex items-center justify-between text-text-muted">
             <span className="text-sm">Top Match Score</span>
             <Star size={18} />
@@ -224,10 +225,9 @@ const RecruiterDashboard = () => {
 
       <section className="grid gap-5 lg:grid-cols-[340px_1fr]">
         <motion.aside
-          layout
           className="glass-card overflow-hidden"
-          animate={{ width: sidebarCollapsed ? 84 : "auto" }}
-          transition={{ duration: 0.25 }}
+          animate={reduceMotion ? undefined : { width: sidebarCollapsed ? 84 : "auto" }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.2 }}
         >
           <button
             onClick={() => setSidebarCollapsed((prev) => !prev)}
@@ -265,7 +265,7 @@ const RecruiterDashboard = () => {
                 placeholder="Job description"
                 required
               />
-              <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} className="btn-primary w-full" type="submit" disabled={saving}>
+              <motion.button whileHover={reduceMotion ? undefined : { scale: 1.01 }} whileTap={reduceMotion ? undefined : { scale: 0.98 }} className="btn-primary w-full" type="submit" disabled={saving}>
                 {saving ? "Posting..." : "Post Job"}
               </motion.button>
             </form>
@@ -313,7 +313,7 @@ const RecruiterDashboard = () => {
                   <motion.article
                     key={candidate._id}
                     variants={item}
-                    whileHover={{ y: -2 }}
+                    whileHover={reduceMotion ? undefined : { y: -2 }}
                     className={`rounded-xl border p-3 ${
                       index < 2
                         ? "border-emerald-400/40 bg-emerald-500/10"

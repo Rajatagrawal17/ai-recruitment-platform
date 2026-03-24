@@ -52,7 +52,7 @@
 
 @layer components {
   .glass-card {
-    @apply rounded-2xl border border-border bg-surface-elevated backdrop-blur-xl shadow-glass;
+    @apply rounded-2xl border border-border bg-surface-elevated backdrop-blur-sm shadow-card;
   }
 
   .btn-primary {
@@ -74,5 +74,26 @@
   .skeleton::after {
     content: "";
     @apply absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/10 animate-shimmer;
+  }
+}
+
+@media (max-width: 768px) {
+  .glass-card {
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .skeleton::after {
+    animation: none !important;
   }
 }

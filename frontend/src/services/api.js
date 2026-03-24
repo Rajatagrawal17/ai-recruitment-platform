@@ -2,12 +2,13 @@ import axios from "axios";
 
 const API_URL_CANDIDATES = [
   process.env.REACT_APP_API_URL,
+  "https://cognifit-backend.onrender.com/api",
   "http://localhost:5000/api",
 ].filter((url, index, arr) => url && arr.indexOf(url) === index);
 
 const API = axios.create({
   baseURL: API_URL_CANDIDATES[0],
-  timeout: 45000,
+  timeout: 15000,
 });
 
 API.interceptors.request.use((req) => {
@@ -59,10 +60,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const wakeBaseUrl = async (baseUrl) => {
   // Try health check endpoint first
   try {
-    await axios.get(`${baseUrl}/health`, { timeout: 40000 });
+    await axios.get(`${baseUrl}/health`, { timeout: 12000 });
   } catch (err) {
     // Fallback to root endpoint
-    await axios.get(`${baseUrl.replace(/\/api\/?$/, "")}`, { timeout: 40000 });
+    await axios.get(`${baseUrl.replace(/\/api\/?$/, "")}`, { timeout: 12000 });
   }
 };
 

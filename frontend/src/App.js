@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 
 import Navbar from "./components/Navbar";
 import HelpChatbot from "./components/HelpChatbot";
@@ -21,23 +21,31 @@ const pageTransition = {
   exit: { opacity: 0, y: -12 },
 };
 
-const AnimatedPage = ({ children }) => (
-  <motion.div
-    initial="initial"
-    animate="animate"
-    exit="exit"
-    variants={pageTransition}
-    transition={{ duration: 0.28, ease: "easeOut" }}
-  >
-    {children}
-  </motion.div>
-);
+const AnimatedPage = ({ children }) => {
+  const reduceMotion = useReducedMotion();
+
+  if (reduceMotion) {
+    return <>{children}</>;
+  }
+
+  return (
+    <motion.div
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={pageTransition}
+      transition={{ duration: 0.22, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 const AppRoutes = () => {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<AnimatedPage><LandingPage /></AnimatedPage>} />
         <Route path="/jobs" element={<AnimatedPage><JobsPage /></AnimatedPage>} />
@@ -96,11 +104,13 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <Router>
-      <Navbar />
-      <AppRoutes />
-      <HelpChatbot />
-    </Router>
+    <MotionConfig reducedMotion="user">
+      <Router>
+        <Navbar />
+        <AppRoutes />
+        <HelpChatbot />
+      </Router>
+    </MotionConfig>
   );
 }
 
