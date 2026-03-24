@@ -142,6 +142,8 @@ exports.loginUser = async (req, res) => {
       });
     }
 
+    const tokenExpiry = process.env.JWT_EXPIRES_IN || "7d";
+
     // 🔐 TOKEN
     const token = jwt.sign(
       {
@@ -149,13 +151,14 @@ exports.loginUser = async (req, res) => {
         role: user.role,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: tokenExpiry }
     );
 
     res.status(200).json({
       success: true,
       message: "Login successful ✅",
       token,
+      tokenExpiresIn: tokenExpiry,
       user: {
         _id: user._id,
         name: user.name,
