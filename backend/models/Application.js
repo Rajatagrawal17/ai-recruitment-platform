@@ -2,6 +2,18 @@ const mongoose = require("mongoose");
 
 const applicationSchema = new mongoose.Schema(
   {
+    candidateName: {
+      type: String,
+      trim: true,
+    },
+    jobTitle: {
+      type: String,
+      trim: true,
+    },
+    company: {
+      type: String,
+      trim: true,
+    },
     job: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Job",
@@ -46,7 +58,7 @@ const applicationSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "accepted", "rejected"],
+      enum: ["pending", "shortlisted", "accepted", "rejected"],
       default: "pending",
     },
   },

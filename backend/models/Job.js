@@ -14,6 +14,10 @@ const jobSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    companyRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+    },
     location: {
       type: String,
       default: "Not specified",
@@ -32,6 +36,10 @@ const jobSchema = new mongoose.Schema(
         type: String,
       },
     ],
+    experience: {
+      type: Number,
+      default: 0,
+    },
     yearsOfExperience: {
       type: Number,
       default: 0,

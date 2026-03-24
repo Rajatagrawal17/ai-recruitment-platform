@@ -60,9 +60,9 @@ const Login = () => {
       setTimeout(() => {
         const role = res.data.user?.role;
         if (role === "recruiter" || role === "admin") {
-          navigate("/recruiter/dashboard");
+          navigate("/dashboard");
         } else {
-          navigate("/candidate/dashboard");
+          navigate("/apply");
         }
       }, 500);
     } catch (error) {

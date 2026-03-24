@@ -9,6 +9,13 @@
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 8px 32px rgba(79, 70, 229, 0.1);
+  transition: height 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.navbar.scrolled {
+  height: 58px;
+  background: rgba(9, 17, 31, 0.94);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
 }
 
 .navbar-container {
@@ -40,11 +47,28 @@
   transition: all 0.3s ease;
   white-space: nowrap;
   min-width: fit-content;
+  position: relative;
 }
 
 .navbar-logo:hover {
   filter: brightness(1.2);
   transform: scale(1.05);
+}
+
+.navbar-logo::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(184, 149, 106, 0.7), transparent);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.navbar-logo:hover::after {
+  opacity: 1;
 }
 
 /* ==================== CENTER NAV LINKS ==================== */
@@ -65,6 +89,7 @@
   font-size: 14px;
   transition: all 0.3s ease;
   padding: 8px 0;
+  letter-spacing: 0.02em;
 }
 
 .navbar-link:hover {
@@ -73,8 +98,8 @@
 }
 
 .navbar-link.active {
-  color: #4f46e5;
-  text-shadow: 0 0 15px rgba(79, 70, 229, 0.6);
+  color: #93c5fd;
+  text-shadow: 0 0 15px rgba(56, 189, 248, 0.42);
 }
 
 .navbar-underline {
@@ -83,7 +108,7 @@
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, #4f46e5, #06b6d4);
+  background: linear-gradient(90deg, #0ea5e9, #f59e0b);
   transition: width 0.3s ease;
 }
 
@@ -101,6 +126,35 @@
   display: flex;
   align-items: center;
   gap: 20px;
+}
+
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #dbeafe;
+  background: rgba(30, 41, 59, 0.42);
+}
+
+.role-pill.recruiter,
+.role-pill.admin {
+  color: #fde68a;
+  border-color: rgba(251, 191, 36, 0.38);
+  background: linear-gradient(120deg, rgba(180, 83, 9, 0.32), rgba(120, 53, 15, 0.18));
+}
+
+.role-pill.candidate {
+  color: #bfdbfe;
+  border-color: rgba(56, 189, 248, 0.36);
+  background: linear-gradient(120deg, rgba(14, 116, 144, 0.38), rgba(12, 74, 110, 0.2));
 }
 
 /* ==================== USER AVATAR DROPDOWN ==================== */
@@ -123,11 +177,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.55);
 }
 
 .user-avatar:hover {
   box-shadow: 0 0 20px rgba(79, 70, 229, 0.6), 0 0 40px rgba(6, 182, 212, 0.3);
   transform: scale(1.1);
+}
+
+.user-avatar-container:hover .user-avatar {
+  animation: avatarPulse 1.5s ease infinite;
+}
+
+@keyframes avatarPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(56, 189, 248, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+  }
 }
 
 .user-dropdown {
@@ -142,7 +213,7 @@
   box-shadow: 0 8px 32px rgba(79, 70, 229, 0.2), 0 0 1px rgba(6, 182, 212, 0.3) inset;
   min-width: 200px;
   padding: 8px 0;
-  animation: slideDown 0.3s ease;
+  animation: slideDown 0.25s ease;
   z-index: 1001;
 }
 
@@ -198,6 +269,26 @@
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.navbar-auth .btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.navbar-auth .btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 80%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  transition: left 0.45s ease;
+}
+
+.navbar-auth .btn:hover::before {
+  left: 135%;
 }
 
 /* ==================== HAMBURGER MENU ==================== */
@@ -354,6 +445,10 @@
 
   .navbar-right {
     gap: 12px;
+  }
+
+  .role-pill {
+    display: none;
   }
 
   .navbar-auth {

@@ -9,6 +9,7 @@ const Navbar = () => {
   const { user, token, role, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const userDropdownRef = useRef(null);
 
   // Close dropdowns when clicking outside
@@ -22,15 +23,26 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > 8);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const navLinks = token
     ? role === "candidate"
       ? [
-          { path: "/jobs", label: "Jobs" },
+          { path: "/apply", label: "Apply" },
           { path: "/candidate/dashboard", label: "My Applications" },
         ]
       : [
+          { path: "/dashboard", label: "Dashboard" },
           { path: "/jobs", label: "Jobs" },
-          { path: "/recruiter/dashboard", label: "Dashboard" },
         ]
     : [
         { path: "/jobs", label: "Jobs" },
@@ -44,12 +56,12 @@ const Navbar = () => {
     logout();
     setUserDropdownOpen(false);
     setMobileMenuOpen(false);
-    navigate("/login");
+    navigate("/");
   };
 
   return (
     <>
-      <nav className="navbar">
+      <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
         <div className="navbar-container">
           {/* Logo */}
           <Link to="/" className="navbar-logo">
@@ -74,6 +86,7 @@ const Navbar = () => {
           <div className="navbar-right">
             {token && (
               <div className="user-avatar-container" ref={userDropdownRef}>
+                <span className={`role-pill ${role || "guest"}`}>{role || "user"}</span>
                 <button
                   className="user-avatar"
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -86,7 +99,7 @@ const Navbar = () => {
                       Welcome, {user?.name || "User"}
                     </div>
                     <Link
-                      to={role === "candidate" ? "/candidate/dashboard" : "/recruiter/dashboard"}
+                      to={role === "candidate" ? "/candidate/dashboard" : "/dashboard"}
                       className="user-dropdown-item"
                     >
                       Dashboard
@@ -161,7 +174,7 @@ const Navbar = () => {
               {token ? (
                 <>
                   <Link
-                    to={role === "candidate" ? "/candidate/dashboard" : "/recruiter/dashboard"}
+                    to={role === "candidate" ? "/candidate/dashboard" : "/dashboard"}
                     className="btn btn-secondary"
                     onClick={() => setMobileMenuOpen(false)}
                   >

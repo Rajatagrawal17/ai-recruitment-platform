@@ -3,6 +3,8 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
+const Company = require("./models/Company");
+const Candidate = require("./models/Candidate");
 const Job = require("./models/Job");
 const User = require("./models/User");
 const Application = require("./models/Application");
@@ -13,6 +15,8 @@ const seedDatabase = async () => {
     console.log("✅ Connected to MongoDB");
 
     // Clear existing data
+    await Company.deleteMany({});
+    await Candidate.deleteMany({});
     await User.deleteMany({});
     await Job.deleteMany({});
     await Application.deleteMany({});
@@ -20,179 +24,289 @@ const seedDatabase = async () => {
 
     // Create admin user
     const adminUser = await User.create({
-      name: "Cognifit Admin",
-      email: "admin@cognifit.com",
+      name: "HireAI Admin",
+      email: "admin@hireai.com",
       password: "admin123",
       role: "admin",
       phoneNumber: "+919876543210"
     });
     console.log("👤 Created admin user");
 
-    // Create recruiter user
-    const recruiterUser = await User.create({
-      name: "John Recruiter",
-      email: "recruiter@cognifit.com",
-      password: "recruiter123",
-      role: "recruiter",
-      phoneNumber: "+919123456789"
-    });
-    console.log("👔 Created recruiter user");
-
-    // Create candidate users
-    const candidates = await User.insertMany([
+    // Create recruiter users for each company
+    const recruiterUsers = await User.insertMany([
       {
-        name: "Raj Kumar",
-        email: "raj@example.com",
-        password: "raj123",
-        role: "candidate",
-        phoneNumber: "+919876543211"
+        name: "Aanya Mehta",
+        email: "recruiter.google@hireai.com",
+        password: "recruiter123",
+        role: "recruiter",
+        phoneNumber: "+919123456781",
       },
       {
-        name: "Priya Singh",
-        email: "priya@example.com",
-        password: "priya123",
-        role: "candidate",
-        phoneNumber: "+919876543212"
+        name: "Rahul Verma",
+        email: "recruiter.amazon@hireai.com",
+        password: "recruiter123",
+        role: "recruiter",
+        phoneNumber: "+919123456782",
       },
       {
-        name: "Amit Patel",
-        email: "amit@example.com",
-        password: "amit123",
-        role: "candidate",
-        phoneNumber: "+919876543213"
+        name: "Nisha Kapoor",
+        email: "recruiter.microsoft@hireai.com",
+        password: "recruiter123",
+        role: "recruiter",
+        phoneNumber: "+919123456783",
       },
-      {
-        name: "Sarah Johnson",
-        email: "sarah@example.com",
-        password: "sarah123",
-        role: "candidate",
-        phoneNumber: "+919876543214"
-      }
     ]);
-    console.log("👥 Created 4 candidate users");
+    console.log(`👔 Created ${recruiterUsers.length} recruiter users`);
 
-    // Create sample jobs
+    // Create companies
+    const companies = await Company.insertMany([
+      {
+        name: "Google",
+        description: "Google builds products that organize the world's information and make it universally accessible and useful.",
+        industry: "Internet & Software",
+        location: "Bengaluru, India",
+        website: "https://about.google",
+      },
+      {
+        name: "Amazon",
+        description: "Amazon focuses on e-commerce, cloud computing, and AI solutions at global scale.",
+        industry: "E-commerce & Cloud",
+        location: "Hyderabad, India",
+        website: "https://www.amazon.jobs",
+      },
+      {
+        name: "Microsoft",
+        description: "Microsoft empowers every person and every organization on the planet to achieve more.",
+        industry: "Enterprise Software & Cloud",
+        location: "Noida, India",
+        website: "https://careers.microsoft.com",
+      },
+    ]);
+    console.log(`🏢 Created ${companies.length} companies`);
+
+    const companyByName = Object.fromEntries(companies.map((company) => [company.name, company]));
+    const recruiterByCompany = {
+      Google: recruiterUsers[0],
+      Amazon: recruiterUsers[1],
+      Microsoft: recruiterUsers[2],
+    };
+
+    // Create jobs
     const jobs = await Job.insertMany([
       {
-        title: "Senior Backend Developer",
-        description: "We are looking for an experienced backend developer with expertise in Node.js and MongoDB. Experience with AWS is a plus. Competitive salary, flexible work hours.",
-        company: "TechCorp",
-        location: "Bangalore, India",
+        title: "Software Engineer",
+        company: "Google",
+        companyRef: companyByName.Google._id,
+        location: "Bengaluru, India",
+        skills: ["JavaScript", "Node.js", "System Design", "MongoDB"],
+        experience: 2,
+        yearsOfExperience: 2,
+        description: "Build and scale backend services for high-traffic Google products.",
         type: "full-time",
-        salary: 150000,
-        skills: ["Node.js", "MongoDB", "AWS", "REST APIs"],
-        createdBy: recruiterUser._id
-      },
-      {
-        title: "Frontend Engineer (React)",
-        description: "Join our frontend team to build beautiful React applications. Must have 3+ years of experience with React and TypeScript. Work on cutting-edge projects.",
-        company: "WebStudio",
-        location: "Mumbai, India",
-        type: "full-time",
-        salary: 120000,
-        skills: ["React", "TypeScript", "CSS", "JavaScript"],
-        createdBy: recruiterUser._id
-      },
-      {
-        title: "Full Stack Developer",
-        description: "We need a full stack developer comfortable with both frontend and backend. Experience with MERN stack preferred. Great work-life balance.",
-        company: "StartupXYZ",
-        location: "Delhi, India",
-        type: "full-time",
-        salary: 130000,
-        skills: ["React", "Node.js", "MongoDB", "JavaScript"],
-        createdBy: recruiterUser._id
-      },
-      {
-        title: "DevOps Engineer",
-        description: "Looking for a DevOps engineer to manage our cloud infrastructure. Docker, Kubernetes, and AWS experience required. Remote friendly.",
-        company: "CloudSystems",
-        location: "Remote",
-        type: "full-time",
-        salary: 140000,
-        skills: ["Docker", "Kubernetes", "AWS", "Linux"],
-        createdBy: recruiterUser._id
-      },
-      {
-        title: "UI/UX Designer",
-        description: "Creative designer needed to create amazing user experiences. Portfolio required. Experience with Figma is a must. Flexible hours available.",
-        company: "DesignHub",
-        location: "Bangalore, India",
-        type: "full-time",
-        salary: 100000,
-        skills: ["Figma", "UI Design", "UX Research", "Prototyping"],
-        createdBy: recruiterUser._id
+        salary: 2400000,
+        createdBy: recruiterByCompany.Google._id,
       },
       {
         title: "Machine Learning Engineer",
-        description: "Join our AI team to work on cutting-edge machine learning projects. Python, TensorFlow, and PyTorch experience needed. Innovation-driven role.",
-        company: "AI Innovations",
-        location: "Hyderabad, India",
+        company: "Google",
+        companyRef: companyByName.Google._id,
+        location: "Bengaluru, India",
+        skills: ["Python", "TensorFlow", "MLOps", "Data Structures"],
+        experience: 3,
+        yearsOfExperience: 3,
+        description: "Design and deploy machine learning models for recommendation and ranking systems.",
         type: "full-time",
-        salary: 160000,
-        skills: ["Python", "TensorFlow", "PyTorch", "Data Science"],
-        createdBy: recruiterUser._id
-      }
+        salary: 2800000,
+        createdBy: recruiterByCompany.Google._id,
+      },
+      {
+        title: "Backend Developer",
+        company: "Amazon",
+        companyRef: companyByName.Amazon._id,
+        location: "Hyderabad, India",
+        skills: ["Java", "Spring Boot", "AWS", "MySQL"],
+        experience: 2,
+        yearsOfExperience: 2,
+        description: "Own backend APIs for Amazon fulfillment and logistics workflows.",
+        type: "full-time",
+        salary: 2200000,
+        createdBy: recruiterByCompany.Amazon._id,
+      },
+      {
+        title: "Cloud Engineer",
+        company: "Microsoft",
+        companyRef: companyByName.Microsoft._id,
+        location: "Noida, India",
+        skills: ["Azure", "Kubernetes", "Terraform", "Linux"],
+        experience: 4,
+        yearsOfExperience: 4,
+        description: "Improve cloud reliability, observability, and CI/CD infrastructure for enterprise workloads.",
+        type: "full-time",
+        salary: 2600000,
+        createdBy: recruiterByCompany.Microsoft._id,
+      },
     ]);
-    console.log(`📋 Created ${jobs.length} job listings`);
+    console.log(`📋 Created ${jobs.length} jobs`);
 
-    // Create applications
+    // Create candidate users
+    const candidateUsers = await User.insertMany([
+      {
+        name: "Arjun Sharma",
+        email: "arjun.sharma@demo.com",
+        password: "candidate123",
+        role: "candidate",
+        phoneNumber: "+919876543201",
+      },
+      {
+        name: "Meera Iyer",
+        email: "meera.iyer@demo.com",
+        password: "candidate123",
+        role: "candidate",
+        phoneNumber: "+919876543202",
+      },
+      {
+        name: "Karan Singh",
+        email: "karan.singh@demo.com",
+        password: "candidate123",
+        role: "candidate",
+        phoneNumber: "+919876543203",
+      },
+      {
+        name: "Sneha Patel",
+        email: "sneha.patel@demo.com",
+        password: "candidate123",
+        role: "candidate",
+        phoneNumber: "+919876543204",
+      },
+      {
+        name: "David Roy",
+        email: "david.roy@demo.com",
+        password: "candidate123",
+        role: "candidate",
+        phoneNumber: "+919876543205",
+      },
+    ]);
+    console.log(`👥 Created ${candidateUsers.length} candidate users`);
+
+    // Create candidate profiles
+    const candidates = await Candidate.insertMany([
+      {
+        name: "Arjun Sharma",
+        email: "arjun.sharma@demo.com",
+        skills: ["Node.js", "MongoDB", "JavaScript", "System Design"],
+        experience: 3,
+        user: candidateUsers[0]._id,
+      },
+      {
+        name: "Meera Iyer",
+        email: "meera.iyer@demo.com",
+        skills: ["Python", "TensorFlow", "MLOps", "SQL"],
+        experience: 4,
+        user: candidateUsers[1]._id,
+      },
+      {
+        name: "Karan Singh",
+        email: "karan.singh@demo.com",
+        skills: ["Java", "Spring Boot", "AWS", "MySQL"],
+        experience: 2,
+        user: candidateUsers[2]._id,
+      },
+      {
+        name: "Sneha Patel",
+        email: "sneha.patel@demo.com",
+        skills: ["Azure", "Kubernetes", "Terraform", "Linux"],
+        experience: 5,
+        user: candidateUsers[3]._id,
+      },
+      {
+        name: "David Roy",
+        email: "david.roy@demo.com",
+        skills: ["JavaScript", "AWS", "Docker", "CI/CD"],
+        experience: 3,
+        user: candidateUsers[4]._id,
+      },
+    ]);
+    console.log(`🧑‍💻 Created ${candidates.length} candidate profiles`);
+
+    const userByEmail = Object.fromEntries(candidateUsers.map((candidate) => [candidate.email, candidate]));
+    const jobByTitle = Object.fromEntries(jobs.map((job) => [job.title, job]));
+
+    // Create applications with HR-style statuses and match scores
     const applications = await Application.insertMany([
       {
-        candidate: candidates[0]._id,
-        job: jobs[0]._id,
-        status: "accepted",
-        fullName: candidates[0].name,
-        email: candidates[0].email,
-        phone: candidates[0].phoneNumber,
-        yearsExperience: 5,
-        matchScore: 95
-      },
-      {
-        candidate: candidates[1]._id,
-        job: jobs[1]._id,
-        status: "pending",
-        fullName: candidates[1].name,
-        email: candidates[1].email,
-        phone: candidates[1].phoneNumber,
+        candidateName: "Arjun Sharma",
+        jobTitle: "Software Engineer",
+        company: "Google",
+        candidate: userByEmail["arjun.sharma@demo.com"]._id,
+        job: jobByTitle["Software Engineer"]._id,
+        fullName: "Arjun Sharma",
+        email: "arjun.sharma@demo.com",
+        phone: "+919876543201",
         yearsExperience: 3,
-        matchScore: 85
+        matchScore: 92,
+        status: "shortlisted",
       },
       {
-        candidate: candidates[2]._id,
-        job: jobs[2]._id,
-        status: "rejected",
-        fullName: candidates[2].name,
-        email: candidates[2].email,
-        phone: candidates[2].phoneNumber,
-        yearsExperience: 1,
-        matchScore: 40
-      },
-      {
-        candidate: candidates[3]._id,
-        job: jobs[3]._id,
-        status: "pending",
-        fullName: candidates[3].name,
-        email: candidates[3].email,
-        phone: candidates[3].phoneNumber,
+        candidateName: "Meera Iyer",
+        jobTitle: "Machine Learning Engineer",
+        company: "Google",
+        candidate: userByEmail["meera.iyer@demo.com"]._id,
+        job: jobByTitle["Machine Learning Engineer"]._id,
+        fullName: "Meera Iyer",
+        email: "meera.iyer@demo.com",
+        phone: "+919876543202",
         yearsExperience: 4,
-        matchScore: 88
+        matchScore: 95,
+        status: "accepted",
       },
       {
-        candidate: candidates[0]._id,
-        job: jobs[4]._id,
-        status: "accepted",
-        fullName: candidates[0].name,
-        email: candidates[0].email,
-        phone: candidates[0].phoneNumber,
+        candidateName: "Karan Singh",
+        jobTitle: "Backend Developer",
+        company: "Amazon",
+        candidate: userByEmail["karan.singh@demo.com"]._id,
+        job: jobByTitle["Backend Developer"]._id,
+        fullName: "Karan Singh",
+        email: "karan.singh@demo.com",
+        phone: "+919876543203",
+        yearsExperience: 2,
+        matchScore: 88,
+        status: "pending",
+      },
+      {
+        candidateName: "Sneha Patel",
+        jobTitle: "Cloud Engineer",
+        company: "Microsoft",
+        candidate: userByEmail["sneha.patel@demo.com"]._id,
+        job: jobByTitle["Cloud Engineer"]._id,
+        fullName: "Sneha Patel",
+        email: "sneha.patel@demo.com",
+        phone: "+919876543204",
         yearsExperience: 5,
-        matchScore: 92
-      }
+        matchScore: 97,
+        status: "accepted",
+      },
+      {
+        candidateName: "David Roy",
+        jobTitle: "Software Engineer",
+        company: "Google",
+        candidate: userByEmail["david.roy@demo.com"]._id,
+        job: jobByTitle["Software Engineer"]._id,
+        fullName: "David Roy",
+        email: "david.roy@demo.com",
+        phone: "+919876543205",
+        yearsExperience: 3,
+        matchScore: 54,
+        status: "rejected",
+      },
     ]);
-    console.log(`📝 Created ${applications.length} job applications`);
+    console.log(`📝 Created ${applications.length} applications`);
 
     await mongoose.disconnect();
     console.log("✅ Database seeded successfully!");
+    console.log("🔐 Demo Login Credentials:");
+    console.log("Admin: admin@hireai.com / admin123");
+    console.log("Recruiter: recruiter.google@hireai.com / recruiter123");
+    console.log("Candidate: arjun.sharma@demo.com / candidate123");
     process.exit(0);
   } catch (error) {
     console.error("❌ Error seeding database:", error.message);
