@@ -30,6 +30,28 @@ API.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    const status = error.response?.status;
+    const message = String(error.response?.data?.message || "").toLowerCase();
+    const isAuthError =
+      status === 401 &&
+      (message.includes("token failed") ||
+        message.includes("no token") ||
+        message.includes("not authorized") ||
+        message.includes("jwt") ||
+        message.includes("expired"));
+
+    if (isAuthError) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("role");
+
+      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+        window.location.href = `/login?reason=session-expired&next=${encodeURIComponent(window.location.pathname)}`;
+      }
+
+      return Promise.reject(error);
+    }
+
     const isNetworkError =
       error.code === "ERR_NETWORK" ||
       error.code === "ECONNABORTED" ||

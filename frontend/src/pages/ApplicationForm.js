@@ -58,7 +58,21 @@ const ApplicationForm = () => {
       const res = await applyToJob(payload);
       setResult(res.data.application || null);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to submit application.");
+      const rawMessage = err.response?.data?.message || "Failed to submit application.";
+      const normalized = String(rawMessage).toLowerCase();
+
+      if (
+        normalized.includes("token failed") ||
+        normalized.includes("no token") ||
+        normalized.includes("not authorized") ||
+        normalized.includes("jwt") ||
+        normalized.includes("expired")
+      ) {
+        setError("Your session expired. Please login again and re-submit this application.");
+        return;
+      }
+
+      setError(rawMessage);
     } finally {
       setLoading(false);
     }
