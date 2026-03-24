@@ -1,5 +1,6 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 
 import Navbar from "./components/Navbar";
 import HelpChatbot from "./components/HelpChatbot";
@@ -14,30 +15,49 @@ import ApplicationForm from "./pages/ApplicationForm";
 import RecruiterDashboard from "./pages/RecruiterDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
 
-function App() {
+const pageTransition = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -12 },
+};
+
+const AnimatedPage = ({ children }) => (
+  <motion.div
+    initial="initial"
+    animate="animate"
+    exit="exit"
+    variants={pageTransition}
+    transition={{ duration: 0.28, ease: "easeOut" }}
+  >
+    {children}
+  </motion.div>
+);
+
+const AppRoutes = () => {
+  const location = useLocation();
+
   return (
-    <Router>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/jobs" element={<JobsPage />} />
-        <Route path="/jobs/:id" element={<JobDetailPage />} />
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<AnimatedPage><LandingPage /></AnimatedPage>} />
+        <Route path="/jobs" element={<AnimatedPage><JobsPage /></AnimatedPage>} />
+        <Route path="/jobs/:id" element={<AnimatedPage><JobDetailPage /></AnimatedPage>} />
         <Route
           path="/jobs/:id/apply"
           element={(
             <ProtectedRoute allowedRoles={["candidate"]}>
-              <ApplicationForm />
+              <AnimatedPage><ApplicationForm /></AnimatedPage>
             </ProtectedRoute>
           )}
         />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<AnimatedPage><LoginPage /></AnimatedPage>} />
+        <Route path="/register" element={<AnimatedPage><RegisterPage /></AnimatedPage>} />
 
         <Route
           path="/apply"
           element={(
             <ProtectedRoute allowedRoles={["candidate"]}>
-              <JobsPage />
+              <AnimatedPage><JobsPage /></AnimatedPage>
             </ProtectedRoute>
           )}
         />
@@ -46,7 +66,7 @@ function App() {
           path="/dashboard"
           element={(
             <ProtectedRoute allowedRoles={["recruiter", "admin"]}>
-              <RecruiterDashboard />
+              <AnimatedPage><RecruiterDashboard /></AnimatedPage>
             </ProtectedRoute>
           )}
         />
@@ -55,7 +75,7 @@ function App() {
           path="/candidate/dashboard"
           element={(
             <ProtectedRoute allowedRoles={["candidate"]}>
-              <CandidateDashboard />
+              <AnimatedPage><CandidateDashboard /></AnimatedPage>
             </ProtectedRoute>
           )}
         />
@@ -70,6 +90,15 @@ function App() {
         <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+    </AnimatePresence>
+  );
+};
+
+function App() {
+  return (
+    <Router>
+      <Navbar />
+      <AppRoutes />
       <HelpChatbot />
     </Router>
   );

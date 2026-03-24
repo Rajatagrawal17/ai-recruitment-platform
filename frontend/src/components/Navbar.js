@@ -1,215 +1,198 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import "./Navbar.css";
+import { useTheme } from "../context/ThemeContext";
 
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, token, role, logout } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const userDropdownRef = useRef(null);
+  const { isDark, toggleTheme } = useTheme();
 
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target)) {
-        setUserDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  useEffect(() => {
-    const onScroll = () => {
-      setScrolled(window.scrollY > 8);
-    };
-
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const navLinks = token
-    ? role === "candidate"
-      ? [
-          { path: "/apply", label: "Apply" },
-          { path: "/candidate/dashboard", label: "My Applications" },
-        ]
-      : [
-          { path: "/dashboard", label: "Dashboard" },
-          { path: "/jobs", label: "Jobs" },
-        ]
-    : [
-        { path: "/jobs", label: "Jobs" },
+  const links = useMemo(() => {
+    if (!token) {
+      return [
+        { path: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
         { path: "/login", label: "Login" },
         { path: "/register", label: "Register" },
       ];
+    }
 
-  const isActive = (path) => location.pathname === path;
+    if (role === "candidate") {
+      return [
+        { path: "/apply", label: "Apply Jobs", icon: BriefcaseBusiness },
+        { path: "/candidate/dashboard", label: "My Applications", icon: LayoutDashboard },
+      ];
+    }
+
+    return [
+      { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { path: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
+    ];
+  }, [token, role]);
+
+  const closeAll = () => {
+    setMobileOpen(false);
+    setProfileOpen(false);
+  };
 
   const handleLogout = () => {
     logout();
-    setUserDropdownOpen(false);
-    setMobileMenuOpen(false);
+    closeAll();
     navigate("/");
   };
 
+  const roleLabel = role ? role.charAt(0).toUpperCase() + role.slice(1) : "Guest";
+
   return (
-    <>
-      <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
-        <div className="navbar-container">
-          {/* Logo */}
-          <Link to="/" className="navbar-logo">
-            <span>HireAI</span>
-          </Link>
-
-          {/* Desktop Nav Links */}
-          <div className="navbar-center">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`navbar-link ${isActive(link.path) ? "active" : ""}`}
-              >
-                {link.label}
-                <span className="navbar-underline"></span>
-              </Link>
-            ))}
+    <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
+        <Link to="/" className="flex items-center gap-2">
+          <div className="rounded-xl bg-gradient-to-tr from-primary to-accent px-2 py-1 text-sm font-extrabold text-white shadow-card">
+            H
           </div>
+          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-lg font-extrabold text-transparent">
+            HireAI
+          </span>
+        </Link>
 
-          {/* Right Section - Desktop */}
-          <div className="navbar-right">
-            {token && (
-              <div className="user-avatar-container" ref={userDropdownRef}>
-                <span className={`role-pill ${role || "guest"}`}>{role || "user"}</span>
-                <button
-                  className="user-avatar"
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                >
-                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-                </button>
-                {userDropdownOpen && (
-                  <div className="user-dropdown">
-                    <div className="user-dropdown-header">
-                      Welcome, {user?.name || "User"}
-                    </div>
-                    <Link
-                      to={role === "candidate" ? "/candidate/dashboard" : "/dashboard"}
-                      className="user-dropdown-item"
-                    >
-                      Dashboard
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="user-dropdown-item logout"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-            {!token && (
-              <div className="navbar-auth">
-                <Link to="/login" className="btn btn-secondary btn-sm">
-                  Login
-                </Link>
-                <Link to="/register" className="btn btn-primary btn-sm">
-                  Register
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Hamburger Menu */}
-          <button
-            className={`hamburger ${mobileMenuOpen ? "open" : ""}`}
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
-        </div>
-      </nav>
-
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div className="mobile-menu-overlay">
-          <div className="mobile-menu">
-            <div className="mobile-menu-header">
-              <Link to="/" className="navbar-logo" onClick={() => setMobileMenuOpen(false)}>
-                HireAI
-              </Link>
-              <button
-                className={`hamburger ${mobileMenuOpen ? "open" : ""}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <span></span>
-                <span></span>
-                <span></span>
-              </button>
-            </div>
-
-            <div className="mobile-menu-links">
-              {navLinks.map((link) => (
+        <nav className="hidden items-center gap-2 md:flex">
+          {links.map((link) => {
+            const active = location.pathname === link.path;
+            return (
+              <motion.div key={link.path} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
                 <Link
-                  key={link.path}
                   to={link.path}
-                  className={`mobile-menu-link ${isActive(link.path) ? "active" : ""}`}
-                  onClick={() => setMobileMenuOpen(false)}
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    active
+                      ? "bg-primary-soft text-primary"
+                      : "text-text-muted hover:bg-surface-soft hover:text-text"
+                  }`}
                 >
                   {link.label}
                 </Link>
-              ))}
-            </div>
+              </motion.div>
+            );
+          })}
+        </nav>
 
-            <div className="mobile-menu-footer">
-              {token ? (
-                <>
-                  <Link
-                    to={role === "candidate" ? "/candidate/dashboard" : "/dashboard"}
-                    className="btn btn-secondary"
-                    onClick={() => setMobileMenuOpen(false)}
+        <div className="flex items-center gap-2">
+          <motion.button
+            whileHover={{ rotate: isDark ? -20 : 20 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={toggleTheme}
+            className="rounded-lg border border-border bg-surface-elevated p-2 text-text-muted hover:text-text"
+            title="Toggle theme"
+          >
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          </motion.button>
+
+          {token ? (
+            <div className="relative hidden md:block">
+              <button
+                onClick={() => setProfileOpen((prev) => !prev)}
+                className="flex items-center gap-2 rounded-xl border border-border bg-surface-elevated px-3 py-1.5"
+              >
+                <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary">
+                  {roleLabel}
+                </span>
+                <span className="text-sm font-medium text-text">{user?.name || "User"}</span>
+                <UserCircle2 size={18} className="text-text-muted" />
+              </button>
+
+              <AnimatePresence>
+                {profileOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                    className="glass-card absolute right-0 mt-2 w-52 p-2"
                   >
-                    Dashboard
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="btn btn-danger"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/login"
-                    className="btn btn-secondary"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    to="/register"
-                    className="btn btn-primary"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Register
-                  </Link>
-                </>
-              )}
+                    <button
+                      onClick={() => {
+                        navigate(role === "candidate" ? "/candidate/dashboard" : "/dashboard");
+                        setProfileOpen(false);
+                      }}
+                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-soft hover:text-text"
+                    >
+                      Open Dashboard
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-500 hover:bg-red-500/10"
+                    >
+                      Logout
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </div>
+          ) : (
+            <div className="hidden items-center gap-2 md:flex">
+              <Link to="/login" className="btn-secondary text-sm">
+                Login
+              </Link>
+              <Link to="/register" className="btn-primary text-sm">
+                Register
+              </Link>
+            </div>
+          )}
+
+          <button
+            onClick={() => setMobileOpen((prev) => !prev)}
+            className="rounded-lg border border-border bg-surface-elevated p-2 text-text-muted md:hidden"
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
         </div>
-      )}
-    </>
+      </div>
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-t border-border bg-surface-elevated/95 px-4 py-3 md:hidden"
+          >
+            <div className="space-y-2">
+              {links.map((link) => {
+                const active = location.pathname === link.path;
+                const Icon = link.icon;
+
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={closeAll}
+                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ${
+                      active
+                        ? "bg-primary-soft text-primary"
+                        : "text-text-muted hover:bg-surface-soft"
+                    }`}
+                  >
+                    {Icon ? <Icon size={16} /> : null}
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+
+              {token ? (
+                <button onClick={handleLogout} className="w-full rounded-lg bg-red-500/10 px-3 py-2 text-left text-sm font-medium text-red-500">
+                  Logout
+                </button>
+              ) : null}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
   );
 };
 
