@@ -28,6 +28,7 @@ const Register = () => {
   const [timer, setTimer] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [fallbackOtp, setFallbackOtp] = useState("");
+  const [fallbackCode, setFallbackCode] = useState("");
   const [captchaToken, setCaptchaToken] = useState(null);
   const [verifying, setVerifying] = useState(false);
   const navigate = useNavigate();
@@ -135,6 +136,7 @@ const Register = () => {
       });
 
       setFallbackOtp(otpResponse?.data?.demoOtp || "");
+      setFallbackCode(otpResponse?.data?.fallbackCode || "");
 
       setError("");
       setAttempts(0);
@@ -148,6 +150,7 @@ const Register = () => {
         : null;
       setError(apiMessage || networkMessage || "Failed to send OTP");
       setFallbackOtp("");
+      setFallbackCode("");
       setVerifying(false);
     }
   };
@@ -326,19 +329,45 @@ const Register = () => {
 
                 {error && <div className="alert alert-error">{error}</div>}
 
+                {fallbackCode && (
+                  <div className="alert alert-info" style={{ backgroundColor: "#1e40af", padding: "16px", borderRadius: "8px", marginBottom: "16px" }}>
+                    <p style={{ margin: "0 0 8px 0", fontSize: "12px", opacity: 0.8 }}>Can't receive OTP? Use this verification code:</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <strong style={{ fontSize: "20px", letterSpacing: "2px" }}>{fallbackCode}</strong>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(fallbackCode);
+                          alert("Code copied to clipboard!");
+                        }}
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: "12px",
+                          backgroundColor: "#2563eb",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer"
+                        }}
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {fallbackOtp && (
                   <div className="alert alert-success">
-                    Fallback OTP: <strong>{fallbackOtp}</strong>
+                    Demo OTP: <strong>{fallbackOtp}</strong>
                   </div>
                 )}
 
                 <div className="otp-input">
                   <input
                     type="text"
-                    maxLength="6"
-                    placeholder="000000"
+                    placeholder="Enter 6-digit OTP or verification code"
                     value={otpValue}
-                    onChange={(e) => setOtpValue(e.target.value.replace(/[^0-9]/g, ""))}
+                    onChange={(e) => setOtpValue(e.target.value.toUpperCase())}
                     className="otp-field"
                   />
                 </div>
@@ -357,10 +386,13 @@ const Register = () => {
                 <button
                   className="btn-verify"
                   onClick={handleVerifyMobileOTP}
-                  disabled={otpValue.length !== 6 || verifying}
+                  disabled={otpValue.length < 5 || verifying}
                 >
                   {verifying ? "Verifying..." : "Verify"}
                 </button>
+                <p style={{ fontSize: "12px", color: "#94a3b8", marginTop: "12px", textAlign: "center" }}>
+                  Enter the 6-digit OTP or the 9-character code (ABC-123-XYZ) shown above
+                </p>
               </div>
             )}
 

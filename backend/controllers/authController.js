@@ -9,6 +9,17 @@ const otpStorage = new Map();
 // Generate random 6-digit OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+// Generate unique fallback code (e.g., "ABC123XYZ")
+const generateFallbackCode = () => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 9; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  // Insert dashes for readability: ABC-123-XYZ
+  return code.substring(0, 3) + "-" + code.substring(3, 6) + "-" + code.substring(6, 9);
+};
+
 // Normalize Indian phone numbers to +91XXXXXXXXXX
 const normalizeIndianPhoneNumber = (phoneNumber = "") => {
   const digits = String(phoneNumber).replace(/\D/g, "");
@@ -25,16 +36,17 @@ const normalizeIndianPhoneNumber = (phoneNumber = "") => {
 };
 
 // Store OTP with expiration (10 minutes = 600 seconds)
-const storeOTP = (key, otp) => {
+const storeOTP = (key, otp, fallbackCode) => {
   otpStorage.set(key, {
     otp,
+    fallbackCode,
     expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
     attempts: 0,
   });
 };
 
-// Verify OTP
-const verifyOTPCode = (key, otp) => {
+// Verify OTP or fallback code
+const verifyOTPCode = (key, input) => {
   const data = otpStorage.get(key);
   
   if (!data) return { valid: false, message: "OTP not found or expired" };
@@ -49,13 +61,18 @@ const verifyOTPCode = (key, otp) => {
     return { valid: false, message: "Too many attempts. Request a new OTP" };
   }
   
-  if (data.otp !== otp) {
+  // Accept either the OTP or the fallback code
+  const normalizedInput = String(input).replace(/\s|-/g, "").toUpperCase();
+  const matchesOTP = data.otp === input;
+  const matchesFallback = data.fallbackCode.replace(/-/g, "") === normalizedInput;
+  
+  if (!matchesOTP && !matchesFallback) {
     data.attempts++;
-    return { valid: false, message: "Incorrect OTP" };
+    return { valid: false, message: "Incorrect OTP or verification code" };
   }
   
   otpStorage.delete(key);
-  return { valid: true, message: "OTP verified" };
+  return { valid: true, message: "Verification successful" };
 };
 
 /* =========================
@@ -179,6 +196,7 @@ exports.sendMobileOTP = async (req, res) => {
     }
 
     const otp = generateOTP();
+    const fallbackCode = generateFallbackCode();
     const key = `mobile_${normalizedPhoneNumber}`;
 
     // Send OTP using provider service. Even if provider fails, keep OTP flow alive in demo mode.
@@ -198,21 +216,22 @@ exports.sendMobileOTP = async (req, res) => {
       result = { success: true, demo: true };
     }
 
-    // Store OTP for phone verification step
-    storeOTP(key, otp);
+    // Store OTP and fallback code for phone verification step
+    storeOTP(key, otp, fallbackCode);
 
     // If step-1 is using email method, also store under email key so verify-email-otp can validate same code path.
     if (method === "email" && email) {
-      storeOTP(`email_${email}`, otp);
+      storeOTP(`email_${email}`, otp, fallbackCode);
     }
 
     res.status(200).json({
       success: true,
       message: result.demo
-        ? "SMS provider unavailable. Use the fallback OTP shown in app."
+        ? "SMS provider unavailable. Use OTP or Verification Code shown below."
         : `OTP sent via ${method === "sms" ? "SMS" : "Email"}`,
       demo: result.demo || false,
       demoOtp: result.demo ? otp : undefined,
+      fallbackCode: fallbackCode, // Always return fallback code for display
     });
 
   } catch (error) {
@@ -277,6 +296,7 @@ exports.sendEmailOTP = async (req, res) => {
     }
 
     const otp = generateOTP();
+    const fallbackCode = generateFallbackCode();
     const key = `email_${email}`;
 
     // Send OTP using provider service. Even if provider fails, keep OTP flow alive in demo mode.
@@ -296,13 +316,15 @@ exports.sendEmailOTP = async (req, res) => {
       result = { success: true, demo: true };
     }
 
-    // Store OTP
-    storeOTP(key, otp);
+    // Store OTP and fallback code
+    storeOTP(key, otp, fallbackCode);
 
     res.status(200).json({
       success: true,
       message: "OTP sent to email",
       demo: result.demo || false,
+      demoOtp: result.demo ? otp : undefined,
+      fallbackCode: fallbackCode, // Always return fallback code for display
     });
 
   } catch (error) {
