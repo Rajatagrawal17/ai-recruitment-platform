@@ -126,6 +126,7 @@ export const createJob = (data) => API.post("/jobs/create", data);
 export const applyToJob = (formData) =>
   API.post("/applications/apply", formData, {
     headers: { "Content-Type": "multipart/form-data" },
+    timeout: 60000,
   });
 export const getCandidateApplications = () => API.get("/applications/my");
 export const getAllApplications = () => API.get("/applications/all");

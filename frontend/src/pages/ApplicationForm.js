@@ -72,6 +72,11 @@ const ApplicationForm = () => {
         return;
       }
 
+      if (err.code === "ECONNABORTED" || normalized.includes("timeout")) {
+        setError("Application submission took too long. Please retry with a smaller resume file or try again in a moment.");
+        return;
+      }
+
       setError(rawMessage);
     } finally {
       setLoading(false);

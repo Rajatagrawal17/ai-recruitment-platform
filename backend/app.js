@@ -99,6 +99,34 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Centralized API error handling for upload and runtime errors.
+app.use((error, req, res, next) => {
+  if (!error) {
+    next();
+    return;
+  }
+
+  if (error.name === "MulterError") {
+    if (error.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        success: false,
+        message: "Resume file is too large. Maximum allowed size is 8MB.",
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: error.message || "File upload failed",
+    });
+  }
+
+  const status = error.statusCode || 500;
+  return res.status(status).json({
+    success: false,
+    message: error.message || "Internal server error",
+  });
+});
+
 const setDbConnected = (value) => {
   dbConnected = Boolean(value);
 };

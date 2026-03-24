@@ -1,5 +1,6 @@
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
 
 const ALLOWED_MIME_TYPES = new Set([
   "application/pdf",
@@ -7,11 +8,17 @@ const ALLOWED_MIME_TYPES = new Set([
 ]);
 
 const ALLOWED_EXTENSIONS = new Set([".pdf", ".docx"]);
+const UPLOAD_DIR = path.resolve(__dirname, "..", "uploads");
 
 // storage config
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/");
+    try {
+      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+      cb(null, UPLOAD_DIR);
+    } catch (error) {
+      cb(error);
+    }
   },
 
   filename: function (req, file, cb) {
@@ -36,6 +43,9 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
+  limits: {
+    fileSize: 8 * 1024 * 1024,
+  },
 });
 
 module.exports = upload;
