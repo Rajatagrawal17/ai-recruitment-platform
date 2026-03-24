@@ -57,8 +57,13 @@ API.interceptors.response.use(
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const wakeBaseUrl = async (baseUrl) => {
-  const healthUrl = `${baseUrl.replace(/\/api\/?$/, "")}/`;
-  await axios.get(healthUrl, { timeout: 30000 });
+  // Try health check endpoint first
+  try {
+    await axios.get(`${baseUrl}/health`, { timeout: 40000 });
+  } catch (err) {
+    // Fallback to root endpoint
+    await axios.get(`${baseUrl.replace(/\/api\/?$/, "")}`, { timeout: 40000 });
+  }
 };
 
 export const warmupBackend = async () => {
@@ -71,7 +76,7 @@ export const warmupBackend = async () => {
       return true;
     } catch (err) {
       lastError = err;
-      await sleep(1200);
+      await sleep(1500);
     }
   }
 

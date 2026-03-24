@@ -79,27 +79,42 @@ app.get("/", (req, res) => {
 });
 
 /* =========================
+   HEALTH CHECK ENDPOINT
+========================= */
+let dbConnected = false;
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    dbConnected,
+  });
+});
+
+/* =========================
    MONGODB CONNECTION
 ========================= */
-console.log("Attempting to connect to MongoDB...");
+const PORT = process.env.PORT || 5000;
 
+// Start server immediately (don't wait for DB)
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT} 🚀`);
+});
+
+// Connect to MongoDB asynchronously
+console.log("Attempting to connect to MongoDB...");
 mongoose
   .connect(process.env.MONGO_URI, {
-    serverSelectionTimeoutMS: 10000,
-    socketTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 30000,
+    socketTimeoutMS: 30000,
   })
   .then(() => {
     console.log("MongoDB Connected ✅");
-
-    const PORT = process.env.PORT || 5000;
-
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT} 🚀`);
-    });
+    dbConnected = true;
   })
   .catch((error) => {
     console.error("MongoDB Connection Failed ❌");
     console.error("Error:", error.message);
     console.error("Full error:", error);
-    process.exit(1);
+    // Don't exit - server can still respond, but DB queries will fail
   });
