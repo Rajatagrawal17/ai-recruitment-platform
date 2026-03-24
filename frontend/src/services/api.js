@@ -109,11 +109,14 @@ export const getCandidateApplications = () => API.get("/applications/my");
 export const getAllApplications = () => API.get("/applications/all");
 export const updateApplicationStatus = (applicationId, status) =>
   API.put(`/applications/status/${applicationId}`, { status });
+export const scheduleInterview = (applicationId, payload) =>
+  API.put(`/applications/schedule/${applicationId}`, payload);
 
 export const getJobCandidates = (jobId) => API.get(`/matching/job/${jobId}/candidates`);
 export const getCandidateJobMatches = (candidateId) => API.get(`/matching/candidate/${candidateId}/jobs`);
 export const analyzeResume = (data) => API.post("/matching/analyze-resume", data);
 export const scoreCandidate = (data) => API.post("/matching/score", data);
 export const getTopCandidates = () => API.get("/matching/top-candidates");
+export const getAnalytics = () => API.get("/analytics");
 
 export default API;

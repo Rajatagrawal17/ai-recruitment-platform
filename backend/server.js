@@ -71,6 +71,7 @@ app.use("/api/companies", require("./routes/companyRoutes"));
 app.use("/api/jobs", require("./routes/jobRoutes"));
 app.use("/api/applications", require("./routes/applicationRoutes"));
 app.use("/api/matching", require("./routes/matchingRoutes"));
+app.use("/api/analytics", require("./routes/analyticsRoutes"));
 
 /* =========================
    TEST ROUTE

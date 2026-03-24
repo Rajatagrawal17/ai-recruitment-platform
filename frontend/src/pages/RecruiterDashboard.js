@@ -14,8 +14,10 @@ import {
 import MatchScoreBadge from "../components/MatchScoreBadge";
 import {
   createJob,
+  getAnalytics,
   getJobs,
   getJobCandidates,
+  scheduleInterview,
   updateApplicationStatus,
 } from "../services/api";
 
@@ -54,6 +56,8 @@ const RecruiterDashboard = () => {
   const [toast, setToast] = useState(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [analytics, setAnalytics] = useState(null);
+  const [interviewDrafts, setInterviewDrafts] = useState({});
 
   const openToast = (type, message) => {
     setToast({ type, message });
@@ -62,8 +66,12 @@ const RecruiterDashboard = () => {
 
   const loadDashboard = async () => {
     try {
-      const jobsRes = await getJobs();
+      const [jobsRes, analyticsRes] = await Promise.all([
+        getJobs(),
+        getAnalytics().catch(() => ({ data: { analytics: null } })),
+      ]);
       setJobs(jobsRes.data.jobs || []);
+      setAnalytics(analyticsRes.data.analytics || null);
     } catch (err) {
       openToast("error", err.response?.data?.message || "Unable to load recruiter dashboard");
     } finally {
@@ -153,6 +161,44 @@ const RecruiterDashboard = () => {
     }
   };
 
+  const updateInterviewDraft = (applicationId, field, value) => {
+    setInterviewDrafts((prev) => ({
+      ...prev,
+      [applicationId]: {
+        ...(prev[applicationId] || {}),
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleScheduleInterview = async (applicationId, jobId) => {
+    const draft = interviewDrafts[applicationId] || {};
+    if (!draft.scheduledAt) {
+      openToast("error", "Select interview date and time first");
+      return;
+    }
+
+    try {
+      await scheduleInterview(applicationId, {
+        scheduledAt: draft.scheduledAt,
+        timezone: draft.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        mode: draft.mode || "video",
+        meetingLink: draft.meetingLink || "",
+        notes: draft.notes || "",
+      });
+
+      const res = await getJobCandidates(jobId);
+      setJobCandidates((prev) => ({
+        ...prev,
+        [jobId]: res.data.matchedCandidates || [],
+      }));
+
+      openToast("success", "Interview scheduled successfully");
+    } catch (err) {
+      openToast("error", err.response?.data?.message || "Unable to schedule interview");
+    }
+  };
+
   const totalApplicants = Object.values(jobCandidates).flat().length;
   const topScore = ranking[0]?.matchScore || 0;
 
@@ -222,6 +268,43 @@ const RecruiterDashboard = () => {
           <p className="mt-3 text-3xl font-bold">{topScore}%</p>
         </motion.article>
       </motion.section>
+
+      {analytics && (
+        <section className="glass-card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Hiring Analytics</h2>
+            <span className="text-xs text-text-muted">Live platform signals</span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-4">
+            <div className="rounded-xl bg-surface-soft p-3">
+              <p className="text-xs text-text-muted">Total Applications</p>
+              <p className="mt-1 text-2xl font-bold">{analytics.totalApplications || 0}</p>
+            </div>
+            <div className="rounded-xl bg-surface-soft p-3">
+              <p className="text-xs text-text-muted">Acceptance Rate</p>
+              <p className="mt-1 text-2xl font-bold">{analytics.acceptanceRate || 0}%</p>
+            </div>
+            <div className="rounded-xl bg-surface-soft p-3">
+              <p className="text-xs text-text-muted">Average Match</p>
+              <p className="mt-1 text-2xl font-bold">{analytics.averageMatchScore || 0}%</p>
+            </div>
+            <div className="rounded-xl bg-surface-soft p-3">
+              <p className="text-xs text-text-muted">Shortlisted</p>
+              <p className="mt-1 text-2xl font-bold">{analytics.statuses?.shortlisted || 0}</p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-xl bg-surface-soft p-3">
+            <p className="text-xs text-text-muted">Top Skills in Pipeline</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(analytics.topSkills || []).slice(0, 8).map((item) => (
+                <span key={item.skill} className="rounded-full bg-primary-soft px-2 py-1 text-xs font-medium text-primary">
+                  {item.skill} ({item.count})
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-5 lg:grid-cols-[340px_1fr]">
         <motion.aside
@@ -439,6 +522,54 @@ const RecruiterDashboard = () => {
                                           )}
                                         </div>
                                       </div>
+
+                                      <div className="mt-3 grid gap-2 rounded-lg bg-surface-soft p-3 text-xs text-text-muted md:grid-cols-2">
+                                        <div className="space-y-2">
+                                          <p className="font-semibold text-text">Schedule Interview</p>
+                                          <input
+                                            type="datetime-local"
+                                            className="input-modern"
+                                            value={interviewDrafts[candidate._id]?.scheduledAt || ""}
+                                            onChange={(event) => updateInterviewDraft(candidate._id, "scheduledAt", event.target.value)}
+                                          />
+                                          <select
+                                            className="input-modern"
+                                            value={interviewDrafts[candidate._id]?.mode || "video"}
+                                            onChange={(event) => updateInterviewDraft(candidate._id, "mode", event.target.value)}
+                                          >
+                                            <option value="video">video</option>
+                                            <option value="phone">phone</option>
+                                            <option value="onsite">onsite</option>
+                                          </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                          <input
+                                            className="input-modern"
+                                            placeholder="Meeting link (optional)"
+                                            value={interviewDrafts[candidate._id]?.meetingLink || ""}
+                                            onChange={(event) => updateInterviewDraft(candidate._id, "meetingLink", event.target.value)}
+                                          />
+                                          <input
+                                            className="input-modern"
+                                            placeholder="Notes (optional)"
+                                            value={interviewDrafts[candidate._id]?.notes || ""}
+                                            onChange={(event) => updateInterviewDraft(candidate._id, "notes", event.target.value)}
+                                          />
+                                          <button
+                                            className="btn-primary w-full"
+                                            onClick={() => handleScheduleInterview(candidate._id, job._id)}
+                                            type="button"
+                                          >
+                                            Schedule Interview
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      {candidate.interview?.scheduledAt && (
+                                        <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+                                          Scheduled: {new Date(candidate.interview.scheduledAt).toLocaleString()} ({candidate.interview.mode || "video"})
+                                        </p>
+                                      )}
                                     </motion.div>
                                   ))}
                                 </motion.div>

@@ -139,6 +139,32 @@ const applicationSchema = new mongoose.Schema(
       enum: ["pending", "shortlisted", "accepted", "rejected"],
       default: "pending",
     },
+    interview: {
+      scheduledAt: {
+        type: Date,
+      },
+      timezone: {
+        type: String,
+        default: "UTC",
+      },
+      mode: {
+        type: String,
+        enum: ["video", "phone", "onsite"],
+        default: "video",
+      },
+      meetingLink: {
+        type: String,
+        trim: true,
+      },
+      notes: {
+        type: String,
+        trim: true,
+      },
+      scheduledBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    },
   },
   { timestamps: true }
 );

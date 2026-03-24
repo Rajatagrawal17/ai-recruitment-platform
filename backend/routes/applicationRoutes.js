@@ -5,6 +5,7 @@ const {
   applyJob,
   getAllApplications,
   updateStatus,
+  scheduleInterview,
   getMyApplications,
 } = require("../controllers/applicationController");
 
@@ -26,8 +27,15 @@ router.get(
 router.put(
   "/status/:id",
   protect,
-  authorizeRoles("admin"),
+  authorizeRoles("recruiter", "admin"),
   updateStatus
+);
+
+router.put(
+  "/schedule/:id",
+  protect,
+  authorizeRoles("recruiter", "admin"),
+  scheduleInterview
 );
 
 module.exports = router;

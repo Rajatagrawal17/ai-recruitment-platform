@@ -263,6 +263,7 @@ const CandidateDashboard = () => {
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Match</th>
                   <th className="px-5 py-3">Progress</th>
+                  <th className="px-5 py-3">Interview</th>
                   <th className="px-5 py-3">AI Explanation</th>
                   <th className="px-5 py-3">AI Feedback</th>
                 </tr>
@@ -294,6 +295,16 @@ const CandidateDashboard = () => {
                         <div className="w-28">
                           <ScoreBar score={app.matchScore || 0} reduceMotion={reduceMotion} />
                         </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        {app.interview?.scheduledAt ? (
+                          <div className="max-w-[180px] text-xs text-text-muted">
+                            <p className="font-medium text-text">{new Date(app.interview.scheduledAt).toLocaleString()}</p>
+                            <p className="capitalize">{app.interview.mode || "video"}</p>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-text-muted">Not scheduled</span>
+                        )}
                       </td>
                       <td className="px-5 py-4">
                         <div className="max-w-xs space-y-1 text-xs text-text-muted">

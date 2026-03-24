@@ -2,6 +2,7 @@ const Application = require("../models/Application");
 const Job = require("../models/Job");
 const Candidate = require("../models/Candidate");
 const { calculateMatchScore } = require("../../ai-service/matcher");
+const { sendNotificationEmail } = require("../utils/notificationService");
 const {
   parseResumeText,
   parseResumeFile,
@@ -138,6 +139,17 @@ exports.applyJob = async (req, res) => {
       status: "pending",
     });
 
+    sendNotificationEmail({
+      to: application.email || req.user.email,
+      subject: "Application Submitted Successfully",
+      heading: "Application Received",
+      message: `Your application for ${job.title} at ${job.company} has been submitted. We will notify you when there is an update.`,
+      ctaLabel: "View Applications",
+      ctaUrl: process.env.FRONTEND_URL || "http://localhost:3000/candidate/dashboard",
+    }).catch((err) => {
+      console.error("Application email notification failed:", err.message);
+    });
+
     res.status(201).json({
       success: true,
       message: "Application submitted successfully",
@@ -191,7 +203,7 @@ exports.updateStatus = async (req, res) => {
 
     const { status } = req.body;
 
-    const allowedStatus = ["pending", "accepted", "rejected"];
+    const allowedStatus = ["pending", "shortlisted", "accepted", "rejected"];
 
     if (!allowedStatus.includes(status)) {
       return res.status(400).json({
@@ -204,7 +216,7 @@ exports.updateStatus = async (req, res) => {
       req.params.id,
       { status },
       { new: true }
-    );
+    ).populate("job", "title company").populate("candidate", "email");
 
     if (!application) {
       return res.status(404).json({
@@ -219,6 +231,24 @@ exports.updateStatus = async (req, res) => {
       application,
     });
 
+    if (status === "shortlisted" || status === "rejected") {
+      const targetEmail = application?.email || application?.candidate?.email;
+      const jobTitle = application?.job?.title || "this role";
+      const company = application?.job?.company || "the company";
+      const statusText = status === "shortlisted" ? "shortlisted" : "rejected";
+
+      sendNotificationEmail({
+        to: targetEmail,
+        subject: `Application ${statusText}: ${jobTitle}`,
+        heading: `Your application was ${statusText}`,
+        message: `Your application for ${jobTitle} at ${company} is now marked as ${statusText}.`,
+        ctaLabel: "Open Dashboard",
+        ctaUrl: process.env.FRONTEND_URL || "http://localhost:3000/candidate/dashboard",
+      }).catch((err) => {
+        console.error("Status email notification failed:", err.message);
+      });
+    }
+
   } catch (error) {
 
     res.status(500).json({
@@ -226,6 +256,71 @@ exports.updateStatus = async (req, res) => {
       message: error.message,
     });
 
+  }
+};
+
+
+/* =========================
+   SCHEDULE INTERVIEW (RECRUITER/ADMIN)
+=========================*/
+exports.scheduleInterview = async (req, res) => {
+  try {
+    const { scheduledAt, timezone, mode, meetingLink, notes } = req.body;
+
+    if (!scheduledAt) {
+      return res.status(400).json({
+        success: false,
+        message: "scheduledAt is required",
+      });
+    }
+
+    const application = await Application.findById(req.params.id)
+      .populate("job", "title company")
+      .populate("candidate", "email name");
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
+    application.interview = {
+      scheduledAt: new Date(scheduledAt),
+      timezone: timezone || "UTC",
+      mode: mode || "video",
+      meetingLink: meetingLink || "",
+      notes: notes || "",
+      scheduledBy: req.user._id,
+    };
+
+    if (application.status === "pending") {
+      application.status = "shortlisted";
+    }
+
+    await application.save();
+
+    sendNotificationEmail({
+      to: application.email || application?.candidate?.email,
+      subject: `Interview Scheduled: ${application?.job?.title || "Role"}`,
+      heading: "Interview Scheduled",
+      message: `Your interview for ${application?.job?.title || "the role"} at ${application?.job?.company || "the company"} is scheduled on ${new Date(scheduledAt).toLocaleString()}.`,
+      ctaLabel: "View Details",
+      ctaUrl: process.env.FRONTEND_URL || "http://localhost:3000/candidate/dashboard",
+    }).catch((err) => {
+      console.error("Interview email notification failed:", err.message);
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Interview scheduled successfully",
+      application,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 

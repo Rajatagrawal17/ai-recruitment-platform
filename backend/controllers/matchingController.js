@@ -40,6 +40,7 @@ exports.getMatchedCandidatesForJob = async (req, res) => {
       currentMatchScore: app.matchScore,
       status: app.status,
       appliedAt: app.createdAt,
+      interview: app.interview || null,
       matchExplanation: app.matchExplanation || {},
       resumeFeedback: app.resumeFeedback || {},
       matchScore: calculateMatchScore(
