@@ -20,6 +20,8 @@ const EXPERIENCE_LEVELS = {
 exports.extractSkills = (text) => {
   if (!text) return { technical: [], soft: [], experience: "unknown" };
 
+  const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
   const textLower = text.toLowerCase();
   const extracted = {
     technical: new Set(),
@@ -30,7 +32,8 @@ exports.extractSkills = (text) => {
   // Extract technical skills
   Object.values(TECH_SKILLS).forEach((skillArray) => {
     skillArray.forEach((skill) => {
-      const regex = new RegExp(`\\b${skill}\\b`, "gi");
+      const escapedSkill = escapeRegex(skill);
+      const regex = new RegExp(`\\b${escapedSkill}\\b`, "gi");
       if (regex.test(textLower)) {
         extracted.technical.add(skill);
       }
@@ -39,7 +42,8 @@ exports.extractSkills = (text) => {
 
   // Extract soft skills
   SOFT_SKILLS.forEach((skill) => {
-    const regex = new RegExp(`\\b${skill}\\b`, "gi");
+    const escapedSkill = escapeRegex(skill);
+    const regex = new RegExp(`\\b${escapedSkill}\\b`, "gi");
     if (regex.test(textLower)) {
       extracted.soft.add(skill);
     }

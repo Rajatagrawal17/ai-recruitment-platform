@@ -3,6 +3,30 @@ const path = require("path");
 const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
 
+const extractPdfText = async (buffer) => {
+  if (typeof pdfParse === "function") {
+    const parsed = await pdfParse(buffer);
+    return parsed?.text || "";
+  }
+
+  if (typeof pdfParse?.PDFParse === "function") {
+    const parser = new pdfParse.PDFParse({ data: buffer });
+    try {
+      const parsed = await parser.getText();
+      if (typeof parsed === "string") {
+        return parsed;
+      }
+      return parsed?.text || parsed?.rawText || "";
+    } finally {
+      if (typeof parser.destroy === "function") {
+        await parser.destroy();
+      }
+    }
+  }
+
+  throw new Error("Unsupported pdf-parse version. Could not find parser implementation.");
+};
+
 const SKILL_KEYWORDS = [
   "javascript",
   "typescript",
@@ -176,8 +200,7 @@ const parsePdfResume = async (filePath) => {
   }
 
   const buffer = await fs.promises.readFile(filePath);
-  const parsedPdf = await pdfParse(buffer);
-  const text = parsedPdf?.text || "";
+  const text = await extractPdfText(buffer);
 
   return {
     text,
