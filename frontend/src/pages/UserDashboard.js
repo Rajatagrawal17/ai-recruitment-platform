@@ -7,6 +7,7 @@ import AnimatedStats from "../components/AnimatedStats";
 import LoadingAnimation from "../components/LoadingAnimation";
 import StatsChart from "../components/StatsChart";
 import Achievements from "../components/Achievements";
+import AnimatedBackground from "../components/AnimatedBackground";
 
 const UserDashboard = () => {
   const [applications, setApplications] = useState([]);
@@ -53,6 +54,7 @@ const UserDashboard = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+      <AnimatedBackground />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
         <h1>👤 User Dashboard</h1>
         <motion.button 
@@ -197,6 +199,7 @@ const UserDashboard = () => {
                   <motion.div 
                     key={app._id} 
                     className="job-card" 
+                    layout 
                     initial={{ opacity: 0, y: 20, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}

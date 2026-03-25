@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import MatchScoreBadge from "../components/MatchScoreBadge";
 import { getCandidateApplications, getRecommendedJobs } from "../services/api";
+import AnimatedBackground from "../components/AnimatedBackground";
 
 const container = {
   hidden: { opacity: 0 },
@@ -103,6 +104,7 @@ const CandidateDashboard = () => {
       transition={reduceMotion ? { duration: 0 } : { duration: 0.22 }}
       className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 md:px-6"
     >
+      <AnimatedBackground />
       <section className="glass-card overflow-hidden p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -194,6 +196,7 @@ const CandidateDashboard = () => {
               <motion.article
                 key={job._id}
                 variants={item}
+                layout
                 whileHover={reduceMotion ? undefined : { y: -4 }}
                 className="rounded-2xl border border-border bg-surface-soft p-4"
               >

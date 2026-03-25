@@ -6,6 +6,7 @@ import AnimatedStats from "../components/AnimatedStats";
 import AnimatedCard from "../components/AnimatedCard";
 import StatsChart from "../components/StatsChart";
 import LoadingAnimation from "../components/LoadingAnimation";
+import AnimatedBackground from "../components/AnimatedBackground";
 import "./AdminDashboard.css";
 
 const AdminDashboard = () => {
@@ -141,12 +142,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-container">
-      {/* Background Orbs */}
-      <div className="background-orbs">
-        <div className="orb orb-1"></div>
-        <div className="orb orb-2"></div>
-        <div className="orb orb-3"></div>
-      </div>
+      <AnimatedBackground />
 
       {/* Header */}
       <div className="admin-header">
@@ -342,9 +338,9 @@ const AdminDashboard = () => {
                 className="activity-section"
               >
                 <h2>Recent Activity</h2>
-                <div className="activity-list">
+                <div className="activity-list" style={{ layout: "position" }}>
                   {recentApplications.map((app, index) => (
-                    <AnimatedCard key={app.id} delay={index}>
+                    <AnimatedCard key={app.id} delay={index} layout>
                       <div style={{ display: "flex", alignItems: "center", gap: "1rem", width: "100%" }}>
                         <div className="activity-avatar">
                           {app.candidateName.charAt(0)}
@@ -444,6 +440,7 @@ const AdminDashboard = () => {
                     <AnimatedCard 
                       key={job._id} 
                       delay={index} 
+                      layout
                       className="job-row-animated"
                       exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
                     >
@@ -504,7 +501,7 @@ const AdminDashboard = () => {
               <h2>Recent Applications</h2>
               <div className="applications-list">
                 {recentApplications.map((app, index) => (
-                  <AnimatedCard key={app.id} delay={index}>
+                  <AnimatedCard key={app.id} delay={index} layout>
                     <div className="app-header">
                       <div className="app-info">
                         <div className="app-name">{app.candidateName}</div>

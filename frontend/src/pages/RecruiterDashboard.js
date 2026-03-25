@@ -20,6 +20,7 @@ import {
   scheduleInterview,
   updateApplicationStatus,
 } from "../services/api";
+import AnimatedBackground from "../components/AnimatedBackground";
 
 const initialForm = {
   title: "",
@@ -207,8 +208,9 @@ const RecruiterDashboard = () => {
       initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={reduceMotion ? { duration: 0 } : { duration: 0.22 }}
-      className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 md:px-6"
+      className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 md:px-6 z-0"
     >
+      <AnimatedBackground />
       <AnimatePresence>
         {toast && (
           <motion.div
@@ -396,6 +398,7 @@ const RecruiterDashboard = () => {
                   <motion.article
                     key={candidate._id}
                     variants={item}
+                    layout
                     whileHover={reduceMotion ? undefined : { y: -2 }}
                     className={`rounded-xl border p-3 ${
                       index < 2

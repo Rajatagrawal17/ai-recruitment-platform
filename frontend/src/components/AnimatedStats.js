@@ -1,8 +1,20 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import "./AnimatedStats.css";
 
 const AnimatedStats = ({ icon, label, value, change, delay = 0 }) => {
+  const [hasAnimated, setHasAnimated] = React.useState(false);
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (latest) => Math.round(latest));
+
+  React.useEffect(() => {
+    if (hasAnimated) {
+      const parsed = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.-]+/g,"")) || 0;
+      const animation = animate(count, parsed, { duration: 1.5, delay: delay * 0.1, type: "spring", bounce: 0 });
+      return animation.stop;
+    }
+  }, [value, hasAnimated, delay]);
+  
   const containerVariants = {
     hidden: { opacity: 0, scale: 0.8 },
     visible: {
@@ -73,8 +85,15 @@ const AnimatedStats = ({ icon, label, value, change, delay = 0 }) => {
 
       <div className="stat-content">
         <motion.p className="stat-label">{label}</motion.p>
-        <motion.h3 className="stat-value" variants={numberVariants}>
-          {value}
+        <motion.h3 
+          className="stat-value" 
+          variants={numberVariants}
+          onViewportEnter={() => setHasAnimated(true)}
+          viewport={{ once: true }}
+        >
+          {typeof value === 'number' || !isNaN(parseFloat(String(value).replace(/[^0-9.-]+/g,""))) 
+            ? <><motion.span>{rounded}</motion.span>{String(value).includes('%') ? '%' : ''}</> 
+            : value}
         </motion.h3>
 
         {change && (
