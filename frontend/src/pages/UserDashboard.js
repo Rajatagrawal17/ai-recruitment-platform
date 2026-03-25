@@ -161,14 +161,17 @@ const UserDashboard = () => {
           </motion.button>
         </div>
 
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {renderContent()}
-        </motion.div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, scale: 0.98, filter: "blur(4px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 0.98, filter: "blur(4px)" }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );
@@ -194,11 +197,12 @@ const UserDashboard = () => {
                   <motion.div 
                     key={app._id} 
                     className="job-card" 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ delay: index * 0.1, duration: 0.4 }}
-                    whileHover={{ y: -5, boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }}
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+                    transition={{ type: "spring", stiffness: 100, damping: 15, delay: index * 0.05 }}
+                    whileHover={{ y: -5, scale: 1.01, boxShadow: "0 15px 30px rgba(0,0,0,0.12)" }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     <h3>{app.jobId?.title || "Job"}</h3>
                     <p className="job-company">🏭 {app.jobId?.company || "Company"}</p>

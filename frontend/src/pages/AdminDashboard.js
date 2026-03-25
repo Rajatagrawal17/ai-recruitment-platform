@@ -274,46 +274,61 @@ const AdminDashboard = () => {
                     <div className="stage-header">Applied</div>
                     <div className="stage-count">24</div>
                     <div className="stage-bar">
-                      <div className="stage-progress" style={{ width: "100%" }}></div>
+                      <motion.div 
+                        className="stage-progress" 
+                        initial={{ width: 0 }}
+                        whileInView={{ width: "100%" }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1.2, ease: "easeOut" }}
+                      />
                     </div>
                   </div>
                   <div className="pipeline-stage">
                     <div className="stage-header">Screening</div>
                     <div className="stage-count">16</div>
                     <div className="stage-bar">
-                      <div
+                      <motion.div
                         className="stage-progress"
+                        initial={{ width: 0 }}
+                        whileInView={{ width: "66.7%" }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1.2, ease: "easeOut", delay: 0.1 }}
                         style={{
-                          width: "66.7%",
                           background: "linear-gradient(90deg, #06b6d4, #0ea5e9)"
                         }}
-                      ></div>
+                      />
                     </div>
                   </div>
                   <div className="pipeline-stage">
                     <div className="stage-header">Interview</div>
                     <div className="stage-count">8</div>
                     <div className="stage-bar">
-                      <div
+                      <motion.div
                         className="stage-progress"
+                        initial={{ width: 0 }}
+                        whileInView={{ width: "33.3%" }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
                         style={{
-                          width: "33.3%",
                           background: "linear-gradient(90deg, #10b981, #34d399)"
                         }}
-                      ></div>
+                      />
                     </div>
                   </div>
                   <div className="pipeline-stage">
                     <div className="stage-header">Offer</div>
                     <div className="stage-count">3</div>
                     <div className="stage-bar">
-                      <div
+                      <motion.div
                         className="stage-progress"
+                        initial={{ width: 0 }}
+                        whileInView={{ width: "12.5%" }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
                         style={{
-                          width: "12.5%",
                           background: "linear-gradient(90deg, #f59e0b, #fbbf24)"
                         }}
-                      ></div>
+                      />
                     </div>
                   </div>
                 </div>

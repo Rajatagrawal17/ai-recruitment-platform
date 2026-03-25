@@ -1,10 +1,52 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import Toast from "../components/Toast";
 import JobCard from "../components/JobCard";
 import { FAKE_JOBS } from "../data/fakeData";
 import "./Jobs.css";
+
+const normalizeJobType = (job) => {
+  const rawType = String(job?.type || job?.jobType || "").toLowerCase();
+
+  if (rawType.includes("remote")) return "remote";
+  if (rawType.includes("part")) return "part-time";
+  if (rawType.includes("contract")) return "contract";
+  return "full-time";
+};
+
+const extractSalaryNumber = (salary) => {
+  if (typeof salary === "number") return salary;
+
+  if (Array.isArray(salary)) {
+    const values = salary.map((value) => Number(value)).filter((value) => Number.isFinite(value));
+    if (!values.length) return null;
+    return Math.max(...values);
+  }
+
+  if (typeof salary === "string") {
+    const values = salary
+      .match(/\d+/g)
+      ?.map((value) => Number(value))
+      .filter((value) => Number.isFinite(value));
+    if (!values?.length) return null;
+    return Math.max(...values);
+  }
+
+  return null;
+};
+
+const extractExperienceYears = (job) => {
+  const numeric = Number(job?.experience ?? job?.yearsOfExperience);
+  if (Number.isFinite(numeric)) return numeric;
+
+  const label = String(job?.experienceLevel || "");
+  const numbers = label.match(/\d+/g)?.map((value) => Number(value)) || [];
+  if (!numbers.length) return 0;
+  return Math.max(...numbers);
+};
+
+const normalizeSkill = (value) => String(value || "").trim().toLowerCase();
 
 const Jobs = () => {
   const navigate = useNavigate();
@@ -24,18 +66,60 @@ const Jobs = () => {
   // Filters
   const [filters, setFilters] = useState({
     jobType: [],
+    company: "",
     experienceLevel: 0,
     salaryRange: [0, 200000],
-    skills: []
+    skills: [],
+    remoteOnly: false,
+    minMatchScore: 0,
+    onlyFavorites: false,
   });
 
   const [expandedFilters, setExpandedFilters] = useState({
     jobType: true,
+    company: true,
     experience: true,
     salary: true,
     skills: true,
-    location: true
+    aiScore: true,
+    location: true,
   });
+
+  const availableJobTypes = useMemo(() => {
+    return ["full-time", "part-time", "contract", "remote"];
+  }, []);
+
+  const availableCompanies = useMemo(() => {
+    return Array.from(new Set(jobs.map((job) => String(job.company || "").trim()).filter(Boolean))).sort(
+      (a, b) => a.localeCompare(b)
+    );
+  }, [jobs]);
+
+  const availableSkills = useMemo(() => {
+    return Array.from(
+      new Set(
+        jobs
+          .flatMap((job) => (Array.isArray(job.skills) ? job.skills : []))
+          .map((skill) => String(skill).trim())
+          .filter(Boolean)
+      )
+    )
+      .sort((a, b) => a.localeCompare(b))
+      .slice(0, 20);
+  }, [jobs]);
+
+  const hasActiveFilters =
+    searchTerm.trim() ||
+    locationTerm.trim() ||
+    filters.jobType.length > 0 ||
+    filters.company ||
+    filters.experienceLevel > 0 ||
+    filters.salaryRange[0] > 0 ||
+    filters.salaryRange[1] < 200000 ||
+    filters.skills.length > 0 ||
+    filters.remoteOnly ||
+    filters.minMatchScore > 0 ||
+    filters.onlyFavorites;
 
   useEffect(() => {
     loadFavorites();
@@ -64,36 +148,98 @@ const Jobs = () => {
 
   useEffect(() => {
     applyFilters();
-    setCurrentPage(1);
   }, [searchTerm, locationTerm, filters, sortBy, jobs, favorites]);
 
   const applyFilters = () => {
     let filtered = jobs.filter((job) => {
+      const normalizedSearch = searchTerm.toLowerCase();
+      const normalizedLocation = locationTerm.toLowerCase();
+      const normalizedType = normalizeJobType(job);
+      const normalizedCompany = String(job.company || "").trim();
+      const salaryValue = extractSalaryNumber(job.salary);
+      const yearsOfExperience = extractExperienceYears(job);
+      const normalizedSkills = (job.skills || []).map((skill) => normalizeSkill(skill));
+      const normalizedTitle = String(job.title || "").toLowerCase();
+      const normalizedDescription = String(job.description || "").toLowerCase();
+      const normalizedCompanyText = normalizedCompany.toLowerCase();
+      const normalizedJobLocation = String(job.location || "").toLowerCase();
+      const searchableSkills = normalizedSkills.join(" ");
+
       const matchesSearch =
-        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.description?.toLowerCase().includes(searchTerm.toLowerCase());
+        !normalizedSearch ||
+        normalizedTitle.includes(normalizedSearch) ||
+        normalizedDescription.includes(normalizedSearch) ||
+        normalizedCompanyText.includes(normalizedSearch) ||
+        searchableSkills.includes(normalizedSearch);
 
       const matchesLocation =
-        !locationTerm || job.location?.toLowerCase().includes(locationTerm.toLowerCase());
+        !normalizedLocation || normalizedJobLocation.includes(normalizedLocation);
 
       const matchesJobType =
-        filters.jobType.length === 0 || filters.jobType.includes(job.jobType);
+        filters.jobType.length === 0 || filters.jobType.includes(normalizedType);
+
+      const matchesCompany = !filters.company || filters.company === normalizedCompany;
+
+      const matchesExperience = yearsOfExperience >= filters.experienceLevel;
 
       const matchesSalary =
-        (!job.salary || job.salary >= filters.salaryRange[0]) &&
-        (!job.salary || job.salary <= filters.salaryRange[1]);
+        salaryValue === null ||
+        (salaryValue >= filters.salaryRange[0] && salaryValue <= filters.salaryRange[1]);
 
-      return matchesSearch && matchesLocation && matchesJobType && matchesSalary;
+      const matchesSkills =
+        filters.skills.length === 0 ||
+        filters.skills.every((requiredSkill) => normalizedSkills.includes(normalizeSkill(requiredSkill)));
+
+      const matchesRemote =
+        !filters.remoteOnly ||
+        normalizedType === "remote" ||
+        normalizedJobLocation.includes("remote") ||
+        normalizedJobLocation.includes("work from home");
+
+      const matchScore = Number(job.matchScore);
+      const matchesAiScore =
+        filters.minMatchScore === 0 ||
+        (Number.isFinite(matchScore) && matchScore >= filters.minMatchScore);
+
+      const matchesFavorite = !filters.onlyFavorites || favorites.includes(job._id);
+
+      return (
+        matchesSearch &&
+        matchesLocation &&
+        matchesJobType &&
+        matchesCompany &&
+        matchesExperience &&
+        matchesSalary &&
+        matchesSkills &&
+        matchesRemote &&
+        matchesAiScore &&
+        matchesFavorite
+      );
     });
 
     // Apply sorting
     if (sortBy === "date") {
-      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      filtered.sort(
+        (a, b) =>
+          new Date(b.createdAt || b.postedDate || 0) - new Date(a.createdAt || a.postedDate || 0)
+      );
     } else if (sortBy === "salary") {
-      filtered.sort((a, b) => (b.salary || 0) - (a.salary || 0));
+      filtered.sort(
+        (a, b) =>
+          (extractSalaryNumber(b.salary) || 0) - (extractSalaryNumber(a.salary) || 0)
+      );
+    } else {
+      filtered.sort((a, b) => {
+        const scoreA = Number(a.matchScore) || 0;
+        const scoreB = Number(b.matchScore) || 0;
+        const dateA = new Date(a.createdAt || a.postedDate || 0).getTime() || 0;
+        const dateB = new Date(b.createdAt || b.postedDate || 0).getTime() || 0;
+        return scoreB - scoreA || dateB - dateA;
+      });
     }
 
     setFilteredJobs(filtered);
+    setCurrentPage(1);
   };
 
   const toggleFavorite = (jobId, jobTitle) => {
@@ -130,14 +276,27 @@ const Jobs = () => {
     });
   };
 
+  const handleSkillToggle = (skill) => {
+    setFilters({
+      ...filters,
+      skills: filters.skills.includes(skill)
+        ? filters.skills.filter((item) => item !== skill)
+        : [...filters.skills, skill],
+    });
+  };
+
   const clearAllFilters = () => {
     setSearchTerm("");
     setLocationTerm("");
     setFilters({
       jobType: [],
+      company: "",
       experienceLevel: 0,
       salaryRange: [0, 200000],
-      skills: []
+      skills: [],
+      remoteOnly: false,
+      minMatchScore: 0,
+      onlyFavorites: false,
     });
   };
 
@@ -207,7 +366,7 @@ const Jobs = () => {
         <aside className="filter-sidebar">
           <div className="filter-header">
             <h3>Filters</h3>
-            {Object.values(filters).some((v) => (Array.isArray(v) && v.length > 0) || v !== 0) && (
+            {hasActiveFilters && (
               <button className="clear-filters-btn" onClick={clearAllFilters}>
                 Clear All
               </button>
@@ -227,7 +386,7 @@ const Jobs = () => {
             </button>
             {expandedFilters.jobType && (
               <div className="filter-options">
-                {["Full-time", "Part-time", "Contract", "Remote"].map((type) => (
+                {availableJobTypes.map((type) => (
                   <label key={type} className="filter-checkbox">
                     <input
                       type="checkbox"
@@ -235,9 +394,35 @@ const Jobs = () => {
                       onChange={() => handleJobTypeChange(type)}
                     />
                     <span className="checkbox-custom"></span>
-                    {type}
+                    {type.replace(/(^|-)\w/g, (char) => char.toUpperCase())}
                   </label>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Company Filter */}
+          <div className="filter-section">
+            <button className="filter-section-header" onClick={() => toggleFilter("company")}>
+              <span>Company</span>
+              <svg className={`chevron ${expandedFilters.company ? "open" : ""}`} viewBox="0 0 24 24">
+                <path d="M6 9l6 6 6-6"></path>
+              </svg>
+            </button>
+            {expandedFilters.company && (
+              <div className="filter-options">
+                <select
+                  className="filter-select"
+                  value={filters.company}
+                  onChange={(e) => setFilters({ ...filters, company: e.target.value })}
+                >
+                  <option value="">All companies</option>
+                  {availableCompanies.map((company) => (
+                    <option key={company} value={company}>
+                      {company}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
@@ -320,6 +505,85 @@ const Jobs = () => {
             )}
           </div>
 
+          {/* Skills Filter */}
+          <div className="filter-section">
+            <button className="filter-section-header" onClick={() => toggleFilter("skills")}>
+              <span>Skills</span>
+              <svg className={`chevron ${expandedFilters.skills ? "open" : ""}`} viewBox="0 0 24 24">
+                <path d="M6 9l6 6 6-6"></path>
+              </svg>
+            </button>
+            {expandedFilters.skills && (
+              <div className="filter-options">
+                <div className="skill-chip-grid">
+                  {availableSkills.map((skill) => (
+                    <button
+                      key={skill}
+                      type="button"
+                      className={`skill-chip-filter ${filters.skills.includes(skill) ? "active" : ""}`}
+                      onClick={() => handleSkillToggle(skill)}
+                    >
+                      {skill}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Toggles */}
+          <div className="filter-section">
+            <div className="filter-options">
+              <label className="filter-checkbox">
+                <input
+                  type="checkbox"
+                  checked={filters.remoteOnly}
+                  onChange={(e) => setFilters({ ...filters, remoteOnly: e.target.checked })}
+                />
+                <span className="checkbox-custom"></span>
+                Remote only
+              </label>
+
+              <label className="filter-checkbox">
+                <input
+                  type="checkbox"
+                  checked={filters.onlyFavorites}
+                  onChange={(e) => setFilters({ ...filters, onlyFavorites: e.target.checked })}
+                />
+                <span className="checkbox-custom"></span>
+                Favorites only
+              </label>
+            </div>
+          </div>
+
+          {/* AI Match Score Filter */}
+          <div className="filter-section">
+            <button className="filter-section-header" onClick={() => toggleFilter("aiScore")}>
+              <span>Minimum AI Match</span>
+              <svg className={`chevron ${expandedFilters.aiScore ? "open" : ""}`} viewBox="0 0 24 24">
+                <path d="M6 9l6 6 6-6"></path>
+              </svg>
+            </button>
+            {expandedFilters.aiScore && (
+              <div className="filter-slider">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={filters.minMatchScore}
+                  onChange={(e) =>
+                    setFilters({ ...filters, minMatchScore: parseInt(e.target.value, 10) || 0 })
+                  }
+                  className="range-input"
+                />
+                <div className="range-labels">
+                  <span>0%</span>
+                  <span>{filters.minMatchScore}%+</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Location Filter */}
           <div className="filter-section">
             <button
@@ -331,11 +595,42 @@ const Jobs = () => {
                 <path d="M6 9l6 6 6-6"></path>
               </svg>
             </button>
+            {expandedFilters.location && (
+              <div className="filter-options">
+                <p className="filter-note">Use the location search box above for city/country filtering.</p>
+              </div>
+            )}
           </div>
         </aside>
 
         {/* Jobs Grid Section */}
         <main className="jobs-main">
+          {hasActiveFilters && (
+            <div className="active-filters-bar">
+              <span className="active-filters-title">Active filters:</span>
+              <div className="active-filters-list">
+                {searchTerm && <span className="active-filter-chip">Search: {searchTerm}</span>}
+                {locationTerm && <span className="active-filter-chip">Location: {locationTerm}</span>}
+                {filters.company && <span className="active-filter-chip">Company: {filters.company}</span>}
+                {filters.jobType.map((type) => (
+                  <span key={type} className="active-filter-chip">
+                    Type: {type}
+                  </span>
+                ))}
+                {filters.skills.map((skill) => (
+                  <span key={skill} className="active-filter-chip">
+                    Skill: {skill}
+                  </span>
+                ))}
+                {filters.remoteOnly && <span className="active-filter-chip">Remote only</span>}
+                {filters.onlyFavorites && <span className="active-filter-chip">Favorites only</span>}
+                {filters.minMatchScore > 0 && (
+                  <span className="active-filter-chip">AI Match: {filters.minMatchScore}%+</span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Top Bar */}
           <div className="jobs-top-bar">
             <div className="jobs-count">

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -14,6 +14,13 @@ const Navbar = () => {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const links = useMemo(() => {
     if (!token) {
@@ -52,12 +59,25 @@ const Navbar = () => {
   const roleLabel = role ? role.charAt(0).toUpperCase() + role.slice(1) : "Guest";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="rounded-xl bg-gradient-to-tr from-primary to-accent px-2 py-1 text-sm font-extrabold text-white shadow-card">
+    <motion.header 
+      className={`sticky top-0 z-50 border-b transition-colors duration-300 ${isScrolled ? 'border-border/50 bg-surface/80 backdrop-blur-xl shadow-sm' : 'border-transparent bg-transparent'}`}
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+      <motion.div 
+        className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-6"
+        animate={{ height: isScrolled ? "4rem" : "5rem" }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        <Link to="/" className="flex items-center gap-2 group">
+          <motion.div 
+            className="rounded-xl bg-gradient-to-tr from-primary to-accent px-2 py-1 text-sm font-extrabold text-white shadow-card"
+            whileHover={{ rotate: 10, scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
             H
-          </div>
+          </motion.div>
           <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-lg font-extrabold text-transparent">
             HireAI
           </span>
@@ -157,7 +177,7 @@ const Navbar = () => {
             {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
-      </div>
+      </motion.div>
 
       <AnimatePresence>
         {mobileOpen && (
@@ -198,7 +218,7 @@ const Navbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </motion.header>
   );
 };
 

@@ -9,17 +9,20 @@ const AnimatedCard = ({ children, delay = 0, onClick, className = "", ...props }
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.6,
-        ease: "easeOut",
+        type: "spring",
+        stiffness: 100,
+        damping: 15,
         delay: delay * 0.1
       }
     },
     hover: {
       y: -8,
-      boxShadow: "0 20px 40px rgba(79, 70, 229, 0.2)",
+      scale: 1.02,
+      boxShadow: "0 22px 44px -12px rgba(79, 70, 229, 0.25), 0 4px 10px -4px rgba(0, 0, 0, 0.1)",
       transition: {
-        duration: 0.3,
-        ease: "easeOut"
+        type: "spring",
+        stiffness: 300,
+        damping: 20
       }
     }
   };
@@ -31,6 +34,7 @@ const AnimatedCard = ({ children, delay = 0, onClick, className = "", ...props }
       initial="hidden"
       animate="visible"
       whileHover="hover"
+      whileTap={{ scale: 0.98 }}
       onClick={onClick}
       {...props}
     >

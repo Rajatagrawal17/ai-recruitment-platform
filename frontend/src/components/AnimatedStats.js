@@ -9,14 +9,21 @@ const AnimatedStats = ({ icon, label, value, change, delay = 0 }) => {
       opacity: 1,
       scale: 1,
       transition: {
-        duration: 0.6,
-        ease: "easeOut",
+        type: "spring",
+        stiffness: 100,
+        damping: 15,
         delay: delay * 0.1
       }
     },
     hover: {
       y: -5,
-      boxShadow: "0 15px 35px rgba(79, 70, 229, 0.25)"
+      scale: 1.02,
+      boxShadow: "0 22px 44px -12px rgba(79, 70, 229, 0.25), 0 4px 10px -4px rgba(0, 0, 0, 0.1)",
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 20
+      }
     }
   };
 
@@ -26,8 +33,9 @@ const AnimatedStats = ({ icon, label, value, change, delay = 0 }) => {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.8,
-        ease: "easeOut",
+        type: "spring",
+        stiffness: 100,
+        damping: 15,
         delay: delay * 0.1 + 0.2
       }
     }
@@ -53,6 +61,7 @@ const AnimatedStats = ({ icon, label, value, change, delay = 0 }) => {
       initial="hidden"
       animate="visible"
       whileHover="hover"
+      whileTap={{ scale: 0.98 }}
     >
       <motion.div
         className="stat-icon"

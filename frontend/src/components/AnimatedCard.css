@@ -1,14 +1,17 @@
 /* Animated Card Component */
 .animated-card {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.05), rgba(118, 75, 162, 0.05));
-  border: 1px solid rgba(79, 70, 229, 0.2);
-  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4));
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
   padding: 1.5rem;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   position: relative;
   overflow: hidden;
+  will-change: transform, box-shadow;
 }
 
 .animated-card::before {
@@ -24,14 +27,15 @@
     rgba(255, 255, 255, 0.1),
     transparent
   );
-  transition: left 0.5s ease;
+  transform: skewX(-45deg);
+  transition: left 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .animated-card:hover::before {
-  left: 100%;
+  left: 150%;
 }
 
 .animated-card:hover {
-  border-color: rgba(79, 70, 229, 0.4);
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(118, 75, 162, 0.1));
+  border-color: rgba(79, 70, 229, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.6));
 }
