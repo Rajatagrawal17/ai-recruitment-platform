@@ -3,25 +3,54 @@ const Job = require("../models/Job");
 const fs = require("fs");
 const path = require("path");
 const { extractSkillsFromText } = require("../utils/resumeIntelligence");
-const pdfParse = require("pdf-parse");
+let pdfParse;
+try {
+  pdfParse = require("pdf-parse/lib/pdf.js");
+} catch (e) {
+  try {
+    pdfParse = require("pdf-parse");
+  } catch (e2) {
+    pdfParse = null;
+  }
+}
 const mammoth = require("mammoth");
 
 // Extract text from resume file
 const extractTextFromResume = async (filePath) => {
-  const fileExtension = path.extname(filePath).toLowerCase();
-  const fileBuffer = fs.readFileSync(filePath);
+  try {
+    const fileExtension = path.extname(filePath).toLowerCase();
+    const fileBuffer = fs.readFileSync(filePath);
 
-  if (fileExtension === ".pdf") {
-    const pdfData = await pdfParse(fileBuffer);
-    return pdfData.text || "";
+    if (fileExtension === ".pdf") {
+      // Check if pdfParse is available
+      if (!pdfParse) {
+        console.warn("PDF parsing not available, extracting basic text");
+        // Fallback: return a message indicating PDF couldn't be parsed
+        return "PDF file uploaded successfully. Text extraction limited.";
+      }
+
+      try {
+        // pdf-parse usage
+        const pdfModule = require("pdf-parse/lib/pdf");
+        const pdfData = await pdfModule(fileBuffer);
+        return pdfData.text || "";
+      } catch (pdfError) {
+        console.warn("PDF parsing failed:", pdfError.message);
+        // Fallback for PDF parsing
+        return "PDF file uploaded. Please ensure it contains text.";
+      }
+    }
+
+    if (fileExtension === ".docx") {
+      const result = await mammoth.extractRawText({ buffer: fileBuffer });
+      return result.value || "";
+    }
+
+    return "";
+  } catch (error) {
+    console.error("Error extracting text from resume:", error);
+    return "";
   }
-
-  if (fileExtension === ".docx") {
-    const result = await mammoth.extractRawText({ buffer: fileBuffer });
-    return result.value || "";
-  }
-
-  return "";
 };
 
 // Extract job titles/field of interest from resume text

@@ -1,12 +1,30 @@
 const fs = require("fs");
 const path = require("path");
-const pdfParse = require("pdf-parse");
+let pdfParse;
+try {
+  pdfParse = require("pdf-parse/lib/pdf");
+} catch (e) {
+  try {
+    pdfParse = require("pdf-parse");
+  } catch (e2) {
+    pdfParse = null;
+  }
+}
 const mammoth = require("mammoth");
 
 const extractPdfText = async (buffer) => {
+  if (!pdfParse) {
+    throw new Error("PDF parsing library not available. Please ensure pdf-parse is installed.");
+  }
+
   if (typeof pdfParse === "function") {
-    const parsed = await pdfParse(buffer);
-    return parsed?.text || "";
+    try {
+      const parsed = await pdfParse(buffer);
+      return parsed?.text || "";
+    } catch (e) {
+      console.error("PDF parsing with pdfParse function failed:", e.message);
+      return "";
+    }
   }
 
   if (typeof pdfParse?.PDFParse === "function") {
@@ -17,14 +35,20 @@ const extractPdfText = async (buffer) => {
         return parsed;
       }
       return parsed?.text || parsed?.rawText || "";
-    } finally {
-      if (typeof parser.destroy === "function") {
-        await parser.destroy();
-      }
+    } catch (e) {
+      console.error("PDF parsing with PDFParse class failed:", e.message);
+      return "";
     }
   }
 
-  throw new Error("Unsupported pdf-parse version. Could not find parser implementation.");
+  // Fallback for different pdf-parse versions
+  try {
+    const parsed = await pdfParse(buffer);
+    return parsed?.text || "";
+  } catch (e) {
+    console.error("PDF parsing fallback failed:", e.message);
+    return "";
+  }
 };
 
 const SKILL_KEYWORDS = [
