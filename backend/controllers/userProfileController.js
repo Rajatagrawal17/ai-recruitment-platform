@@ -210,14 +210,17 @@ exports.uploadResume = async (req, res) => {
     // Extract location
     const currentLocation = extractLocation(resumeText);
 
+    // Fetch existing user data first to preserve any existing values
+    const existingUser = await User.findById(userId);
+
     // Update user with extracted data
     const user = await User.findByIdAndUpdate(
       userId,
       {
         resumeUrl: `/uploads/${req.file.filename}`,
         skills: skills,
-        fieldOfInterest: fieldOfInterest.length > 0 ? fieldOfInterest : user?.fieldOfInterest || [],
-        currentLocation: currentLocation || user?.currentLocation || "",
+        fieldOfInterest: fieldOfInterest.length > 0 ? fieldOfInterest : existingUser?.fieldOfInterest || [],
+        currentLocation: currentLocation || existingUser?.currentLocation || "",
         resumeDataExtracted: true,
       },
       { new: true, runValidators: true }
