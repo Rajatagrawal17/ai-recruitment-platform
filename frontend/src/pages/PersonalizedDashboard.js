@@ -5,11 +5,9 @@ import {
   Briefcase,
   AlertCircle,
   Loader,
-  Download,
-  ExternalLink,
+  ArrowRight,
 } from "lucide-react";
 import API from "../services/api";
-import ProfileSetupCard from "../components/ProfileSetupCard";
 import PersonalizedJobCard from "../components/PersonalizedJobCard";
 import "./PersonalizedDashboard.css";
 
@@ -52,13 +50,6 @@ const PersonalizedDashboard = () => {
     }
   };
 
-  const handleProfileUpdate = () => {
-    // Refresh profile and jobs after update
-    setTimeout(() => {
-      fetchUserProfile();
-    }, 500);
-  };
-
   const handleApplyJob = async (jobId) => {
     try {
       const response = await API.post("/applications/apply", {
@@ -74,16 +65,6 @@ const PersonalizedDashboard = () => {
     }
   };
 
-  const downloadResume = () => {
-    if (userProfile?.resumeUrl) {
-      const resumePath = userProfile.resumeUrl;
-      const link = document.createElement("a");
-      link.href = `${process.env.REACT_APP_API_URL || "https://cognifit-backend.onrender.com/api"}${resumePath}`;
-      link.download = true;
-      link.click();
-    }
-  };
-
   if (loading) {
     return (
       <div className="personalized-dashboard loading-state">
@@ -94,7 +75,33 @@ const PersonalizedDashboard = () => {
         >
           <Loader size={40} color="#6366f1" />
         </motion.div>
-        <p>Loading your personalized dashboard...</p>
+        <p>Loading your personalized recommendations...</p>
+      </div>
+    );
+  }
+
+  // If profile is not complete, show message to upload resume
+  if (!profileComplete) {
+    return (
+      <div className="personalized-dashboard not-ready-state">
+        <motion.div
+          className="not-ready-container"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Briefcase size={64} className="not-ready-icon" />
+          <h2>Complete Your Profile First</h2>
+          <p>Upload your resume to unlock personalized job recommendations based on your skills and preferences.</p>
+          <motion.button
+            className="goto-profile-btn"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => window.location.href = "/candidate/dashboard"}
+          >
+            Go to Profile Setup <ArrowRight size={18} />
+          </motion.button>
+        </motion.div>
       </div>
     );
   }
@@ -117,9 +124,9 @@ const PersonalizedDashboard = () => {
           <div className="header-content">
             <h1>
               <Target className="header-icon" />
-              Your Personalized Job Board
+              Personalized Job Recommendations
             </h1>
-            <p>AI-powered job recommendations based on your resume and preferences</p>
+            <p>Jobs matched to your skills & preferences based on your resume</p>
           </div>
         </motion.div>
 
@@ -134,197 +141,71 @@ const PersonalizedDashboard = () => {
           </motion.div>
         )}
 
-        {/* Profile Setup Section */}
-        {!profileComplete ? (
-          <motion.div
-            className="profile-setup-section"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <ProfileSetupCard onProfileUpdate={handleProfileUpdate} />
-          </motion.div>
-        ) : (
-          <>
-            {/* Profile Summary */}
+        {/* Personalized Jobs Section */}
+        <motion.div
+          className="jobs-section"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="jobs-header">
+            <div>
+              <h2>
+                <Briefcase className="section-icon" />
+                Recommended For You
+              </h2>
+              <p className="jobs-subtitle">
+                {personalizedJobs.length} job{personalizedJobs.length !== 1 ? 's' : ''} match your skills, interests & location
+              </p>
+            </div>
+          </div>
+
+          {personalizedJobs.length === 0 ? (
             <motion.div
-              className="profile-summary"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              className="no-jobs-state"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
             >
-              <div className="summary-header">
-                <h2>Your Profile</h2>
-                <motion.button
-                  className="edit-profile-btn"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    // Could open profile edit modal
-                    window.location.href = "/candidate-dashboard";
-                  }}
-                >
-                  Edit Profile
-                </motion.button>
-              </div>
-
-              <div className="summary-grid">
-                {/* Resume Info */}
-                <motion.div
-                  className="summary-card resume-card"
-                  whileHover={{ y: -4 }}
-                >
-                  <div className="card-header">
-                    <Briefcase className="card-icon" />
-                    <h3>Resume</h3>
-                  </div>
-                  <div className="card-content">
-                    <p>✅ Resume uploaded and analyzed</p>
-                    <motion.button
-                      className="secondary-btn"
-                      onClick={downloadResume}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Download size={16} />
-                      Download Resume
-                    </motion.button>
-                  </div>
-                </motion.div>
-
-                {/* Skills Card */}
-                {userProfile?.skills && userProfile.skills.length > 0 && (
-                  <motion.div
-                    className="summary-card"
-                    whileHover={{ y: -4 }}
-                  >
-                    <div className="card-header">
-                      <h3>Your Skills ({userProfile.skills.length})</h3>
-                    </div>
-                    <div className="card-content">
-                      <div className="skills-preview">
-                        {userProfile.skills.slice(0, 6).map((skill, idx) => (
-                          <span key={idx} className="skill-badge">
-                            {skill}
-                          </span>
-                        ))}
-                        {userProfile.skills.length > 6 && (
-                          <span className="skill-badge more">
-                            +{userProfile.skills.length - 6} more
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Interests Card */}
-                {userProfile?.fieldOfInterest &&
-                  userProfile.fieldOfInterest.length > 0 && (
-                    <motion.div
-                      className="summary-card"
-                      whileHover={{ y: -4 }}
-                    >
-                      <div className="card-header">
-                        <h3>
-                          Interest Areas ({userProfile.fieldOfInterest.length})
-                        </h3>
-                      </div>
-                      <div className="card-content">
-                        <div className="interests-list">
-                          {userProfile.fieldOfInterest.map((interest, idx) => (
-                            <span key={idx} className="interest-badge">
-                              {interest}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                {/* Location Card */}
-                {userProfile?.currentLocation && (
-                  <motion.div
-                    className="summary-card"
-                    whileHover={{ y: -4 }}
-                  >
-                    <div className="card-header">
-                      <h3>Preferred Location</h3>
-                    </div>
-                    <div className="card-content">
-                      <p className="location-text">📍 {userProfile.currentLocation}</p>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
+              <AlertCircle size={48} />
+              <h3>No matching jobs yet</h3>
+              <p>
+                We're continuously adding new jobs that match your profile.
+              </p>
             </motion.div>
-
-            {/* Personalized Jobs Section */}
+          ) : (
             <motion.div
-              className="jobs-section"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
+              className="jobs-grid-personalized"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.08,
+                  },
+                },
+              }}
             >
-              <div className="jobs-header">
-                <h2>
-                  <Briefcase className="section-icon" />
-                  Recommended Jobs ({personalizedJobs.length})
-                </h2>
-                <p className="jobs-subtitle">
-                  These jobs match your profile, skills, and preferences
-                </p>
-              </div>
-
-              {personalizedJobs.length === 0 ? (
-                <motion.div
-                  className="no-jobs-state"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <AlertCircle size={48} />
-                  <h3>No matching jobs found</h3>
-                  <p>
-                    We're still looking for jobs that match your profile. Check back
-                    soon!
-                  </p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  className="jobs-grid"
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    hidden: { opacity: 0 },
-                    visible: {
-                      opacity: 1,
-                      transition: {
-                        staggerChildren: 0.1,
-                      },
-                    },
-                  }}
-                >
-                  <AnimatePresence>
-                    {personalizedJobs.map((job, index) => (
-                      <motion.div
-                        key={job._id || index}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <PersonalizedJobCard
-                          job={job}
-                          onApply={handleApplyJob}
-                        />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </motion.div>
-              )}
+              <AnimatePresence>
+                {personalizedJobs.map((job, index) => (
+                  <motion.div
+                    key={job._id || index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <PersonalizedJobCard
+                      job={job}
+                      onApply={handleApplyJob}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </motion.div>
-          </>
-        )}
+          )}
+        </motion.div>
       </motion.div>
     </div>
   );
