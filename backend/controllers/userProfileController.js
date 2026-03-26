@@ -280,6 +280,102 @@ exports.getUserProfile = async (req, res) => {
 };
 
 /* =========================
+   CALCULATE JOB MATCH SCORE
+========================= */
+const calculateJobMatchScore = (job, userProfile) => {
+  let score = 0;
+  let details = {
+    skillMatch: 0,
+    locationMatch: 0,
+    interestMatch: 0,
+    totalFactors: 0,
+  };
+
+  // 1. SKILL MATCHING (40 points max)
+  if (userProfile.skills && userProfile.skills.length > 0 && job.skills) {
+    const userSkillsLower = userProfile.skills.map((s) =>
+      s.toLowerCase().replace(/\s+/g, " ")
+    );
+    const jobSkillsLower = (job.skills || []).map((s) =>
+      s.toLowerCase().replace(/\s+/g, " ")
+    );
+
+    const matchingSkills = userSkillsLower.filter((skill) =>
+      jobSkillsLower.some((jobSkill) => jobSkill.includes(skill) || skill.includes(jobSkill))
+    );
+
+    const skillPercentage = (matchingSkills.length / userSkillsLower.length) * 100;
+    details.skillMatch = Math.round(skillPercentage);
+    score += (matchingSkills.length / Math.max(userSkillsLower.length, 1)) * 40;
+  }
+  details.totalFactors++;
+
+  // 2. LOCATION MATCHING (25 points max)
+  if (userProfile.currentLocation) {
+    const userLocationLower = userProfile.currentLocation.toLowerCase();
+    const jobLocationLower = (job.location || "").toLowerCase();
+    const jobTypeLower = (job.type || "").toLowerCase();
+
+    if (
+      jobLocationLower.includes(userLocationLower) ||
+      userLocationLower.includes(jobLocationLower)
+    ) {
+      details.locationMatch = 100;
+      score += 25;
+    } else if (
+      jobTypeLower.includes("remote") ||
+      jobLocationLower.includes("remote")
+    ) {
+      details.locationMatch = 60;
+      score += 15;
+    } else {
+      details.locationMatch = 0;
+    }
+  }
+  details.totalFactors++;
+
+  // 3. FIELD OF INTEREST MATCHING (25 points max)
+  if (userProfile.fieldOfInterest && userProfile.fieldOfInterest.length > 0) {
+    const jobTitleLower = (job.title || "").toLowerCase();
+    const jobDescLower = (job.description || "").toLowerCase();
+
+    let interestMatches = 0;
+    userProfile.fieldOfInterest.forEach((interest) => {
+      const interestLower = interest.toLowerCase();
+      if (
+        jobTitleLower.includes(interestLower) ||
+        jobDescLower.includes(interestLower)
+      ) {
+        interestMatches++;
+      }
+    });
+
+    const interestPercentage =
+      (interestMatches / Math.max(userProfile.fieldOfInterest.length, 1)) * 100;
+    details.interestMatch = Math.round(interestPercentage);
+    score +=
+      (interestMatches / Math.max(userProfile.fieldOfInterest.length, 1)) * 25;
+  }
+  details.totalFactors++;
+
+  // 4. BONUS: SALARY MATCH (10 points max)
+  if (job.salary) {
+    const salaryNum = parseInt(job.salary);
+    if (salaryNum >= 600000) {
+      score += 10;
+    } else if (salaryNum >= 400000) {
+      score += 8;
+    }
+  }
+
+  const finalScore = Math.round((score / 100) * 100);
+  return {
+    matchScore: Math.min(100, finalScore),
+    matchDetails: details,
+  };
+};
+
+/* =========================
    GET PERSONALIZED JOBS
 ========================= */
 exports.getPersonalizedJobs = async (req, res) => {
@@ -302,6 +398,16 @@ exports.getPersonalizedJobs = async (req, res) => {
       });
     }
 
+    // If no resume uploaded, return empty
+    if (!user.resumeDataExtracted) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        jobs: [],
+        message: "Please upload your resume to get personalized job recommendations",
+      });
+    }
+
     // Build filter based on user profile
     let filter = {};
 
@@ -313,7 +419,7 @@ exports.getPersonalizedJobs = async (req, res) => {
       filter.title = { $in: titleRegex };
     }
 
-    // Filter by location
+    // Filter by location (but be more flexible)
     if (user.currentLocation) {
       filter.$or = [
         { location: new RegExp(user.currentLocation, "i") },
@@ -328,16 +434,36 @@ exports.getPersonalizedJobs = async (req, res) => {
       filter.skills = { $in: skillRegex };
     }
 
-    // Get personalized jobs with sorting
+    // Get jobs
     const jobs = await Job.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(20)
-      .select("title company location type salary skills description");
+      .select("_id title company location type salary skills description requiredExperience")
+      .lean();
+
+    // Calculate match score for each job
+    const jobsWithScores = jobs.map((job) => {
+      const { matchScore, matchDetails } = calculateJobMatchScore(job, {
+        skills: user.skills || [],
+        currentLocation: user.currentLocation || "",
+        fieldOfInterest: user.fieldOfInterest || [],
+      });
+
+      return {
+        ...job,
+        matchScore,
+        matchDetails,
+      };
+    });
+
+    // Sort by match score descending
+    jobsWithScores.sort((a, b) => b.matchScore - a.matchScore);
+
+    // Return top 25 matches
+    const topJobs = jobsWithScores.slice(0, 25);
 
     res.status(200).json({
       success: true,
-      count: jobs.length,
-      jobs: jobs,
+      count: topJobs.length,
+      jobs: topJobs,
       userProfile: {
         fieldOfInterest: user.fieldOfInterest,
         currentLocation: user.currentLocation,

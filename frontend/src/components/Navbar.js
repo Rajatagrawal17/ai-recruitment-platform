@@ -34,6 +34,7 @@ const Navbar = () => {
     if (role === "candidate") {
       return [
         { path: "/apply", label: "Apply Jobs", icon: BriefcaseBusiness },
+        { path: "/personalized/jobs", label: "AI Recommendations", icon: LayoutDashboard },
         { path: "/candidate/dashboard", label: "Applications & Feedback", icon: LayoutDashboard },
       ];
     }

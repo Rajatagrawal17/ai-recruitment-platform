@@ -164,11 +164,12 @@ const ProfileSetupCard = ({ onProfileUpdate }) => {
         </h3>
         <form onSubmit={handleLinkedinSubmit} className="profile-form">
           <input
-            type="url"
+            type="text"
             placeholder="https://linkedin.com/in/yourprofile"
             value={linkedinUrl}
             onChange={(e) => setLinkedinUrl(e.target.value)}
             disabled={loading}
+            required
           />
           <motion.button
             type="submit"

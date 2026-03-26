@@ -15,6 +15,7 @@ import JobDetailPage from "./pages/JobDetailPage";
 import ApplicationForm from "./pages/ApplicationForm";
 import RecruiterDashboard from "./pages/RecruiterDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
+import PersonalizedDashboard from "./pages/PersonalizedDashboard";
 import { useAuth } from "./context/AuthContext";
 
 const pageTransition = {
@@ -131,6 +132,15 @@ const AppRoutes = () => {
           element={(
             <ProtectedRoute allowedRoles={["candidate"]}>
               <AnimatedPage><CandidateDashboard /></AnimatedPage>
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route
+          path="/personalized/jobs"
+          element={(
+            <ProtectedRoute allowedRoles={["candidate"]}>
+              <AnimatedPage><PersonalizedDashboard /></AnimatedPage>
             </ProtectedRoute>
           )}
         />
