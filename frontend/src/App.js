@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import ForgotPassword from "./pages/ForgotPassword";
 import LandingPage from "./pages/LandingPage";
 import JobsPage from "./pages/JobsPage";
 import JobDetailPage from "./pages/JobDetailPage";
@@ -94,6 +95,15 @@ const AppRoutes = () => {
           element={(
             <PublicOnlyRoute>
               <AnimatedPage><RegisterPage /></AnimatedPage>
+            </PublicOnlyRoute>
+          )}
+        />
+
+        <Route
+          path="/forgot-password"
+          element={(
+            <PublicOnlyRoute>
+              <AnimatedPage><ForgotPassword /></AnimatedPage>
             </PublicOnlyRoute>
           )}
         />

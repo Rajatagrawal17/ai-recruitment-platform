@@ -118,6 +118,12 @@ export const sendMobileOTP = (data) => API.post("/auth/send-mobile-otp", data);
 export const verifyMobileOTP = (data) => API.post("/auth/verify-mobile-otp", data);
 export const verifyCaptcha = (data) => API.post("/auth/verify-captcha", data);
 
+// Forgot Password
+export const forgotPassword = (data) => API.post("/auth/forgot-password", data);
+export const sendResetOTP = (data) => API.post("/auth/send-reset-otp", data);
+export const verifyResetOTP = (data) => API.post("/auth/verify-reset-otp", data);
+export const resetPassword = (data) => API.post("/auth/reset-password", data);
+
 export const getJobs = () => API.get("/jobs");
 export const getRecommendedJobs = () => API.get("/jobs/recommendations");
 export const getJobById = (jobId) => API.get(`/jobs/${jobId}`);

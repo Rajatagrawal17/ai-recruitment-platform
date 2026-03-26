@@ -428,3 +428,230 @@ exports.verifyCaptcha = async (req, res) => {
     });
   }
 };
+
+/* =========================
+   FORGOT PASSWORD
+========================= */
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      return res.status(200).json({
+        success: true,
+        message: "If an account exists with this email, you will receive a password reset link",
+      });
+    }
+
+    // Send OTP to user's email
+    const otp = generateOTP();
+    const fallbackCode = generateFallbackCode();
+    const key = `forgot_${email}`;
+
+    // Store OTP for password reset
+    storeOTP(key, otp, fallbackCode);
+
+    try {
+      await sendOTP(email, otp, "email", email);
+    } catch (providerError) {
+      console.error("OTP provider failed:", providerError.message);
+      // Continue anyway for demo mode
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent to your email",
+      demoOtp: process.env.NODE_ENV === "development" ? otp : undefined,
+      fallbackCode: fallbackCode,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/* =========================
+   SEND RESET OTP (with Phone Fallback)
+========================= */
+exports.sendResetOTP = async (req, res) => {
+  try {
+    const { email, method = "email", phoneNumber } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: "If an account exists, OTP will be sent",
+      });
+    }
+
+    // For phone fallback, user must have verified phone number
+    if (method === "sms" && !user.phoneNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "No verified phone number on file. Use email option.",
+      });
+    }
+
+    const otp = generateOTP();
+    const fallbackCode = generateFallbackCode();
+    const key = `reset_${email}`;
+
+    storeOTP(key, otp, fallbackCode);
+
+    let result;
+    try {
+      if (method === "sms" && user.phoneNumber) {
+        result = await sendOTP(user.phoneNumber, otp, "sms", email);
+      } else {
+        result = await sendOTP(email, otp, "email", email);
+      }
+    } catch (providerError) {
+      console.error("OTP provider failed:", providerError.message);
+      result = { success: true, demo: true };
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `OTP sent via ${method === "sms" ? "SMS" : "email"}`,
+      demo: result?.demo || false,
+      demoOtp: process.env.NODE_ENV === "development" ? otp : undefined,
+      fallbackCode: fallbackCode,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/* =========================
+   VERIFY RESET OTP
+========================= */
+exports.verifyResetOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and OTP are required",
+      });
+    }
+
+    const key = `reset_${email}`;
+    const result = verifyOTPCode(key, otp);
+
+    if (!result.valid) {
+      return res.status(400).json({
+        success: false,
+        message: result.message,
+      });
+    }
+
+    // Generate a temporary reset token (valid for 15 minutes)
+    const resetToken = jwt.sign(
+      { email, purpose: "password_reset" },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "OTP verified successfully",
+      resetToken,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/* =========================
+   RESET PASSWORD
+========================= */
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, newPassword, resetToken } = req.body;
+
+    if (!email || !newPassword || !resetToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Email, new password, and reset token are required",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    // Verify the reset token
+    try {
+      const decoded = jwt.verify(resetToken, process.env.JWT_SECRET);
+      if (decoded.email !== email || decoded.purpose !== "password_reset") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid or expired reset token",
+        });
+      }
+    } catch (tokenError) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset token",
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully. Please login with your new password.",
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
