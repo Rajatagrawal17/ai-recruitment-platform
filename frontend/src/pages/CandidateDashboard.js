@@ -10,6 +10,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import MatchScoreBadge from "../components/MatchScoreBadge";
+import ProfileSetupCard from "../components/ProfileSetupCard";
+import PersonalizedJobs from "../components/PersonalizedJobs";
 import { getCandidateApplications, getRecommendedJobs } from "../services/api";
 import AnimatedBackground from "../components/AnimatedBackground";
 
@@ -64,6 +66,7 @@ const CandidateDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [recommendationLoading, setRecommendationLoading] = useState(true);
   const [error, setError] = useState("");
+  const [profileRefresh, setProfileRefresh] = useState(0);
 
   useEffect(() => {
     const loadData = async () => {
@@ -162,6 +165,12 @@ const CandidateDashboard = () => {
           reduceMotion={reduceMotion}
         />
       </motion.section>
+
+      {/* Profile Setup Card */}
+      <ProfileSetupCard onProfileUpdate={() => setProfileRefresh(prev => prev + 1)} />
+
+      {/* Personalized Jobs Section */}
+      <PersonalizedJobs triggerRefresh={profileRefresh} />
 
       <section className="glass-card p-5">
         <div className="mb-4 flex items-center justify-between">

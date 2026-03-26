@@ -55,6 +55,37 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // LinkedIn and Resume Profile
+    linkedinUrl: {
+      type: String,
+      trim: true,
+    },
+
+    resumeUrl: {
+      type: String,
+      trim: true,
+    },
+
+    currentLocation: {
+      type: String,
+      trim: true,
+    },
+
+    fieldOfInterest: {
+      type: [String],
+      default: [], // e.g., ["Software Developer", "Backend", "Full Stack"]
+    },
+
+    skills: {
+      type: [String],
+      default: [], // Extracted from resume/LinkedIn
+    },
+
+    resumeDataExtracted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
