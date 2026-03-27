@@ -1,3 +1,6 @@
+/* Design System Tokens */
+@import './tokens/design-tokens.css';
+
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
@@ -12,7 +15,7 @@
   --text-muted: #475569;
   --primary: #2563eb;
   --primary-soft: #dbeafe;
-  --accent: #0ea5e9;
+  --accent: #11a1e4;
   --border: rgba(15, 23, 42, 0.1);
 }
 
