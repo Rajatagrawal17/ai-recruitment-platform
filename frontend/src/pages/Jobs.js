@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import API from "../services/api";
 import Toast from "../components/Toast";
 import JobCard from "../components/JobCard";
@@ -318,7 +319,12 @@ const Jobs = () => {
       </div>
 
       {/* Hero Banner */}
-      <div className="jobs-hero">
+      <motion.div 
+        className="jobs-hero"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         <h1 className="jobs-hero-title">Find Your Dream Job</h1>
         <p className="jobs-hero-subtitle">Discover opportunities matched to your skills</p>
 
@@ -359,7 +365,7 @@ const Jobs = () => {
             Search
           </button>
         </div>
-      </div>
+      </motion.div>
 
       <div className="jobs-content">
         {/* Filter Sidebar */}
@@ -632,7 +638,12 @@ const Jobs = () => {
           )}
 
           {/* Top Bar */}
-          <div className="jobs-top-bar">
+          <motion.div 
+            className="jobs-top-bar"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+          >
             <div className="jobs-count">
               <span className="count-number">{filteredJobs.length}</span>
               <span className="count-label">jobs found</span>
@@ -646,23 +657,51 @@ const Jobs = () => {
                 <option value="salary">Highest Salary</option>
               </select>
             </div>
-          </div>
+          </motion.div>
 
           {/* Jobs Grid */}
           {filteredJobs.length === 0 ? (
             <EmptyState onClearFilters={clearAllFilters} />
           ) : (
             <>
-              <div className="jobs-grid">
+              <motion.div 
+                className="jobs-grid"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: {
+                      staggerChildren: 0.08,
+                      delayChildren: 0.1
+                    }
+                  }
+                }}
+              >
                 {paginatedJobs.map((job) => (
-                  <JobCard
+                  <motion.div
                     key={job._id}
-                    job={job}
-                    isApplied={job.isApplied || false}
-                    matchScore={job.matchScore}
-                  />
+                    variants={{
+                      hidden: { opacity: 0, y: 20 },
+                      visible: {
+                        opacity: 1,
+                        y: 0,
+                        transition: {
+                          duration: 0.4,
+                          ease: "easeOut"
+                        }
+                      }
+                    }}
+                  >
+                    <JobCard
+                      job={job}
+                      isApplied={job.isApplied || false}
+                      matchScore={job.matchScore}
+                    />
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
 
               {/* Pagination */}
               {totalPages > 1 && (
