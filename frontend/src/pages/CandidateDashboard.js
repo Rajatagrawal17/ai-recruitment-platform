@@ -14,6 +14,7 @@ import ProfileSetupCard from "../components/ProfileSetupCard";
 import PersonalizedJobs from "../components/PersonalizedJobs";
 import { getCandidateApplications, getRecommendedJobs } from "../services/api";
 import AnimatedBackground from "../components/AnimatedBackground";
+import LoadingAnimation from "../components/LoadingAnimation";
 
 const container = {
   hidden: { opacity: 0 },
@@ -179,10 +180,8 @@ const CandidateDashboard = () => {
         </div>
 
         {recommendationLoading ? (
-          <div className="grid gap-3 md:grid-cols-2">
-            {[1, 2, 3, 4].map((s) => (
-              <div key={s} className="skeleton h-36" />
-            ))}
+          <div className="flex justify-center py-8">
+             <LoadingAnimation text="Scanning Grid for Matches..." scale={0.6} />
           </div>
         ) : recommendations.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-10 text-center">
@@ -246,10 +245,8 @@ const CandidateDashboard = () => {
         </div>
 
         {loading ? (
-          <div className="space-y-3 p-5">
-            {[1, 2, 3].map((row) => (
-              <div key={row} className="skeleton h-16" />
-            ))}
+          <div className="flex justify-center py-8">
+             <LoadingAnimation text="Loading Timeline..." scale={0.7} />
           </div>
         ) : error ? (
           <div className="p-5">

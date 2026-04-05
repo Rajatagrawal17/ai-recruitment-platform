@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import MatchScoreBadge from "../components/MatchScoreBadge";
+import LoadingAnimation from "../components/LoadingAnimation";
 import {
   createJob,
   getAnalytics,
@@ -381,9 +382,8 @@ const RecruiterDashboard = () => {
             <div className="glass-panel p-8 rounded-3xl mt-6 border border-surface-container-highest">
               <h2 className="font-headline text-2xl font-bold mb-6">Active Jobs Pipeline</h2>
               {loading ? (
-                <div className="animate-pulse space-y-4">
-                  <div className="h-10 bg-surface-container-high rounded w-full"></div>
-                  <div className="h-10 bg-surface-container-high rounded w-full"></div>
+                <div className="flex justify-center py-12">
+                  <LoadingAnimation text="Initializing Orbital Grid..." />
                 </div>
               ) : jobs.length === 0 ? (
                 <p className="text-on-surface-variant text-sm">No active jobs yet.</p>
@@ -420,9 +420,8 @@ const RecruiterDashboard = () => {
                            <tr className="bg-surface-container-lowest border-b border-surface-container-highest">
                              <td colSpan={4} className="px-4 py-6">
                                {loadingCandidates ? (
-                                  <div className="animate-pulse flex items-center justify-center py-4">
-                                     <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
-                                     <span className="ml-3 font-label text-xs text-primary uppercase tracking-widest">Scanning Resumes...</span>
+                                  <div className="flex items-center justify-center py-4">
+                                     <LoadingAnimation text="Scanning Resumes..." scale={0.6} />
                                   </div>
                                ) : (jobCandidates[job._id] || []).length === 0 ? (
                                  <p className="text-xs text-text-muted text-center italic py-2">No applicants in queue.</p>
