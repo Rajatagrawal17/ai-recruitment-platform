@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+﻿import React, { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion, useInView } from "framer-motion";
 import MatchScoreBadge from "../components/MatchScoreBadge";
 import LoadingAnimation from "../components/LoadingAnimation";
 import {
@@ -529,7 +529,7 @@ const RecruiterDashboard = () => {
       <footer className="w-full py-12 border-t border-slate-800/30 bg-slate-950 mt-12">
         <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <span className="font-headline font-bold text-slate-300 tracking-tighter">Orbital AI</span>
-          <p className="font-label text-xs text-slate-500">© 2024 Orbital AI. Built for the future of talent matching.</p>
+          <p className="font-label text-xs text-slate-500">Â© 2024 Orbital AI. Built for the future of talent matching.</p>
           <div className="flex gap-8">
             <button className="font-label text-xs text-slate-600 hover:text-primary transition-colors">Privacy Orbit</button>
             <button className="font-label text-xs text-slate-600 hover:text-primary transition-colors">Terms of Gravity</button>
@@ -541,3 +541,4 @@ const RecruiterDashboard = () => {
 };
 
 export default RecruiterDashboard;
+
