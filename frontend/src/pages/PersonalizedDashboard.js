@@ -9,6 +9,14 @@ import {
 } from "lucide-react";
 import API from "../services/api";
 import PersonalizedJobCard from "../components/PersonalizedJobCard";
+import {
+  FadeInOnScroll,
+  ScaleOnScroll,
+  ParallaxSection,
+  ScrollRevealGrid,
+  Perspective3DCard,
+} from "../components/ScrollAnimations";
+import "../components/ScrollAnimations.css";
 import "./PersonalizedDashboard.css";
 
 const PersonalizedDashboard = () => {
@@ -142,12 +150,7 @@ const PersonalizedDashboard = () => {
         )}
 
         {/* Personalized Jobs Section */}
-        <motion.div
-          className="jobs-section"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+        <FadeInOnScroll className="jobs-section">
           <div className="jobs-header">
             <div>
               <h2>
@@ -176,36 +179,38 @@ const PersonalizedDashboard = () => {
             <motion.div
               className="jobs-grid-personalized"
               initial="hidden"
-              animate="visible"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
               variants={{
                 hidden: { opacity: 0 },
                 visible: {
                   opacity: 1,
                   transition: {
-                    staggerChildren: 0.08,
+                    staggerChildren: 0.1,
                   },
                 },
               }}
             >
               <AnimatePresence>
                 {personalizedJobs.map((job, index) => (
-                  <motion.div
-                    key={job._id || index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <PersonalizedJobCard
-                      job={job}
-                      onApply={handleApplyJob}
-                    />
-                  </motion.div>
+                  <ScaleOnScroll key={job._id}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <PersonalizedJobCard
+                        job={job}
+                        onApply={handleApplyJob}
+                      />
+                    </motion.div>
+                  </ScaleOnScroll>
                 ))}
               </AnimatePresence>
             </motion.div>
           )}
-        </motion.div>
+        </FadeInOnScroll>
       </motion.div>
     </div>
   );

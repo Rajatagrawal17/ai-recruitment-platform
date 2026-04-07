@@ -1,0 +1,407 @@
+/* ================================================
+   SCROLL ANIMATION COMPONENTS STYLING
+   Advanced Framer Motion scroll effects styling
+   ================================================ */
+
+/* ============================================
+   PARALLAX SECTION
+   ============================================ */
+
+.parallax-section {
+  position: relative;
+  overflow: hidden;
+  perspective: 1000px;
+}
+
+.parallax-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.05));
+  pointer-events: none;
+}
+
+.parallax-section > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   FADE IN ON SCROLL
+   ============================================ */
+
+.fade-in-scroll {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+}
+
+/* ============================================
+   SCALE ON SCROLL
+   ============================================ */
+
+.scale-scroll {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* ============================================
+   ROTATING CARD
+   ============================================ */
+
+.rotating-card {
+  will-change: transform;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(99, 102, 241, 0.15);
+  transition: all 0.3s ease;
+}
+
+.rotating-card:hover {
+  box-shadow: 0 30px 80px rgba(99, 102, 241, 0.25);
+}
+
+/* ============================================
+   PARALLAX FADE STACK
+   ============================================ */
+
+.parallax-fade-stack {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+}
+
+/* ============================================
+   SHADOW DEPTH CARD
+   ============================================ */
+
+.shadow-depth-card {
+  will-change: box-shadow;
+  transition: all 0.3s ease;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f9f5ff 100%);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  padding: 24px;
+}
+
+.shadow-depth-card:hover {
+  background: linear-gradient(135deg, #f9f5ff 0%, #ffffff 100%);
+}
+
+/* ============================================
+   PERSPECTIVE 3D CARD
+   ============================================ */
+
+.perspective-3d-card {
+  will-change: transform;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(249, 245, 255, 0.9));
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(99, 102, 241, 0.15);
+}
+
+.perspective-3d-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  pointer-events: none;
+}
+
+/* ============================================
+   MORPHING SHAPE
+   ============================================ */
+
+.morphing-shape {
+  will-change: border-radius;
+  transition: all 0.3s ease;
+  margin: 0 auto;
+}
+
+.morphing-shape:hover {
+  filter: drop-shadow(0 10px 30px rgba(99, 102, 241, 0.3));
+}
+
+/* ============================================
+   SCROLL REVEAL TEXT
+   ============================================ */
+
+.scroll-reveal-text {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+}
+
+.scroll-reveal-text h2 {
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* ============================================
+   STAGGERED LIST ON SCROLL
+   ============================================ */
+
+.staggered-list-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.staggered-list-scroll > div {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+}
+
+/* ============================================
+   SCROLL TRACKER / PROGRESS BAR
+   ============================================ */
+
+.scroll-tracker {
+  position: relative;
+}
+
+.scroll-tracker .progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+  z-index: 1000;
+  transform-origin: left;
+  will-change: transform;
+}
+
+/* ============================================
+   PARALLAX HERO SECTION
+   ============================================ */
+
+.parallax-hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.parallax-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.7), rgba(168, 85, 247, 0.7));
+  z-index: 1;
+}
+
+.parallax-hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  color: white;
+  max-width: 600px;
+}
+
+.parallax-hero-content h1 {
+  font-size: 56px;
+  font-weight: 800;
+  margin: 0 0 16px 0;
+  letter-spacing: -1px;
+  animation: fadeInDown 0.8s ease;
+}
+
+.parallax-hero-content p {
+  font-size: 18px;
+  margin: 0;
+  opacity: 0.95;
+  animation: fadeInUp 0.8s ease 0.2s backwards;
+}
+
+/* ============================================
+   SCROLL COUNTER
+   ============================================ */
+
+.scroll-counter {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.scroll-counter span {
+  display: inline-block;
+  font-size: 48px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================================
+   ADVANCED SCROLL SECTION
+   ============================================ */
+
+.advanced-scroll-section {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* ============================================
+   SCROLL REVEAL GRID
+   ============================================ */
+
+.scroll-reveal-grid {
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+.scroll-reveal-grid > div {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.scroll-reveal-grid.grid-1 {
+  grid-template-columns: 1fr;
+}
+
+.scroll-reveal-grid.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.scroll-reveal-grid.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.scroll-reveal-grid.grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1024px) {
+  .scroll-reveal-grid.grid-4,
+  .scroll-reveal-grid.grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .scroll-reveal-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .parallax-hero-content h1 {
+    font-size: 36px;
+  }
+
+  .scroll-counter span {
+    font-size: 32px;
+  }
+}
+
+/* ============================================
+   ADVANCED ANIMATIONS
+   ============================================ */
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============================================
+   PERFORMANCE OPTIMIZATION
+   ============================================ */
+
+.parallax-section,
+.fade-in-scroll,
+.scale-scroll,
+.rotating-card,
+.parallax-fade-stack,
+.shadow-depth-card,
+.perspective-3d-card,
+.morphing-shape,
+.scroll-reveal-text,
+.staggered-list-scroll,
+.scroll-counter,
+.advanced-scroll-section,
+.scroll-reveal-grid {
+  will-change: auto;
+}
+
+/* Lock performance during scroll */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================
+   SCROLL SNAP FOR SECTIONS
+   ============================================ */
+
+html.scroll-snap {
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+}
+
+html.scroll-snap .parallax-section,
+html.scroll-snap .advanced-scroll-section {
+  scroll-snap-align: start;
+}
