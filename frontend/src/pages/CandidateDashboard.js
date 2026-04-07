@@ -8,13 +8,14 @@ import {
   FileText,
   Sparkles,
   TrendingUp,
+  ChevronRight,
 } from "lucide-react";
 import MatchScoreBadge from "../components/MatchScoreBadge";
 import ProfileSetupCard from "../components/ProfileSetupCard";
 import PersonalizedJobs from "../components/PersonalizedJobs";
 import { getCandidateApplications, getRecommendedJobs } from "../services/api";
 import AnimatedBackground from "../components/AnimatedBackground";
-import LoadingAnimation from "../components/LoadingAnimation";
+import { useIsMobile } from "../components/MobileOptimizedAnimations";
 
 const container = {
   hidden: { opacity: 0 },
@@ -62,12 +63,14 @@ const ScoreBar = ({ score, reduceMotion }) => (
 
 const CandidateDashboard = () => {
   const reduceMotion = useReducedMotion();
+  const isMobile = useIsMobile();
   const [applications, setApplications] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [recommendationLoading, setRecommendationLoading] = useState(true);
   const [error, setError] = useState("");
   const [profileRefresh, setProfileRefresh] = useState(0);
+  const [expandedApp, setExpandedApp] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -180,8 +183,10 @@ const CandidateDashboard = () => {
         </div>
 
         {recommendationLoading ? (
-          <div className="flex justify-center py-8">
-             <LoadingAnimation text="Scanning Grid for Matches..." scale={0.6} />
+          <div className="grid gap-3 md:grid-cols-2">
+            {[1, 2, 3, 4].map((s) => (
+              <div key={s} className="skeleton h-36" />
+            ))}
           </div>
         ) : recommendations.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-10 text-center">
@@ -205,28 +210,28 @@ const CandidateDashboard = () => {
                 key={job._id}
                 variants={item}
                 layout
-                whileHover={reduceMotion ? undefined : { y: -4 }}
-                className="rounded-2xl border border-border bg-surface-soft p-4"
+                whileHover={isMobile ? undefined : { y: -4 }}
+                className="rounded-2xl border border-border bg-surface-soft p-4 transition-all"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="font-semibold">{job.title}</h3>
-                    <p className="text-sm text-text-muted">{job.company}</p>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-sm md:text-base truncate">{job.title}</h3>
+                    <p className="text-sm text-text-muted truncate">{job.company}</p>
                   </div>
                   <MatchScoreBadge score={job.matchScore || 0} />
                 </div>
-                <p className="mt-2 text-xs text-text-muted">
+                <p className="mt-2 text-xs text-text-muted line-clamp-2">
                   Matched: {(job.matchedSkills || []).slice(0, 4).join(", ") || "No direct match yet"}
                 </p>
                 {(job.missingSkills || []).length > 0 && (
-                  <p className="mt-1 text-xs text-text-muted">
+                  <p className="mt-1 text-xs text-text-muted line-clamp-1">
                     Gaps: {job.missingSkills.slice(0, 3).join(", ")}
                   </p>
                 )}
                 <p className="mt-2 text-xs text-text-muted">
                   Readiness: <span className="font-semibold capitalize text-text">{job.readiness || "emerging"}</span>
                 </p>
-                <p className="mt-1 text-xs text-text-muted">
+                <p className="mt-1 text-xs text-text-muted line-clamp-2">
                   {job.explanation?.summary || "AI explanation will appear here after profile analysis."}
                 </p>
                 <ScoreBar score={job.matchScore || 0} reduceMotion={reduceMotion} />
@@ -245,8 +250,10 @@ const CandidateDashboard = () => {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-8">
-             <LoadingAnimation text="Loading Timeline..." scale={0.7} />
+          <div className="space-y-3 p-5">
+            {[1, 2, 3].map((row) => (
+              <div key={row} className="skeleton h-16" />
+            ))}
           </div>
         ) : error ? (
           <div className="p-5">
@@ -262,7 +269,112 @@ const CandidateDashboard = () => {
               Start applying to roles and this area will show progress, scores, and actionable AI feedback.
             </p>
           </div>
+        ) : isMobile ? (
+          // Mobile Card View
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="space-y-3 p-4"
+          >
+            <AnimatePresence>
+              {applications.map((app) => (
+                <motion.div
+                  key={app._id}
+                  variants={item}
+                  className="rounded-lg border border-border bg-surface-soft p-4"
+                >
+                  <div
+                    onClick={() =>
+                      setExpandedApp(expandedApp === app._id ? null : app._id)
+                    }
+                    className="cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-sm truncate">
+                          {app.job?.title || "Role"}
+                        </h3>
+                        <p className="text-xs text-text-muted truncate">
+                          {app.job?.company || "Company"}
+                        </p>
+                      </div>
+                      <motion.div
+                        animate={{ rotate: expandedApp === app._id ? 90 : 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <ChevronRight size={18} className="text-text-muted" />
+                      </motion.div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-1 text-xs font-medium capitalize text-primary">
+                        {app.status || "pending"}
+                      </span>
+                      <MatchScoreBadge score={app.matchScore || 0} />
+                    </div>
+
+                    <ScoreBar score={app.matchScore || 0} reduceMotion={reduceMotion} />
+                  </div>
+
+                  <AnimatePresence>
+                    {expandedApp === app._id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="mt-3 space-y-3 border-t border-border pt-3"
+                      >
+                        <div>
+                          <p className="text-xs font-medium text-text-muted">
+                            Applied: {new Date(app.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+
+                        {app.interview?.scheduledAt && (
+                          <div>
+                            <p className="text-xs font-medium text-text">
+                              📅{" "}
+                              {new Date(app.interview.scheduledAt).toLocaleString()}
+                            </p>
+                            <p className="text-xs text-text-muted capitalize">
+                              {app.interview.mode || "video"} interview
+                            </p>
+                          </div>
+                        )}
+
+                        {app.matchExplanation?.summary && (
+                          <div>
+                            <p className="text-xs font-medium text-text-muted mb-1">
+                              Match Explanation
+                            </p>
+                            <p className="text-xs text-text-muted">
+                              {app.matchExplanation.summary}
+                            </p>
+                          </div>
+                        )}
+
+                        {app.resumeFeedback?.suggestions &&
+                          app.resumeFeedback.suggestions.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-text-muted mb-1">
+                                💡 AI Tip
+                              </p>
+                              <p className="text-xs text-text-muted">
+                                {app.resumeFeedback.suggestions[0]}
+                              </p>
+                            </div>
+                          )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         ) : (
+          // Desktop Table View
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm">
               <thead className="bg-surface-soft text-left text-xs uppercase tracking-wide text-text-muted">
