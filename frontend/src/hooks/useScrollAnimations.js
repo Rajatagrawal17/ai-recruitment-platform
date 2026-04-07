@@ -2,15 +2,15 @@ import React, { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
 /**
- * ScrollAnimationProvider Hook
- * Provides scroll-based animation utilities for deep, sophisticated effects
+ * Simplified Scroll Animation Hooks
+ * Lightweight, performant scroll effects
  */
 
 // 1. PARALLAX SCROLL EFFECT
 export const useParallax = (offset = 50) => {
   const ref = useRef(null);
   const { scrollY } = useScroll();
-  const y = useTransform(scrollY, (latest) => latest * offset * 0.1);
+  const y = useTransform(scrollY, (latest) => Math.min(latest * offset * 0.1, 100));
   return { ref, y };
 };
 

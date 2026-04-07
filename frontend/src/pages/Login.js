@@ -3,8 +3,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { loginUser } from "../services/api";
-import { FadeInOnScroll, ParallaxSection } from "../components/ScrollAnimations";
-import "../components/ScrollAnimations.css";
 import "./Login.css";
 
 const Login = () => {

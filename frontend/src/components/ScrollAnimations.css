@@ -1,12 +1,92 @@
-/* ================================================
-   SCROLL ANIMATION COMPONENTS STYLING
-   Advanced Framer Motion scroll effects styling
-   ================================================ */
+/* Scroll Animation Styles - Heavy Framer Motion */
+/* GPU accelerated, performant animations */
 
-/* ============================================
-   PARALLAX SECTION
-   ============================================ */
+* {
+  --animation-duration: 0.6s;
+  --animation-delay: 0s;
+  --spring-stiffness: 100;
+  --spring-damping: 15;
+}
 
+/* Base animation properties */
+.fade-in-scroll,
+.scale-scroll,
+.rotating-card,
+.scroll-reveal-grid,
+.parallax-section,
+.perspective-3d-card,
+.bounce-in-scroll,
+.slide-in-left,
+.slide-in-right,
+.staggered-list,
+.flip-card,
+.expand-section,
+.blur-in,
+.color-pulse,
+.animated-container {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Fade In on Scroll */
+.fade-in-scroll {
+  position: relative;
+}
+
+/* Scale on Scroll */
+.scale-scroll {
+  transform-origin: center;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.scale-scroll:hover {
+  transform: scale(1.03);
+}
+
+/* Rotating Card */
+.rotating-card {
+  transform-style: preserve-3d;
+  perspective: 1200px;
+}
+
+.rotating-card > * {
+  transform-style: preserve-3d;
+}
+
+/* Scroll Reveal Grid */
+.scroll-reveal-grid {
+  display: grid;
+  gap: 2rem;
+  will-change: contents;
+}
+
+.scroll-reveal-grid.grid-1 {
+  grid-template-columns: 1fr;
+}
+
+.scroll-reveal-grid.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.scroll-reveal-grid.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.scroll-reveal-grid > * {
+  will-change: transform, opacity;
+}
+
+@media (max-width: 768px) {
+  .scroll-reveal-grid.grid-2,
+  .scroll-reveal-grid.grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Parallax Section */
 .parallax-section {
   position: relative;
   overflow: hidden;
@@ -20,33 +100,122 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.05));
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(168, 85, 247, 0.02));
   pointer-events: none;
+  z-index: 1;
 }
 
 .parallax-section > * {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
-/* ============================================
-   FADE IN ON SCROLL
-   ============================================ */
-
-.fade-in-scroll {
-  will-change: opacity, transform;
-  transform: translateZ(0);
+/* Perspective 3D Card */
+.perspective-3d-card {
+  transform-style: preserve-3d;
+  perspective: 1500px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-/* ============================================
-   SCALE ON SCROLL
-   ============================================ */
+.perspective-3d-card > * {
+  transform-style: preserve-3d;
+}
 
-.scale-scroll {
+/* Bounce In Animation */
+.bounce-in-scroll {
+  transform-origin: center;
+}
+
+/* Slide In Left/Right */
+.slide-in-left,
+.slide-in-right {
+  position: relative;
+}
+
+/* Staggered List */
+.staggered-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.staggered-list > * {
   will-change: transform, opacity;
-  transform: translateZ(0);
-  backface-visibility: hidden;
 }
+
+/* Flip Card */
+.flip-card {
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.flip-card > * {
+  transform-style: preserve-3d;
+  transition-duration: var(--animation-duration);
+}
+
+/* Expand Section */
+.expand-section {
+  overflow: hidden;
+}
+
+/* Blur In */
+.blur-in {
+  will-change: filter, opacity;
+}
+
+/* Color Pulse */
+.color-pulse {
+  will-change: background-color;
+}
+
+/* Animated Container */
+.animated-container {
+  border-radius: 8px;
+  transition: box-shadow 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.animated-container:hover {
+  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+}
+
+/* Performance optimization - contain layout */
+@supports (contain: layout) {
+  .scroll-reveal-grid,
+  .parallax-section,
+  .staggered-list {
+    contain: layout style paint;
+  }
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: more) {
+  .parallax-section::before {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.08));
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .parallax-section::before {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.04));
+  }
+
+  .animated-container:hover {
+    box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15);
+  }
+}
+
 
 /* ============================================
    ROTATING CARD

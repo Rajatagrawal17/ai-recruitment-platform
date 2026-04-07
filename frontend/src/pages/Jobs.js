@@ -4,8 +4,6 @@ import { motion } from "framer-motion";
 import API from "../services/api";
 import Toast from "../components/Toast";
 import JobCard from "../components/JobCard";
-import { ScrollRevealGrid, ParallaxSection, FadeInOnScroll } from "../components/ScrollAnimations";
-import "../components/ScrollAnimations.css";
 import { FAKE_JOBS } from "../data/fakeData";
 import "./Jobs.css";
 

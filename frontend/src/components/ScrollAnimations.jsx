@@ -1,387 +1,121 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import {
-  useParallax,
-  useFadeInOnScroll,
-  useScaleOnScroll,
-  useParallaxFade,
-  useRotateOnScroll,
-  useShadowDepthOnScroll,
-  usePerspectiveScroll,
-  useMorphOnScroll,
-} from '../hooks/useScrollAnimations';
 
 /**
- * SCROLL ANIMATION COMPONENTS
- * Pre-built components for common scroll animation patterns
+ * Scroll Animation Components - Heavy Frame Motion Edition
+ * Sophisticated, performant scroll-based animations
  */
 
-// 1. PARALLAX SECTION
-export const ParallaxSection = ({
-  children,
-  offset = 50,
-  className = '',
-}) => {
-  const { ref, y } = useParallax(offset);
-
-  return (
-    <motion.section
-      ref={ref}
-      style={{ y }}
-      className={`parallax-section ${className}`}
-    >
-      {children}
-    </motion.section>
-  );
-};
-
-// 2. FADE IN ON SCROLL
+// 1. FADE IN ON SCROLL
 export const FadeInOnScroll = ({
   children,
   className = '',
-  duration = 0.5,
+  delay = 0,
+  duration = 0.6,
 }) => {
-  const { ref, opacity, y } = useFadeInOnScroll();
-
   return (
     <motion.div
-      ref={ref}
-      style={{ opacity, y }}
-      className={`fade-in-scroll ${className}`}
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{
+        duration,
+        delay,
+        type: 'spring',
+        stiffness: 100,
+        damping: 12,
+      }}
+      className={className}
     >
       {children}
     </motion.div>
   );
 };
 
-// 3. SCALE ON SCROLL
+// 2. SCALE ON SCROLL
 export const ScaleOnScroll = ({
   children,
   className = '',
+  delay = 0,
+  duration = 0.6,
 }) => {
-  const { ref, scale, opacity } = useScaleOnScroll();
-
   return (
     <motion.div
-      ref={ref}
-      style={{ scale, opacity }}
-      className={`scale-scroll ${className}`}
+      initial={{ opacity: 0, scale: 0.8 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      whileHover={{ scale: 1.03 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{
+        duration,
+        delay,
+        type: 'spring',
+        stiffness: 100,
+        damping: 15,
+      }}
+      className={className}
     >
       {children}
     </motion.div>
   );
 };
 
-// 4. ROTATING CARD ON SCROLL
+// 3. 3D ROTATING CARD
 export const RotatingCardScroll = ({
   children,
   className = '',
+  delay = 0,
 }) => {
-  const { ref, rotateX, rotateY } = useRotateOnScroll();
-
   return (
     <motion.div
-      ref={ref}
-      style={{
-        rotateX,
-        rotateY,
-        perspective: '1000px',
+      initial={{ opacity: 0, rotateX: 50, rotateY: -50 }}
+      whileInView={{ opacity: 1, rotateX: 0, rotateY: 0 }}
+      whileHover={{ rotateX: 5, rotateY: 5 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{
+        duration: 0.8,
+        delay,
+        type: 'spring',
+        stiffness: 80,
+        damping: 15,
       }}
-      className={`rotating-card ${className}`}
+      style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
+      className={className}
     >
       {children}
     </motion.div>
   );
 };
 
-// 5. PARALLAX FADE STACKED
-export const ParallaxFadeStack = ({
-  children,
-  className = '',
-  multiplier = 0.5,
-}) => {
-  const { ref, opacity, y, scale } = useParallaxFade(multiplier);
-
-  return (
-    <motion.div
-      ref={ref}
-      style={{ opacity, y, scale }}
-      className={`parallax-fade-stack ${className}`}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-// 6. SHADOW DEPTH CARD
-export const ShadowDepthCard = ({
-  children,
-  className = '',
-}) => {
-  const { ref, shadowBlur, shadowOpacity } = useShadowDepthOnScroll();
-
-  return (
-    <motion.div
-      ref={ref}
-      style={{
-        boxShadow: `0 20px 20px rgba(99, 102, 241, 0.2)`,
-      }}
-      className={`shadow-depth-card ${className}`}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-// 7. PERSPECTIVE 3D CARD
-export const Perspective3DCard = ({
-  children,
-  className = '',
-}) => {
-  const { ref, rotateX, rotateY, z } = usePerspectiveScroll();
-
-  return (
-    <motion.div
-      ref={ref}
-      style={{
-        rotateX,
-        rotateY,
-        z,
-        perspective: '1200px',
-      }}
-      className={`perspective-3d-card ${className}`}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-// 8. MORPHING SHAPE
-export const MorphingShape = ({
-  className = '',
-  color = '#6366f1',
-  size = 100,
-}) => {
-  const { ref, borderRadius } = useMorphOnScroll();
-
-  return (
-    <motion.div
-      ref={ref}
-      style={{
-        borderRadius,
-        background: color,
-        width: size,
-        height: size,
-      }}
-      className={`morphing-shape ${className}`}
-    />
-  );
-};
-
-// 9. SCROLL REVEAL TEXT
-export const ScrollRevealText = ({
-  text,
-  className = '',
-  staggerDelay = 0.1,
-}) => {
-  const { ref, opacity, y } = useFadeInOnScroll();
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity, y }}
-      className={`scroll-reveal-text ${className}`}
-    >
-      <motion.h2
-        initial={{ opacity: 0 }}
-        animate={{ opacity }}
-        transition={{ staggerChildren: staggerDelay }}
-      >
-        {text}
-      </motion.h2>
-    </motion.div>
-  );
-};
-
-// 10. STAGGERED LIST ON SCROLL
-export const StaggeredListScroll = ({
-  items = [],
-  className = '',
-  itemComponent: ItemComponent = 'div',
-}) => {
-  const { ref, scrollYProgress } = useFadeInOnScroll();
-
-  return (
-    <motion.div
-      ref={ref}
-      className={`staggered-list-scroll ${className}`}
-      variants={{
-        hidden: { opacity: 0 },
-        visible: {
-          opacity: 1,
-          transition: {
-            staggerChildren: 0.1,
-          },
-        },
-      }}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: '-100px' }}
-    >
-      {items.map((item, idx) => (
-        <motion.div
-          key={idx}
-          variants={{
-            hidden: { opacity: 0, x: -20 },
-            visible: { opacity: 1, x: 0 },
-          }}
-        >
-          <ItemComponent item={item} index={idx} />
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-};
-
-// 11. PROGRESS TRACKING SCROLL
-export const ScrollTracker = ({ children, className = '' }) => {
-  const { scrollYProgress } = useFadeInOnScroll();
-
-  return (
-    <div className={`scroll-tracker ${className}`}>
-      <motion.div
-        className="progress-bar"
-        style={{
-          scaleX: scrollYProgress,
-        }}
-      />
-      {children}
-    </div>
-  );
-};
-
-// 12. PARALLAX HERO SECTION
-export const ParallaxHero = ({
-  title,
-  subtitle,
-  backgroundImage,
-  className = '',
-}) => {
-  const { ref, y: bgY } = useParallax(30);
-  const { ref: contentRef, opacity, y } = useFadeInOnScroll();
-
-  return (
-    <section
-      ref={ref}
-      className={`parallax-hero ${className}`}
-      style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundAttachment: 'fixed',
-      }}
-    >
-      <motion.div
-        ref={contentRef}
-        style={{ y, opacity }}
-        className="parallax-hero-content"
-      >
-        <h1>{title}</h1>
-        <p>{subtitle}</p>
-      </motion.div>
-    </section>
-  );
-};
-
-// 13. SCROLL TRIGGERED COUNTER
-export const ScrollCounter = ({
-  from = 0,
-  to = 100,
-  duration = 2,
-  className = '',
-}) => {
-  const { ref, scrollYProgress } = useFadeInOnScroll();
-  const [displayValue, setDisplayValue] = React.useState(from);
-
-  React.useEffect(() => {
-    const unsubscribe = scrollYProgress.onChange((latest) => {
-      setDisplayValue(Math.floor(from + (to - from) * latest));
-    });
-    return () => unsubscribe();
-  }, [scrollYProgress, from, to]);
-
-  return (
-    <motion.div
-      ref={ref}
-      className={`scroll-counter ${className}`}
-    >
-      <span>{displayValue}</span>
-    </motion.div>
-  );
-};
-
-// 14. ADVANCED SCROLL ANIMATION SECTION
-export const AdvancedScrollSection = ({
-  children,
-  animationType = 'parallaxFade',
-  className = '',
-}) => {
-  const animations = {
-    parallaxFade: useParallaxFade(),
-    scale: useScaleOnScroll(),
-    rotate: useRotateOnScroll(),
-    perspective: usePerspectiveScroll(),
-    morph: useMorphOnScroll(),
-  };
-
-  const currentAnimation = animations[animationType] || animations.parallaxFade;
-  const { ref, ...animationStyle } = currentAnimation;
-
-  return (
-    <motion.section
-      ref={ref}
-      style={animationStyle}
-      className={`advanced-scroll-section ${className}`}
-    >
-      {children}
-    </motion.section>
-  );
-};
-
-// 15. SCROLL REVEAL GRID
+// 4. SCROLL REVEAL GRID
 export const ScrollRevealGrid = ({
   items = [],
   columns = 3,
   className = '',
   renderItem,
 }) => {
-  const { ref, scrollYProgress } = useFadeInOnScroll();
-
   return (
     <motion.div
-      ref={ref}
       className={`scroll-reveal-grid grid-${columns} ${className}`}
       style={{
         display: 'grid',
-        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gridTemplateColumns: `repeat(auto-fit, minmax(250px, 1fr))`,
         gap: '2rem',
       }}
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: '-100px' }}
     >
-      {items.map((item, idx) => (
+      {items && items.map((item, idx) => (
         <motion.div
           key={idx}
-          initial={{ opacity: 0, scale: 0.8 }}
-          whileInView={{
-            opacity: 1,
-            scale: 1,
-          }}
-          transition={{
-            delay: idx * 0.1,
-            duration: 0.4,
-          }}
+          initial={{ opacity: 0, y: 40, scale: 0.85 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          whileHover={{ y: -5, scale: 1.02 }}
           viewport={{ once: true, margin: '-50px' }}
+          transition={{
+            duration: 0.5,
+            delay: idx * 0.1,
+            type: 'spring',
+            stiffness: 100,
+            damping: 15,
+          }}
         >
           {renderItem ? renderItem(item, idx) : <div>{item}</div>}
         </motion.div>
@@ -390,20 +124,306 @@ export const ScrollRevealGrid = ({
   );
 };
 
+// 5. PARALLAX SECTION
+export const ParallaxSection = ({
+  children,
+  className = '',
+}) => {
+  return (
+    <motion.section
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{ duration: 0.7 }}
+      className={className}
+    >
+      {children}
+    </motion.section>
+  );
+};
+
+// 6. 3D PERSPECTIVE CARD
+export const Perspective3DCard = ({
+  children,
+  className = '',
+  delay = 0,
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, rotateY: 90 }}
+      whileInView={{ opacity: 1, rotateY: 0 }}
+      whileHover={{ rotateY: 10, rotateX: 5 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{
+        duration: 0.8,
+        delay,
+        type: 'spring',
+        stiffness: 100,
+        damping: 12,
+      }}
+      style={{ perspective: '1500px', transformStyle: 'preserve-3d' }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// 7. BOUNCE IN ANIMATION
+export const BounceInOnScroll = ({
+  children,
+  className = '',
+  delay = 0,
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.6 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{
+        duration: 0.9,
+        delay,
+        type: 'spring',
+        stiffness: 120,
+        damping: 15,
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// 8. SLIDE IN FROM LEFT
+export const SlideInLeft = ({
+  children,
+  className = '',
+  delay = 0,
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -80 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{
+        duration: 0.7,
+        delay,
+        type: 'spring',
+        stiffness: 100,
+        damping: 15,
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// 9. SLIDE IN FROM RIGHT
+export const SlideInRight = ({
+  children,
+  className = '',
+  delay = 0,
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 80 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{
+        duration: 0.7,
+        delay,
+        type: 'spring',
+        stiffness: 100,
+        damping: 15,
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// 10. STAGGERED LIST
+export const StaggeredList = ({
+  items = [],
+  renderItem,
+  className = '',
+}) => {
+  return (
+    <motion.div
+      className={className}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: '-50px' }}
+      variants={{
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: {
+            staggerChildren: 0.12,
+            type: 'spring',
+            stiffness: 100,
+            damping: 15,
+          },
+        },
+      }}
+    >
+      {items && items.map((item, idx) => (
+        <motion.div
+          key={idx}
+          variants={{
+            hidden: { opacity: 0, y: 30 },
+            visible: {
+              opacity: 1,
+              y: 0,
+            },
+          }}
+        >
+          {renderItem ? renderItem(item, idx) : <div>{item}</div>}
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+};
+
+// 11. FLIP CARD ANIMATION
+export const FlipCard = ({
+  children,
+  className = '',
+  delay = 0,
+}) => {
+  const [isFlipped, setIsFlipped] = React.useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{ duration: 0.6, delay }}
+      onClick={() => setIsFlipped(!isFlipped)}
+      className={className}
+    >
+      <motion.div
+        animate={{ rotateY: isFlipped ? 180 : 0 }}
+        transition={{ type: 'spring', stiffness: 100, damping: 15 }}
+        style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}
+      >
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// 12. EXPAND SECTION
+export const ExpandSection = ({
+  children,
+  className = '',
+  delay = 0,
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, width: 0, height: 0 }}
+      whileInView={{ opacity: 1, width: 'auto', height: 'auto' }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{
+        duration: 0.8,
+        delay,
+        type: 'spring',
+        stiffness: 100,
+        damping: 15,
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// 13. BLUR IN
+export const BlurIn = ({
+  children,
+  className = '',
+  delay = 0,
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, filter: 'blur(10px)' }}
+      whileInView={{ opacity: 1, filter: 'blur(0px)' }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{
+        duration: 0.7,
+        delay,
+        type: 'spring',
+        stiffness: 100,
+        damping: 15,
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// 14. COLOR PULSE
+export const ColorPulse = ({
+  children,
+  className = '',
+  colors = ['#6366f1', '#ec4899', '#10b981'],
+}) => {
+  return (
+    <motion.div
+      animate={{ backgroundColor: colors }}
+      transition={{
+        duration: 3,
+        repeat: Infinity,
+        repeatType: 'loop',
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// 15. CONTAINER ANIMATION
+export const AnimatedContainer = ({
+  children,
+  className = '',
+}) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true, margin: '-50px' }}
+      transition={{
+        duration: 0.6,
+        type: 'spring',
+        stiffness: 100,
+        damping: 15,
+      }}
+      whileHover={{ boxShadow: '0 20px 40px rgba(99, 102, 241, 0.2)' }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
 export default {
-  ParallaxSection,
   FadeInOnScroll,
   ScaleOnScroll,
   RotatingCardScroll,
-  ParallaxFadeStack,
-  ShadowDepthCard,
-  Perspective3DCard,
-  MorphingShape,
-  ScrollRevealText,
-  StaggeredListScroll,
-  ScrollTracker,
-  ParallaxHero,
-  ScrollCounter,
-  AdvancedScrollSection,
   ScrollRevealGrid,
+  ParallaxSection,
+  Perspective3DCard,
+  BounceInOnScroll,
+  SlideInLeft,
+  SlideInRight,
+  StaggeredList,
+  FlipCard,
+  ExpandSection,
+  BlurIn,
+  ColorPulse,
+  AnimatedContainer,
 };
