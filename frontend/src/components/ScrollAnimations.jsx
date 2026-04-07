@@ -124,9 +124,7 @@ export const ShadowDepthCard = ({
     <motion.div
       ref={ref}
       style={{
-        boxShadow: shadowOpacity.get()
-          ? `0 20px ${shadowBlur}px rgba(99, 102, 241, ${shadowOpacity})`
-          : '0 10px 20px rgba(0, 0, 0, 0.1)',
+        boxShadow: `0 20px 20px rgba(99, 102, 241, 0.2)`,
       }}
       className={`shadow-depth-card ${className}`}
     >
@@ -336,11 +334,12 @@ export const AdvancedScrollSection = ({
   };
 
   const currentAnimation = animations[animationType] || animations.parallaxFade;
+  const { ref, ...animationStyle } = currentAnimation;
 
   return (
     <motion.section
-      ref={currentAnimation.ref}
-      style={currentAnimation}
+      ref={ref}
+      style={animationStyle}
       className={`advanced-scroll-section ${className}`}
     >
       {children}
