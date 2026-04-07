@@ -4,7 +4,7 @@ services:
     name: ai-recruitment-backend
     env: node
     plan: free
-    buildCommand: cd backend && npm install --production
+    buildCommand: cd backend && npm install
     startCommand: cd backend && npm start
     envVars:
       - key: MONGO_URI
@@ -23,7 +23,7 @@ services:
     name: ai-recruitment-frontend
     env: node
     plan: free
-    buildCommand: cd frontend && npm install --legacy-peer-deps && npm run build
+    buildCommand: cd frontend && npm install && npm run build
     startCommand: cd frontend && npm start
     envVars:
       - key: REACT_APP_API_URL
