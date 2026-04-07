@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { motion, useScroll, useTransform, useViewportScroll } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 /**
  * ScrollAnimationProvider Hook
@@ -9,7 +9,7 @@ import { motion, useScroll, useTransform, useViewportScroll } from 'framer-motio
 // 1. PARALLAX SCROLL EFFECT
 export const useParallax = (offset = 50) => {
   const ref = useRef(null);
-  const { scrollY } = useViewportScroll();
+  const { scrollY } = useScroll();
   const y = useTransform(scrollY, (latest) => latest * offset * 0.1);
   return { ref, y };
 };
@@ -69,7 +69,7 @@ export const useRotateOnScroll = () => {
 
 // 6. SCROLL PROGRESS BAR
 export const useScrollProgress = () => {
-  const { scrollYProgress } = useViewportScroll();
+  const { scrollYProgress } = useScroll();
   const scaleX = useTransform(scrollYProgress, [0, 1], [0, 1]);
   
   return { scaleX };
