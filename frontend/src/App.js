@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "r
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 
 import Navbar from "./components/Navbar";
+import ModernNavbar from "./components/ModernNavbar";
+import ScrollProgress from "./components/ScrollProgress";
 import HelpChatbot from "./components/HelpChatbot";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -10,6 +12,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import LandingPage from "./pages/LandingPage";
+import ModernLandingPage from "./pages/ModernLandingPage";
 import JobsPage from "./pages/JobsPage";
 import EnhancedJobsPage from "./pages/EnhancedJobsPage";
 import JobDetailPage from "./pages/JobDetailPage";
@@ -66,7 +69,7 @@ const AppRoutes = () => {
   return (
     <AnimatePresence>
       <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<AnimatedPage><LandingPage /></AnimatedPage>} />
+        <Route path="/" element={<AnimatedPage><ModernLandingPage /></AnimatedPage>} />
         <Route
           path="/jobs"
           element={
@@ -173,7 +176,8 @@ function App() {
   return (
     <MotionConfig reducedMotion="user">
       <Router>
-        <Navbar />
+        <ScrollProgress />
+        <ModernNavbar />
         <AppRoutes />
         <HelpChatbot />
       </Router>

@@ -3,15 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
+    "@floating-ui/react": "^0.27.19",
     "ajv": "^8.12.0",
     "ajv-keywords": "^5.1.0",
     "axios": "^1.6.0",
     "chart.js": "^4.5.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "framer-motion": "^10.16.4",
     "gsap": "^3.14.2",
     "lenis": "^1.3.21",
     "lottie-react": "^2.4.1",
     "lucide-react": "^1.0.1",
+    "micro-interactions": "^0.0.1",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.2.0",
@@ -22,6 +26,7 @@
     "react-use-measure": "^2.1.7",
     "recharts": "^2.10.3",
     "socket.io-client": "^4.8.3",
+    "tailwind-merge": "^3.5.0",
     "three": "^0.183.2"
   },
   "scripts": {
