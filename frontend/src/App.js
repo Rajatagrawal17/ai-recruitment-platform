@@ -72,14 +72,6 @@ const AppRoutes = () => {
           element={
             isAuthenticated && role === "candidate"
               ? <Navigate to="/apply" replace />
-              : <AnimatedPage><JobsPage /></AnimatedPage>
-          }
-        />
-        <Route
-          path="/jobs-enhanced"
-          element={
-            isAuthenticated && role === "candidate"
-              ? <Navigate to="/apply" replace />
               : <AnimatedPage><EnhancedJobsPage /></AnimatedPage>
           }
         />
