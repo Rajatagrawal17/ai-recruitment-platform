@@ -7,15 +7,19 @@ const { app, setDbConnected } = require("./app");
    DEBUG (Remove later)
 ========================= */
 console.log("MONGO_URI:", process.env.MONGO_URI);
+console.log("NODE_ENV:", process.env.NODE_ENV);
+console.log("JWT_SECRET:", process.env.JWT_SECRET ? "✓ Set" : "✗ Not set");
 
 /* =========================
    MONGODB CONNECTION
 ========================= */
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || "0.0.0.0";
 
-// Start server immediately (don't wait for DB)
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} 🚀`);
+// Start server on all interfaces (required for Render)
+app.listen(PORT, HOST, () => {
+  console.log(`Server running on ${HOST}:${PORT} 🚀`);
+  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 });
 
 // Connect to MongoDB asynchronously
