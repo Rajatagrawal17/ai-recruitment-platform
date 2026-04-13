@@ -11,6 +11,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import LandingPage from "./pages/LandingPage";
 import JobsPage from "./pages/JobsPage";
+import EnhancedJobsPage from "./pages/EnhancedJobsPage";
 import JobDetailPage from "./pages/JobDetailPage";
 import ApplicationForm from "./pages/ApplicationForm";
 import RecruiterDashboard from "./pages/RecruiterDashboard";
@@ -72,6 +73,14 @@ const AppRoutes = () => {
             isAuthenticated && role === "candidate"
               ? <Navigate to="/apply" replace />
               : <AnimatedPage><JobsPage /></AnimatedPage>
+          }
+        />
+        <Route
+          path="/jobs-enhanced"
+          element={
+            isAuthenticated && role === "candidate"
+              ? <Navigate to="/apply" replace />
+              : <AnimatedPage><EnhancedJobsPage /></AnimatedPage>
           }
         />
         <Route path="/jobs/:id" element={<AnimatedPage><JobDetailPage /></AnimatedPage>} />
