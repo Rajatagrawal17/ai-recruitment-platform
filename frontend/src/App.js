@@ -24,6 +24,7 @@ import PersonalizedDashboard from "./pages/PersonalizedDashboard";
 import SavedJobs from "./pages/SavedJobs";
 import NotificationSettings from "./pages/NotificationSettings";
 import FilteredJobs from "./pages/FilteredJobs";
+import SearchHistoryManager from "./pages/SearchHistoryManager";
 import { useAuth } from "./context/AuthContext";
 
 const pageTransition = {
@@ -165,6 +166,11 @@ const AppRoutes = () => {
         <Route
           path="/jobs/advanced-search"
           element={<AnimatedPage><FilteredJobs /></AnimatedPage>}
+        />
+
+        <Route
+          path="/search-history"
+          element={<AnimatedPage><SearchHistoryManager /></AnimatedPage>}
         />
 
         <Route
