@@ -23,6 +23,7 @@ import CandidateDashboard from "./pages/CandidateDashboard";
 import PersonalizedDashboard from "./pages/PersonalizedDashboard";
 import SavedJobs from "./pages/SavedJobs";
 import NotificationSettings from "./pages/NotificationSettings";
+import FilteredJobs from "./pages/FilteredJobs";
 import { useAuth } from "./context/AuthContext";
 
 const pageTransition = {
@@ -159,6 +160,11 @@ const AppRoutes = () => {
               <AnimatedPage><NotificationSettings /></AnimatedPage>
             </ProtectedRoute>
           )}
+        />
+
+        <Route
+          path="/jobs/advanced-search"
+          element={<AnimatedPage><FilteredJobs /></AnimatedPage>}
         />
 
         <Route
