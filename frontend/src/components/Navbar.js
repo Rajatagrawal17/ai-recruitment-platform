@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2, Heart, Clock } from "lucide-react";
+import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2, Heart, Clock, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { logoutUser } from "../services/api";
@@ -132,10 +132,10 @@ const Navbar = () => {
           </motion.button>
 
           {token ? (
-            <div className="relative hidden md:block">
+            <div className="relative hidden md:flex items-center gap-2">
               <button
                 onClick={() => setProfileOpen((prev) => !prev)}
-                className="flex items-center gap-2 rounded-xl border border-border bg-surface-elevated px-3 py-1.5"
+                className="flex items-center gap-2 rounded-xl border border-border bg-surface-elevated px-3 py-1.5 hover:bg-surface-soft transition-all"
               >
                 <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary">
                   {roleLabel}
@@ -143,6 +143,16 @@ const Navbar = () => {
                 <span className="text-sm font-medium text-text">{user?.name || "User"}</span>
                 <UserCircle2 size={18} className="text-text-muted" />
               </button>
+
+              <motion.button
+                onClick={handleLogout}
+                whileHover={reduceMotion ? undefined : { scale: 1.05 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.95 }}
+                className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-500/20 hover:border-red-500/50 transition-all"
+              >
+                <LogOut size={16} />
+                <span>Logout</span>
+              </motion.button>
 
               <AnimatePresence>
                 {profileOpen && (
@@ -161,12 +171,6 @@ const Navbar = () => {
                     >
                       Open Dashboard
                     </button>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-500 hover:bg-red-500/10"
-                    >
-                      Logout
-                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -177,7 +181,7 @@ const Navbar = () => {
                 Login
               </Link>
               <Link to="/register" className="btn-primary text-sm">
-                Register
+                Get Started
               </Link>
             </div>
           )}
@@ -223,10 +227,42 @@ const Navbar = () => {
               })}
 
               {token ? (
-                <button onClick={handleLogout} className="w-full rounded-lg bg-red-500/10 px-3 py-2 text-left text-sm font-medium text-red-500">
-                  Logout
-                </button>
-              ) : null}
+                <div className="space-y-2 border-t border-border pt-2 mt-2">
+                  <button
+                    onClick={() => {
+                      navigate(role === "candidate" ? "/candidate/dashboard" : "/dashboard");
+                      closeAll();
+                    }}
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-text-muted hover:bg-surface-soft hover:text-text"
+                  >
+                    Dashboard
+                  </button>
+                  <button 
+                    onClick={handleLogout} 
+                    className="w-full flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-500/20"
+                  >
+                    <LogOut size={16} />
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2 border-t border-border pt-2 mt-2">
+                  <Link 
+                    to="/login" 
+                    onClick={closeAll}
+                    className="block w-full rounded-lg px-3 py-2 text-center text-sm font-medium text-text-muted hover:bg-surface-soft"
+                  >
+                    Login
+                  </Link>
+                  <Link 
+                    to="/register" 
+                    onClick={closeAll}
+                    className="block w-full rounded-lg bg-primary px-3 py-2 text-center text-sm font-medium text-white hover:bg-primary-dark"
+                  >
+                    Get Started
+                  </Link>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
