@@ -60,7 +60,6 @@ const notificationPreferenceSchema = new mongoose.Schema(
 );
 
 // Index for quick lookups
-notificationPreferenceSchema.index({ userId: 1 });
 notificationPreferenceSchema.index({ email: 1 });
 
 module.exports = mongoose.model("NotificationPreference", notificationPreferenceSchema);
