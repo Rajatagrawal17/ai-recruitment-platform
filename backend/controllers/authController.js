@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const axios = require("axios");
 const { sendOTP } = require("../utils/otpService");
+const { sendWelcomeEmail } = require("../controllers/notificationController");
 
 // In-memory OTP storage (use Redis in production)
 const otpStorage = new Map();
@@ -105,6 +106,11 @@ exports.registerUser = async (req, res) => {
       mobileVerified: Boolean(mobileVerified),
       emailVerified: Boolean(emailVerified),
     });
+
+    // Send welcome email asynchronously (don't wait for it)
+    sendWelcomeEmail(user._id).catch(err => 
+      console.error("Error sending welcome email:", err.message)
+    );
 
     res.status(201).json({
       success: true,
