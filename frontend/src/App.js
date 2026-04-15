@@ -5,6 +5,7 @@ import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-
 import Navbar from "./components/Navbar";
 import ModernNavbar from "./components/ModernNavbar";
 import ScrollProgress from "./components/ScrollProgress";
+import ThemeToggle from "./components/ThemeToggle";
 import HelpChatbot from "./components/HelpChatbot";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -179,6 +180,7 @@ function App() {
         <ScrollProgress />
         <ModernNavbar />
         <AppRoutes />
+        <ThemeToggle />
         <HelpChatbot />
       </Router>
     </MotionConfig>

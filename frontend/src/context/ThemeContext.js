@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-const ThemeContext = createContext(null);
+export const ThemeContext = createContext(null);
 
 const getInitialTheme = () => {
   const stored = localStorage.getItem("theme");
