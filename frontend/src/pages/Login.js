@@ -61,9 +61,10 @@ const Login = () => {
       setTimeout(() => {
         const role = res.data.user?.role;
         if (role === "recruiter" || role === "admin") {
-          navigate("/dashboard");
+          navigate("/dashboard", { replace: true });
         } else {
-          navigate("/apply");
+          // Navigate to candidate dashboard
+          navigate("/candidate/dashboard", { replace: true });
         }
       }, 500);
     } catch (error) {

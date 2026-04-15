@@ -112,6 +112,7 @@ export const warmupBackend = async () => {
 
 export const loginUser = (data) => API.post("/auth/login", data);
 export const registerUser = (data) => API.post("/auth/register", data);
+export const logoutUser = () => API.post("/auth/logout");
 export const sendEmailOTP = (data) => API.post("/auth/send-email-otp", data);
 export const verifyEmailOTP = (data) => API.post("/auth/verify-email-otp", data);
 export const sendMobileOTP = (data) => API.post("/auth/send-mobile-otp", data);

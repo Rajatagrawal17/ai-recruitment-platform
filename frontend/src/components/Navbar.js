@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } fr
 import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2, Heart, Clock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { logoutUser } from "../services/api";
 
 const Navbar = () => {
   const location = useLocation();
@@ -53,10 +54,19 @@ const Navbar = () => {
     setProfileOpen(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
     closeAll();
-    navigate("/");
+    
+    // Call backend logout endpoint for audit trail
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.warn("Backend logout failed, proceeding with client-side logout:", error.message);
+    }
+    
+    // Clear client-side auth state
+    logout();
+    navigate("/", { replace: true });
   };
 
   const roleLabel = role ? role.charAt(0).toUpperCase() + role.slice(1) : "Guest";

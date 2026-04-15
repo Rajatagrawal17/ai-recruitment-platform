@@ -87,6 +87,7 @@ app.use("/api/matching", require("./routes/matchingRoutes"));
 app.use("/api/analytics", require("./routes/analyticsRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/audit", require("./routes/auditRoutes"));
 
 app.get("/", (req, res) => {
   res.send("API is running 🚀");

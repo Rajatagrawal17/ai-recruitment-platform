@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   registerUser,
   loginUser,
+  logoutUser,
   sendMobileOTP,
   verifyMobileOTP,
   sendEmailOTP,
@@ -22,6 +23,9 @@ router.post("/register", registerUser);
 
 // Login
 router.post("/login", loginUser);
+
+// Logout (protected route)
+router.post("/logout", protect, logoutUser);
 
 // OTP Verification
 router.post("/send-mobile-otp", sendMobileOTP);

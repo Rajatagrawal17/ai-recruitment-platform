@@ -661,3 +661,55 @@ exports.resetPassword = async (req, res) => {
     });
   }
 };
+
+/* =========================
+   LOGOUT USER
+========================= */
+exports.logoutUser = async (req, res) => {
+  try {
+    const AuditLog = require("../models/AuditLog");
+    const userId = req.user._id; // From auth middleware
+    const userEmail = req.user.email || "unknown";
+
+    // Extract metadata from request
+    const userAgent = req.get("user-agent") || "unknown";
+    const ipAddress =
+      req.headers["x-forwarded-for"]?.split(",")[0].trim() ||
+      req.connection.remoteAddress ||
+      "unknown";
+
+    // Log the logout event for audit trail
+    try {
+      await AuditLog.create({
+        userId,
+        userEmail,
+        action: "logout",
+        status: "success",
+        ipAddress,
+        userAgent,
+        reason: "User initiated logout",
+        metadata: {
+          browser: req.get("user-agent"),
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (logError) {
+      console.warn("Failed to log logout event:", logError.message);
+      // Don't fail logout due to logging error
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully ✅",
+      user: {
+        _id: userId,
+        email: userEmail,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
