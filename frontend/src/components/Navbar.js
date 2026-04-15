@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2, Heart, Clock, LogOut } from "lucide-react";
@@ -16,12 +16,27 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const profileRef = useRef(null);
 
   React.useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    };
+
+    if (profileOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [profileOpen]);
 
   const links = useMemo(() => {
     if (!token) {
@@ -132,7 +147,7 @@ const Navbar = () => {
           </motion.button>
 
           {token ? (
-            <div className="relative hidden md:flex items-center gap-2">
+            <div className="relative hidden md:block" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen((prev) => !prev)}
                 className="flex items-center gap-2 rounded-xl border border-border bg-surface-elevated px-3 py-1.5 hover:bg-surface-soft transition-all"
@@ -144,32 +159,30 @@ const Navbar = () => {
                 <UserCircle2 size={18} className="text-text-muted" />
               </button>
 
-              <motion.button
-                onClick={handleLogout}
-                whileHover={reduceMotion ? undefined : { scale: 1.05 }}
-                whileTap={reduceMotion ? undefined : { scale: 0.95 }}
-                className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-500/20 hover:border-red-500/50 transition-all"
-              >
-                <LogOut size={16} />
-                <span>Logout</span>
-              </motion.button>
-
               <AnimatePresence>
                 {profileOpen && (
                   <motion.div
                     initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 8, scale: 0.97 }}
                     animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
                     exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.97 }}
-                    className="glass-card absolute right-0 mt-2 w-52 p-2"
+                    className="glass-card absolute right-0 mt-2 w-52 p-2 z-50"
                   >
                     <button
                       onClick={() => {
                         navigate(role === "candidate" ? "/candidate/dashboard" : "/dashboard");
                         setProfileOpen(false);
                       }}
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-soft hover:text-text"
+                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-soft hover:text-text transition-colors"
                     >
-                      Open Dashboard
+                      📊 Open Dashboard
+                    </button>
+                    <div className="my-1 h-px bg-border/50" />
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                    >
+                      <LogOut size={16} />
+                      Logout
                     </button>
                   </motion.div>
                 )}
