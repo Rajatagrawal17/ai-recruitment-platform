@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2 } from "lucide-react";
+import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2, Heart } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
@@ -35,6 +35,7 @@ const Navbar = () => {
       return [
         { path: "/apply", label: "Apply Jobs", icon: BriefcaseBusiness },
         { path: "/personalized/jobs", label: "AI Recommendations", icon: LayoutDashboard },
+        { path: "/saved-jobs", label: "Saved Jobs", icon: Heart },
         { path: "/candidate/dashboard", label: "Applications & Feedback", icon: LayoutDashboard },
       ];
     }

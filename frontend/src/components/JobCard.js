@@ -1,15 +1,17 @@
 import React, { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
+import { useSavedJobs } from "../context/SavedJobsContext";
 import "./JobCard.css";
 
 const JobCard = ({ job, isApplied = false, matchScore = null }) => {
   const navigate = useNavigate();
-  const [isSaved, setIsSaved] = useState(false);
+  const { isJobSaved, toggleSaveJob } = useSavedJobs();
   const [isHovered, setIsHovered] = useState(false);
   const [circleDashoffset, setCircleDashoffset] = useState(339);
   const svgRef = useRef(null);
   const isLoggedIn = !!localStorage.getItem("token");
+  const isSaved = isJobSaved(job._id);
 
   // AI Match Score animation on mount
   useEffect(() => {
@@ -94,7 +96,7 @@ const JobCard = ({ job, isApplied = false, matchScore = null }) => {
 
   const handleSaveClick = (e) => {
     e.stopPropagation();
-    setIsSaved(!isSaved);
+    toggleSaveJob(job);
   };
 
   return (
