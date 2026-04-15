@@ -6,6 +6,7 @@ services:
     plan: free
     buildCommand: cd backend && npm install
     startCommand: cd backend && npm start
+    autoDeploy: true
     envVars:
       - key: MONGO_URI
         scope: run
@@ -15,8 +16,11 @@ services:
         sync: false
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 5000
     healthCheckPath: /api/health
     healthCheckDomain: localhost
+    preDeployCommand: cd backend && npm install
 
   # Frontend Service
   - type: web
@@ -25,6 +29,7 @@ services:
     plan: free
     buildCommand: cd frontend && npm install && npm run build
     startCommand: cd frontend && npx serve -s build -l 0.0.0.0:$PORT
+    autoDeploy: true
     envVars:
       - key: REACT_APP_API_URL
         scope: run
@@ -33,3 +38,4 @@ services:
         value: production
       - key: PORT
         value: 3000
+    preDeployCommand: cd frontend && npm install
