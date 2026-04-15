@@ -2,6 +2,7 @@ import axios from "axios";
 
 const API_URL_CANDIDATES = [
   process.env.REACT_APP_API_URL,
+  "https://ai-recruitment-backend.onrender.com/api",
   "https://cognifit-backend.onrender.com/api",
   "http://localhost:5000/api",
 ].filter((url, index, arr) => url && arr.indexOf(url) === index);
