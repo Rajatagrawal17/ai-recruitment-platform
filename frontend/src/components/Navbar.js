@@ -5,6 +5,7 @@ import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2, He
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { logoutUser } from "../services/api";
+import "./Navbar.css";
 
 const Navbar = () => {
   const location = useLocation();
@@ -14,9 +15,9 @@ const Navbar = () => {
   const reduceMotion = useReducedMotion();
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const profileRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   React.useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -24,49 +25,51 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close profile dropdown when clicking outside
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setProfileOpen(false);
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
       }
     };
 
-    if (profileOpen) {
+    if (dropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [profileOpen]);
+  }, [dropdownOpen]);
 
   const links = useMemo(() => {
     if (!token) {
       return [
         { path: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
-        { path: "/login", label: "Login" },
-        { path: "/register", label: "Register" },
       ];
     }
 
     if (role === "candidate") {
       return [
         { path: "/apply", label: "Apply Jobs", icon: BriefcaseBusiness },
-        { path: "/personalized/jobs", label: "AI Recommendations", icon: LayoutDashboard },
-        { path: "/saved-jobs", label: "Saved Jobs", icon: Heart },
-        { path: "/search-history", label: "Search History", icon: Clock },
-        { path: "/candidate/dashboard", label: "Applications & Feedback", icon: LayoutDashboard },
       ];
     }
 
     return [
-      { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { path: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
-      { path: "/candidates", label: "Candidates", icon: UserCircle2 },
     ];
   }, [token, role]);
 
   const closeAll = () => {
     setMobileOpen(false);
-    setProfileOpen(false);
+    setDropdownOpen(false);
+  };
+
+  // Generate initials from user name (e.g. "RA" for "Rajat Agrawal")
+  const getUserInitials = () => {
+    if (!user?.name) return "U";
+    const parts = user.name.trim().split(" ").filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return (parts[0]?.[0] || "U").toUpperCase();
   };
 
   const handleLogout = async () => {
@@ -147,39 +150,40 @@ const Navbar = () => {
           </motion.button>
 
           {token ? (
-            <div className="relative hidden md:block" ref={profileRef}>
-              <button
-                onClick={() => setProfileOpen((prev) => !prev)}
-                className="flex items-center gap-2 rounded-xl border border-border bg-surface-elevated px-3 py-1.5 hover:bg-surface-soft transition-all"
+            <div className="relative hidden md:block" ref={dropdownRef}>
+              {/* Avatar Circle */}
+              <motion.button
+                whileHover={reduceMotion ? undefined : { scale: 1.08 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.95 }}
+                onClick={() => setDropdownOpen((prev) => !prev)}
+                className="avatar-circle"
+                title={`${user?.name || "User"}`}
               >
-                <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary">
-                  {roleLabel}
-                </span>
-                <span className="text-sm font-medium text-text">{user?.name || "User"}</span>
-                <UserCircle2 size={18} className="text-text-muted" />
-              </button>
+                {getUserInitials()}
+              </motion.button>
 
+              {/* Avatar Dropdown */}
               <AnimatePresence>
-                {profileOpen && (
+                {dropdownOpen && (
                   <motion.div
-                    initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 8, scale: 0.97 }}
+                    initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 8, scale: 0.95 }}
                     animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
-                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.97 }}
-                    className="glass-card absolute right-0 mt-2 w-52 p-2 z-50"
+                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.95 }}
+                    className="avatar-dropdown"
                   >
-                    <button
-                      onClick={() => {
-                        navigate(role === "candidate" ? "/candidate/dashboard" : "/dashboard");
-                        setProfileOpen(false);
-                      }}
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-soft hover:text-text transition-colors"
-                    >
-                      📊 Open Dashboard
-                    </button>
-                    <div className="my-1 h-px bg-border/50" />
+                    {/* User Info Header */}
+                    <div className="dropdown-user-info">
+                      <div className="name">{user?.name || "User"}</div>
+                      <div className="email">{user?.email || "email@example.com"}</div>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="dropdown-divider" />
+
+                    {/* Logout Button */}
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                      className="dropdown-logout"
                     >
                       <LogOut size={16} />
                       Logout
