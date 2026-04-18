@@ -10,6 +10,9 @@ const {
   analyzeSkillGap,
   generateApplicationContent,
   screenCandidates,
+  checkResumeAuthenticity,
+  matchResumeToJob,
+  generateResumeImprovements,
 } = require("../controllers/aiController");
 const protect = require("../middleware/authMiddleware");
 
@@ -46,5 +49,16 @@ router.post("/generate-application", protect, generateApplicationContent);
 
 // Recruiter Assistant - Screen candidates for a job
 router.post("/screen-candidates", protect, screenCandidates);
+
+// ==================== NEW CLAUDE AI ENDPOINTS ====================
+
+// Resume Authenticity - Check if resume is genuine/free of red flags
+router.post("/check-authenticity", checkResumeAuthenticity);
+
+// Resume to Job Matching - Match resume against specific job (Claude AI)
+router.post("/match-resume-to-job", matchResumeToJob);
+
+// Generate Resume Improvements - Get detailed improvement plan
+router.post("/generate-improvements", generateResumeImprovements);
 
 module.exports = router;

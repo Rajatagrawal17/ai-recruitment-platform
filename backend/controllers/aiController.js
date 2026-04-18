@@ -5,6 +5,7 @@ const {
   RecommendationEngine,
   InterviewAssistant,
 } = require("../services/aiService");
+const AIResumeAnalyzer = require("../services/aiResumeAnalyzer");
 const Job = require("../models/Job");
 const User = require("../models/User");
 
@@ -47,26 +48,42 @@ exports.analyzeResume = async (req, res) => {
       });
     }
 
-    // If resumeUrl provided, fetch and parse it
+    // Use actual resume text
     let textToAnalyze = resumeText;
     if (resumeUrl && !resumeText) {
-      // In production, implement PDF parsing
-      textToAnalyze = resumeUrl;
+      return res.status(400).json({
+        success: false,
+        message: "Resume text is required for analysis. Please extract text from PDF/file.",
+      });
     }
 
-    const analysis = ResumeAnalyzer.analyzeResumeText(textToAnalyze);
+    // Validate resume length
+    if (textToAnalyze.trim().length < 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Resume text is too short. Please provide a complete resume.",
+      });
+    }
+
+    // Use Claude AI for genuine analysis
+    const analysis = await AIResumeAnalyzer.analyzeResume(textToAnalyze);
 
     res.status(200).json({
       success: true,
       data: {
         ...analysis,
         timestamp: new Date(),
+        provider: "Claude AI",
       },
     });
   } catch (error) {
+    console.error("Resume analysis error:", error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || "Resume analysis failed. Please try again.",
+      hint: error.message.includes("CLAUDE_API_KEY") 
+        ? "Claude API key not configured. Contact administrator." 
+        : undefined,
     });
   }
 };
@@ -451,6 +468,128 @@ exports.screenCandidates = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+// ==================== RESUME AUTHENTICITY CHECK ====================
+exports.checkResumeAuthenticity = async (req, res) => {
+  try {
+    const { resumeText } = req.body;
+
+    if (!resumeText) {
+      return res.status(400).json({
+        success: false,
+        message: "Resume text is required",
+      });
+    }
+
+    if (resumeText.trim().length < 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Resume text is too short for authenticity analysis",
+      });
+    }
+
+    // Use Claude AI to detect authenticity issues
+    const authenticity = await AIResumeAnalyzer.detectAuthenticity(resumeText);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...authenticity,
+        timestamp: new Date(),
+        provider: "Claude AI",
+      },
+    });
+  } catch (error) {
+    console.error("Authenticity check error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Authenticity check failed",
+    });
+  }
+};
+
+// ==================== RESUME-TO-JOB MATCHING (Claude AI) ====================
+exports.matchResumeToJob = async (req, res) => {
+  try {
+    const { resumeText, jobId } = req.body;
+
+    if (!resumeText || !jobId) {
+      return res.status(400).json({
+        success: false,
+        message: "Resume text and Job ID are required",
+      });
+    }
+
+    if (resumeText.trim().length < 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Resume text is too short",
+      });
+    }
+
+    // Get job details
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found",
+      });
+    }
+
+    // Use Claude AI for detailed matching
+    const matchAnalysis = await AIResumeAnalyzer.matchResumeToJob(resumeText, job);
+
+    res.status(200).json({
+      success: true,
+      data: matchAnalysis,
+    });
+  } catch (error) {
+    console.error("Resume matching error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Resume matching failed",
+    });
+  }
+};
+
+// ==================== GENERATE IMPROVEMENT SUGGESTIONS ====================
+exports.generateResumeImprovements = async (req, res) => {
+  try {
+    const { resumeText } = req.body;
+
+    if (!resumeText) {
+      return res.status(400).json({
+        success: false,
+        message: "Resume text is required",
+      });
+    }
+
+    // First analyze the resume
+    const analysis = await AIResumeAnalyzer.analyzeResume(resumeText);
+
+    // Then generate improvements
+    const improvements = await AIResumeAnalyzer.generateImprovements(analysis);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        current_analysis: {
+          ats_score: analysis.ats_score,
+          authenticity_score: analysis.authenticity_score,
+          overall_quality: analysis.overall_quality,
+        },
+        improvements,
+        timestamp: new Date(),
+      },
+    });
+  } catch (error) {
+    console.error("Improvement generation error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to generate improvements",
     });
   }
 };
