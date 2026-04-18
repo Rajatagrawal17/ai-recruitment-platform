@@ -63,7 +63,6 @@ const Login = () => {
         if (role === "recruiter" || role === "admin") {
           navigate("/dashboard", { replace: true });
         } else {
-          // Navigate to candidate dashboard
           navigate("/candidate/dashboard", { replace: true });
         }
       }, 500);

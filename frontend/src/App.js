@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "r
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 
 import Navbar from "./components/Navbar";
-import ModernNavbar from "./components/ModernNavbar";
+import NavbarFixed from "./components/NavbarFixed";
 import ScrollProgress from "./components/ScrollProgress";
 import ThemeToggle from "./components/ThemeToggle";
 import HelpChatbot from "./components/HelpChatbot";
@@ -210,7 +210,7 @@ function App() {
     <MotionConfig reducedMotion="user">
       <Router>
         <ScrollProgress />
-        <ModernNavbar />
+        <NavbarFixed />
         <AppRoutes />
         <ThemeToggle />
         <HelpChatbot />
