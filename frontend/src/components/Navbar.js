@@ -10,7 +10,7 @@ import "./Navbar.css";
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, token, role, logout } = useAuth();
+  const { user, token, role, logout, isAuthenticated } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const reduceMotion = useReducedMotion();
 
@@ -40,7 +40,7 @@ const Navbar = () => {
   }, [dropdownOpen]);
 
   const links = useMemo(() => {
-    if (!token) {
+    if (!token && !isAuthenticated) {
       return [
         { path: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
       ];
@@ -55,7 +55,7 @@ const Navbar = () => {
     return [
       { path: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
     ];
-  }, [token, role]);
+  }, [token, role, isAuthenticated]);
 
   const closeAll = () => {
     setMobileOpen(false);
@@ -149,7 +149,7 @@ const Navbar = () => {
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </motion.button>
 
-          {token ? (
+          {(token || isAuthenticated) ? (
             <div className="relative hidden md:block" ref={dropdownRef}>
               {/* Avatar Circle */}
               <motion.button
@@ -176,6 +176,21 @@ const Navbar = () => {
                       <div className="name">{user?.name || "User"}</div>
                       <div className="email">{user?.email || "email@example.com"}</div>
                     </div>
+
+                    {/* Divider */}
+                    <div className="dropdown-divider" />
+
+                    {/* Dashboard Option */}
+                    <button
+                      onClick={() => {
+                        navigate(role === "candidate" ? "/candidate/dashboard" : "/dashboard");
+                        setDropdownOpen(false);
+                      }}
+                      className="dropdown-menu-item"
+                    >
+                      <LayoutDashboard size={16} />
+                      Dashboard
+                    </button>
 
                     {/* Divider */}
                     <div className="dropdown-divider" />
@@ -243,7 +258,7 @@ const Navbar = () => {
                 );
               })}
 
-              {token ? (
+              {(token || isAuthenticated) ? (
                 <div className="space-y-2 border-t border-border pt-2 mt-2">
                   <button
                     onClick={() => {
