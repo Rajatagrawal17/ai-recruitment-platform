@@ -25,6 +25,7 @@ import SavedJobs from "./pages/SavedJobs";
 import NotificationSettings from "./pages/NotificationSettings";
 import FilteredJobs from "./pages/FilteredJobs";
 import SearchHistoryManager from "./pages/SearchHistoryManager";
+import AIToolsPage from "./pages/AIToolsPage";
 import { useAuth } from "./context/AuthContext";
 
 const pageTransition = {
@@ -178,6 +179,15 @@ const AppRoutes = () => {
           element={(
             <ProtectedRoute allowedRoles={["candidate"]}>
               <AnimatedPage><PersonalizedDashboard /></AnimatedPage>
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route
+          path="/ai-tools"
+          element={(
+            <ProtectedRoute allowedRoles={["candidate"]}>
+              <AnimatedPage><AIToolsPage /></AnimatedPage>
             </ProtectedRoute>
           )}
         />

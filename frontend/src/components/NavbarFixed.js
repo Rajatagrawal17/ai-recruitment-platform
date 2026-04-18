@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Menu, Moon, Sun, X, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, Moon, Sun, X, LogOut, LayoutDashboard, Zap } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { logoutUser } from "../services/api";
@@ -185,6 +185,19 @@ const NavbarFixed = () => {
                         <LayoutDashboard size={16} />
                         Dashboard
                       </button>
+
+                      {role === "candidate" && (
+                        <button
+                          onClick={() => {
+                            navigate("/ai-tools");
+                            setDropdownOpen(false);
+                          }}
+                          className="dropdown-menu-item"
+                        >
+                          <Zap size={16} />
+                          AI Tools
+                        </button>
+                      )}
 
                       <div className="dropdown-divider" />
 
