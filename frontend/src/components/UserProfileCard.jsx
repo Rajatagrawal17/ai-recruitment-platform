@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getApiEndpoint } from "../utils/apiConfig";
 
 const UserProfileCard = () => {
   const { user } = useAuth();
@@ -19,23 +20,8 @@ const UserProfileCard = () => {
           return;
         }
 
-        const apiUrl = process.env.REACT_APP_API_URL || "";
-        
-        // Fallback: if on Render production, construct backend URL
-        let finalApiUrl = apiUrl;
-        if (!apiUrl && window.location.hostname.includes('onrender.com')) {
-          const backendHost = window.location.hostname.replace('frontend', 'backend');
-          finalApiUrl = `https://${backendHost}`;
-        }
-        
-        // Fallback for localhost
-        if (!finalApiUrl) {
-          finalApiUrl = 'http://localhost:5000';
-        }
-
-        const endpoint = `${finalApiUrl}/api/users/profile-info`;
+        const endpoint = getApiEndpoint('/users/profile-info');
         console.log("Fetching profile from:", endpoint);
-        console.log("Hostname:", window.location.hostname);
 
         const response = await fetch(endpoint, {
           headers: {

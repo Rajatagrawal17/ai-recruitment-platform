@@ -4,21 +4,28 @@ import axios from "axios";
 const getApiUrl = () => {
   // 1. Try environment variable
   if (process.env.REACT_APP_API_URL) {
+    console.log("📌 Using REACT_APP_API_URL:", process.env.REACT_APP_API_URL);
     return process.env.REACT_APP_API_URL;
   }
 
   // 2. If on Render production, construct backend URL
   if (typeof window !== "undefined" && window.location.hostname.includes("onrender.com")) {
     const backendHost = window.location.hostname.replace("frontend", "backend");
-    return `https://${backendHost}`;
+    const apiUrl = `https://${backendHost}`;
+    console.log("🌐 Using Render detected URL:", apiUrl);
+    return apiUrl;
   }
 
   // 3. Fallback to localhost
+  console.log("💻 Using localhost fallback");
   return "http://localhost:5000";
 };
 
+// Get primary API URL
+const primaryApiUrl = getApiUrl();
+
 const API_URL_CANDIDATES = [
-  getApiUrl(),
+  primaryApiUrl,
   "https://cognifit-backend-n0gx.onrender.com",
   "http://localhost:5000",
 ].filter((url, index, arr) => url && arr.indexOf(url) === index);
@@ -26,7 +33,7 @@ const API_URL_CANDIDATES = [
 console.log("🌐 API_URL_CANDIDATES:", API_URL_CANDIDATES);
 
 const API = axios.create({
-  baseURL: API_URL_CANDIDATES[0],
+  baseURL: primaryApiUrl,
   timeout: 15000,
 });
 

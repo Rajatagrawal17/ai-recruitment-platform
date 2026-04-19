@@ -246,6 +246,49 @@
   background: rgba(251, 191, 36, 0.02);
 }
 
+/* File Input */
+.file-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.file-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.file-label {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  border: 2.5px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  display: block;
+}
+
+.file-input:focus + .file-label,
+.file-label:hover {
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.file-input:valid + .file-label {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.04);
+}
+
 .field-status {
   display: flex;
   align-items: center;

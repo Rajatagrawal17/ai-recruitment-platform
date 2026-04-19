@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Save, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { getApiEndpoint } from '../utils/apiConfig';
 import './ProfileCompletion.css';
 
 const ProfileCompletion = () => {
@@ -21,7 +22,8 @@ const ProfileCompletion = () => {
     fieldOfInterest: '',
     skills: '',
     linkedinUrl: '',
-    resumeUrl: '',
+    resumeFile: null, // Store actual file
+    resumeUrl: '', // Display filename
   });
 
   // Fetch current profile data
@@ -32,28 +34,9 @@ const ProfileCompletion = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      
-      // Get API URL - with production fallback
-      let apiUrl = process.env.REACT_APP_API_URL || "";
-      
-      // Fallback: if on Render production, construct backend URL
-      if (!apiUrl && window.location.hostname.includes('onrender.com')) {
-        // Frontend: cognifit-frontend-6coo.onrender.com
-        // Backend: cognifit-backend-n0gx.onrender.com
-        // Replace "frontend" with "backend" in hostname
-        const backendHost = window.location.hostname.replace('frontend', 'backend');
-        apiUrl = `https://${backendHost}`;
-      }
-      
-      // Fallback for localhost
-      if (!apiUrl) {
-        apiUrl = 'http://localhost:5000';
-      }
-
-      const endpoint = `${apiUrl}/api/users/profile-info`;
+      const endpoint = getApiEndpoint('/users/profile-info');
       
       console.log("📥 Fetching profile from:", endpoint);
-      console.log("📍 Environment:", window.location.hostname);
       console.log("🔐 Token exists:", !!token);
       
       if (!token) {
@@ -93,7 +76,8 @@ const ProfileCompletion = () => {
           fieldOfInterest: (data.user?.fieldOfInterest || []).join(', '),
           skills: (data.user?.skills || []).join(', '),
           linkedinUrl: data.user?.linkedinUrl || '',
-          resumeUrl: data.user?.resumeUrl || '',
+          resumeFile: null, // Files can't be set in state
+          resumeUrl: data.user?.resumeUrl ? data.user.resumeUrl.split('/').pop() : '', // Show filename
         });
         setProfileCompleteness(data.profileCompleteness || 0);
         console.log("✅ Profile loaded successfully");
@@ -105,7 +89,6 @@ const ProfileCompletion = () => {
       console.error('❌ Error fetching profile:', err);
       console.error('Error name:', err.name);
       console.error('Error message:', err.message);
-      console.error('Error stack:', err.stack);
       setError(`Failed to load profile: ${err.message}`);
     } finally {
       setLoading(false);
@@ -121,6 +104,26 @@ const ProfileCompletion = () => {
     setSuccess(false);
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.includes('pdf')) {
+        setError('Please upload a PDF file');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError('File size must be less than 5MB');
+        return;
+      }
+      setFormData((prev) => ({
+        ...prev,
+        resumeFile: file,
+        resumeUrl: file.name,
+      }));
+      setError(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -128,6 +131,37 @@ const ProfileCompletion = () => {
     setSuccess(false);
 
     try {
+      // If there's a new resume file, upload it first
+      if (formData.resumeFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('resume', formData.resumeFile);
+
+        const uploadEndpoint = getApiEndpoint('/users/resume/upload');
+        console.log("📤 Uploading resume to:", uploadEndpoint);
+
+        const uploadResponse = await fetch(uploadEndpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: uploadFormData,
+        });
+
+        console.log("📥 Upload response status:", uploadResponse.status);
+
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error("Upload failed:", errorText);
+          setError('Failed to upload resume');
+          setSaving(false);
+          return;
+        }
+
+        const uploadData = await uploadResponse.json();
+        console.log("✅ Resume uploaded successfully");
+      }
+
+      // Then update profile with other data
       const updateData = {
         name: formData.name,
         phoneNumber: formData.phoneNumber,
@@ -141,34 +175,12 @@ const ProfileCompletion = () => {
           .map((item) => item.trim())
           .filter((item) => item.length > 0),
         linkedinUrl: formData.linkedinUrl,
-        resumeUrl: formData.resumeUrl,
       };
 
-      const apiUrl = process.env.REACT_APP_API_URL || "";
-      
-      // Fallback: if on Render production, construct backend URL
-      if (!apiUrl && window.location.hostname.includes('onrender.com')) {
-        const backendHost = window.location.hostname.replace('frontend', 'backend');
-        apiUrl = `https://${backendHost}`;
-      }
-      
-      // Fallback for localhost
-      if (!apiUrl) {
-        apiUrl = 'http://localhost:5000';
-      }
-
-      const endpoint = `${apiUrl}/api/users/profile-update`;
+      const endpoint = getApiEndpoint('/users/profile-update');
       
       console.log("📤 Sending profile update to:", endpoint);
       console.log("📋 Data:", updateData);
-      console.log("🔐 Token exists:", !!token);
-
-      if (!endpoint || !endpoint.includes('http')) {
-        console.error("❌ Invalid endpoint:", endpoint);
-        setError('API endpoint not configured properly');
-        setSaving(false);
-        return;
-      }
 
       const response = await fetch(endpoint, {
         method: 'PUT',
@@ -266,11 +278,12 @@ const ProfileCompletion = () => {
       placeholder: 'https://linkedin.com/in/yourprofile',
     },
     {
-      name: 'resumeUrl',
-      label: 'Resume URL',
-      type: 'url',
+      name: 'resumeFile',
+      label: 'Resume (PDF)',
+      type: 'file',
       weight: 12,
-      placeholder: 'https://example.com/resume.pdf',
+      accept: '.pdf',
+      isFile: true,
     },
   ];
 
@@ -398,6 +411,19 @@ const ProfileCompletion = () => {
                 rows="3"
                 className={`form-input ${calculateFieldStatus(field.name)}`}
               />
+            ) : field.isFile ? (
+              <div className="file-input-wrapper">
+                <input
+                  id={field.name}
+                  type="file"
+                  accept={field.accept}
+                  onChange={handleFileChange}
+                  className="file-input"
+                />
+                <label htmlFor={field.name} className="file-label">
+                  {formData.resumeUrl || 'Click to upload PDF'}
+                </label>
+              </div>
             ) : (
               <input
                 id={field.name}
