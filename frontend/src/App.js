@@ -8,6 +8,7 @@ import ScrollProgress from "./components/ScrollProgress";
 import ThemeToggle from "./components/ThemeToggle";
 import HelpChatbot from "./components/HelpChatbot";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { getBackendUrl, getApiEndpoint } from "./utils/apiConfig";
 
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -28,6 +29,19 @@ import SearchHistoryManager from "./pages/SearchHistoryManager";
 import AIToolsPage from "./pages/AIToolsPage";
 import ProfileCompletion from "./pages/ProfileCompletion";
 import { useAuth } from "./context/AuthContext";
+
+// Log API configuration on app start
+if (typeof window !== "undefined") {
+  console.log("");
+  console.log("╔═════════════════════════════════════════════════════════════╗");
+  console.log("║          🚀 COGNIFIT AI RECRUITMENT PLATFORM 🚀            ║");
+  console.log("╚═════════════════════════════════════════════════════════════╝");
+  console.log("📌 Backend Base URL:", getBackendUrl());
+  console.log("📍 Example API Endpoint:", getApiEndpoint("/auth/login"));
+  console.log("🌍 Environment:", process.env.NODE_ENV);
+  console.log("💻 Frontend URL:", window.location.origin);
+  console.log("════════════════════════════════════════════════════════════\n");
+}
 
 const pageTransition = {
   initial: { opacity: 0, y: 16 },

@@ -2,22 +2,23 @@ import axios from "axios";
 
 // Smart API URL detection with fallback
 const getApiUrl = () => {
-  // 1. Try environment variable
+  // 1. Try environment variable (preferred in production)
   if (process.env.REACT_APP_API_URL) {
-    console.log("📌 Using REACT_APP_API_URL:", process.env.REACT_APP_API_URL);
-    return process.env.REACT_APP_API_URL;
+    const url = process.env.REACT_APP_API_URL.replace(/\/api\/?$/, ''); // Remove trailing /api
+    console.log("✅ [Axios] Using REACT_APP_API_URL from env:", url);
+    return url;
   }
 
   // 2. If on Render production, construct backend URL
   if (typeof window !== "undefined" && window.location.hostname.includes("onrender.com")) {
     const backendHost = window.location.hostname.replace("frontend", "backend");
     const apiUrl = `https://${backendHost}`;
-    console.log("🌐 Using Render detected URL:", apiUrl);
+    console.log("✅ [Axios] Detected Render backend:", apiUrl);
     return apiUrl;
   }
 
-  // 3. Fallback to localhost
-  console.log("💻 Using localhost fallback");
+  // 3. Fallback to localhost for development
+  console.log("✅ [Axios] Using localhost fallback");
   return "http://localhost:5000";
 };
 
@@ -26,16 +27,17 @@ const primaryApiUrl = getApiUrl();
 
 const API_URL_CANDIDATES = [
   primaryApiUrl,
-  "https://cognifit-backend-n0gx.onrender.com",
   "http://localhost:5000",
 ].filter((url, index, arr) => url && arr.indexOf(url) === index);
 
-console.log("🌐 API_URL_CANDIDATES:", API_URL_CANDIDATES);
+console.log("✅ [Axios] API URL candidates:", API_URL_CANDIDATES);
 
 const API = axios.create({
-  baseURL: primaryApiUrl,
+  baseURL: `${primaryApiUrl}/api`,
   timeout: 15000,
 });
+
+console.log("✅ [Axios] Created instance with baseURL:", `${primaryApiUrl}/api`);
 
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem("token");
@@ -50,6 +52,14 @@ API.interceptors.request.use((req) => {
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
+    console.error("❌ [Axios] API Error:", {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message,
+      code: error.code,
+    });
+    
     const originalRequest = error.config;
 
     if (!originalRequest) {
