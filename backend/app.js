@@ -78,6 +78,10 @@ app.use(cors({
 
 app.use(express.json());
 
+// Serve uploaded files statically
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 app.use("/api/auth", authLimiter, require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/companies", require("./routes/companyRoutes"));
