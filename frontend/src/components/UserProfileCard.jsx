@@ -22,6 +22,13 @@ const UserProfileCard = () => {
         const apiUrl = process.env.REACT_APP_API_URL || "";
         const endpoint = `${apiUrl}/api/users/profile-info`;
         console.log("Fetching profile from:", endpoint);
+        console.log("REACT_APP_API_URL:", process.env.REACT_APP_API_URL);
+
+        if (!endpoint || !endpoint.includes('http')) {
+          console.warn("Invalid endpoint, using fallback");
+          setLoading(false);
+          return;
+        }
 
         const response = await fetch(endpoint, {
           headers: {
@@ -31,6 +38,13 @@ const UserProfileCard = () => {
         });
         
         console.log("Response status:", response.status);
+        
+        if (!response.ok) {
+          console.error("Response not OK:", response.status, response.statusText);
+          setLoading(false);
+          return;
+        }
+
         const data = await response.json();
         console.log("Response data:", data);
 

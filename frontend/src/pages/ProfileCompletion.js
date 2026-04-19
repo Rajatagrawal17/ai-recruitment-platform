@@ -36,14 +36,42 @@ const ProfileCompletion = () => {
       const endpoint = `${apiUrl}/api/users/profile-info`;
       
       console.log("📥 Fetching profile from:", endpoint);
+      console.log("🔐 Token exists:", !!token);
+      console.log("📍 REACT_APP_API_URL:", process.env.REACT_APP_API_URL);
+      
+      if (!apiUrl) {
+        console.warn("⚠️ REACT_APP_API_URL is empty! Using relative path as fallback");
+      }
+
+      if (!token) {
+        console.error("❌ No token found!");
+        setError('No authentication token found');
+        setLoading(false);
+        return;
+      }
       
       const response = await fetch(endpoint, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
+      console.log("📥 Response status:", response.status);
+
+      if (!response.ok) {
+        console.error("❌ Response not OK:", response.status, response.statusText);
+        const errorText = await response.text();
+        console.error("Response body:", errorText.substring(0, 500));
+        setError(`Server error: ${response.status} ${response.statusText}`);
+        setLoading(false);
+        return;
+      }
+
       const data = await response.json();
+      console.log("📥 Response data:", data);
+      
       if (data.success) {
         setFormData({
           name: data.user?.name || '',
@@ -55,10 +83,17 @@ const ProfileCompletion = () => {
           resumeUrl: data.user?.resumeUrl || '',
         });
         setProfileCompleteness(data.profileCompleteness || 0);
+        console.log("✅ Profile loaded successfully");
+      } else {
+        console.warn("⚠️ Success flag false in response:", data);
+        setError(data.message || 'Failed to load profile');
       }
     } catch (err) {
-      console.error('Error fetching profile:', err);
-      setError('Failed to load profile');
+      console.error('❌ Error fetching profile:', err);
+      console.error('Error name:', err.name);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
+      setError(`Failed to load profile: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -101,6 +136,14 @@ const ProfileCompletion = () => {
       
       console.log("📤 Sending profile update to:", endpoint);
       console.log("📋 Data:", updateData);
+      console.log("🔐 Token exists:", !!token);
+
+      if (!endpoint || !endpoint.includes('http')) {
+        console.error("❌ Invalid endpoint:", endpoint);
+        setError('API endpoint not configured properly');
+        setSaving(false);
+        return;
+      }
 
       const response = await fetch(endpoint, {
         method: 'PUT',
@@ -112,8 +155,13 @@ const ProfileCompletion = () => {
       });
 
       console.log("📥 Response status:", response.status);
+      
+      if (!response.ok) {
+        console.error("❌ Response not OK:", response.status, response.statusText);
+      }
+
       const text = await response.text();
-      console.log("📥 Response text:", text.substring(0, 200));
+      console.log("📥 Response text (first 300 chars):", text.substring(0, 300));
 
       let data;
       try {
@@ -121,7 +169,7 @@ const ProfileCompletion = () => {
       } catch (parseError) {
         console.error("❌ Failed to parse JSON:", parseError);
         console.error("Response was:", text.substring(0, 500));
-        setError(`Server error: Invalid response. Status: ${response.status}`);
+        setError(`Server error: Invalid response. Status: ${response.status} ${response.statusText}`);
         setSaving(false);
         return;
       }
@@ -129,15 +177,20 @@ const ProfileCompletion = () => {
       if (data.success) {
         setSuccess(true);
         setProfileCompleteness(data.profileCompleteness || 0);
+        console.log("✅ Profile updated successfully");
         // Refresh user data
         setTimeout(() => {
           window.location.reload();
         }, 1500);
       } else {
         setError(data.message || 'Failed to update profile');
+        console.warn("⚠️ Update failed:", data);
       }
     } catch (err) {
-      console.error('Error updating profile:', err);
+      console.error('❌ Error updating profile:', err);
+      console.error('Error type:', err.name);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
       setError('Failed to update profile: ' + err.message);
     } finally {
       setSaving(false);
