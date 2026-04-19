@@ -4,6 +4,7 @@ const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
+const { asyncHandler } = require("../utils/errorHandler");
 const {
   updateLinkedInUrl,
   uploadResume,
@@ -13,29 +14,22 @@ const {
   updateProfile,
 } = require("../controllers/userProfileController");
 
-router.get("/profile", protect, async (req, res) => {
-  try {
-    const user = req.user;
-    const profileCompleteness = user.calculateProfileCompleteness();
-    
-    res.json({
-      success: true,
-      message: "Profile data fetched successfully",
-      user: user,
-      profileCompleteness: profileCompleteness,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
+router.get("/profile", protect, asyncHandler(async (req, res) => {
+  const user = req.user;
+  const profileCompleteness = user.calculateProfileCompleteness();
+  
+  res.json({
+    success: true,
+    message: "Profile data fetched successfully",
+    user: user,
+    profileCompleteness: profileCompleteness,
+  });
+}));
 
 // LinkedIn and Resume Profile Endpoints
-router.get("/profile-info", protect, getUserProfile);
-router.put("/profile-update", protect, updateProfile);
-router.put("/linkedin", protect, updateLinkedInUrl);
+router.get("/profile-info", protect, asyncHandler(getUserProfile));
+router.put("/profile-update", protect, asyncHandler(updateProfile));
+router.put("/linkedin", protect, asyncHandler(updateLinkedInUrl));
 router.post("/resume/upload", protect, (req, res, next) => {
   upload.single("resume")(req, res, (err) => {
     if (err) {
@@ -47,20 +41,20 @@ router.post("/resume/upload", protect, (req, res, next) => {
     }
     next();
   });
-}, uploadResume);
-router.delete("/resume", protect, deleteResume);
-router.get("/personalized-jobs", protect, getPersonalizedJobs);
+}, asyncHandler(uploadResume));
+router.delete("/resume", protect, asyncHandler(deleteResume));
+router.get("/personalized-jobs", protect, asyncHandler(getPersonalizedJobs));
 
 router.get(
   "/admin",
   protect,
   authorizeRoles("admin"),
-  (req, res) => {
+  asyncHandler(async (req, res) => {
     res.json({
       success: true,
       message: "Welcome Admin 👑",
     });
-  }
+  })
 );
 
 

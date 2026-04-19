@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { asyncHandler } = require("../utils/errorHandler");
 
 const {
   applyJob,
@@ -13,29 +14,29 @@ const protect = require("../middleware/authMiddleware");
 const authorizeRoles = require("../middleware/roleMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
-router.post("/apply", protect, upload.single("resume"), applyJob);
+router.post("/apply", protect, upload.single("resume"), asyncHandler(applyJob));
 
-router.get("/my", protect, getMyApplications);
+router.get("/my", protect, asyncHandler(getMyApplications));
 
 router.get(
   "/all",
   protect,
   authorizeRoles("admin"),
-  getAllApplications
+  asyncHandler(getAllApplications)
 );
 
 router.put(
   "/status/:id",
   protect,
   authorizeRoles("recruiter", "admin"),
-  updateStatus
+  asyncHandler(updateStatus)
 );
 
 router.put(
   "/schedule/:id",
   protect,
   authorizeRoles("recruiter", "admin"),
-  scheduleInterview
+  asyncHandler(scheduleInterview)
 );
 
 module.exports = router;
