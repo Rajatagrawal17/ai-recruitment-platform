@@ -107,20 +107,35 @@ const ProfileCompletion = () => {
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.includes('pdf')) {
-        setError('Please upload a PDF file');
+      // Check file type
+      if (file.type !== 'application/pdf' && !file.type.includes('wordprocessingml')) {
+        setError('Only PDF and DOCX files are allowed');
+        e.target.value = '';
         return;
       }
+      
+      // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setError('File size must be less than 5MB');
+        e.target.value = '';
         return;
       }
+      
+      // Check file extension as backup
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['pdf', 'docx'].includes(ext)) {
+        setError('Only PDF and DOCX files are allowed');
+        e.target.value = '';
+        return;
+      }
+      
       setFormData((prev) => ({
         ...prev,
         resumeFile: file,
         resumeUrl: file.name,
       }));
       setError(null);
+      console.log("✅ File selected:", file.name, "Size:", file.size);
     }
   };
 
@@ -138,6 +153,7 @@ const ProfileCompletion = () => {
 
         const uploadEndpoint = getApiEndpoint('/users/resume/upload');
         console.log("📤 Uploading resume to:", uploadEndpoint);
+        console.log("📋 File:", formData.resumeFile.name, "Size:", formData.resumeFile.size, "Type:", formData.resumeFile.type);
 
         const uploadResponse = await fetch(uploadEndpoint, {
           method: 'POST',
@@ -151,14 +167,25 @@ const ProfileCompletion = () => {
 
         if (!uploadResponse.ok) {
           const errorText = await uploadResponse.text();
-          console.error("Upload failed:", errorText);
-          setError('Failed to upload resume');
+          console.error("❌ Upload failed - Status:", uploadResponse.status);
+          console.error("❌ Error response:", errorText);
+          
+          let errorMsg = 'Failed to upload resume';
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMsg = errorJson.message || errorMsg;
+          } catch (e) {
+            // Not JSON, use raw text
+            errorMsg = errorText || errorMsg;
+          }
+          
+          setError(errorMsg);
           setSaving(false);
           return;
         }
 
         const uploadData = await uploadResponse.json();
-        console.log("✅ Resume uploaded successfully");
+        console.log("✅ Resume uploaded successfully:", uploadData);
       }
 
       // Then update profile with other data

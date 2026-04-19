@@ -192,11 +192,14 @@ exports.uploadResume = async (req, res) => {
     }
 
     if (!req.file) {
+      console.error("❌ No file uploaded");
       return res.status(400).json({
         success: false,
-        message: "Resume file is required",
+        message: "Resume file is required. Please upload a PDF or DOCX file.",
       });
     }
+
+    console.log("📁 File received:", req.file.filename, "Size:", req.file.size);
 
     // Extract text from resume
     const resumeText = await extractTextFromResume(req.file.path);
@@ -213,6 +216,17 @@ exports.uploadResume = async (req, res) => {
     // Fetch existing user data first to preserve any existing values
     const existingUser = await User.findById(userId);
 
+    if (!existingUser) {
+      // Clean up uploaded file
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
     // Update user with extracted data
     const user = await User.findByIdAndUpdate(
       userId,
@@ -225,6 +239,8 @@ exports.uploadResume = async (req, res) => {
       },
       { new: true, runValidators: true }
     );
+
+    console.log("✅ Resume processed successfully");
 
     res.status(200).json({
       success: true,
@@ -242,9 +258,10 @@ exports.uploadResume = async (req, res) => {
       fs.unlinkSync(req.file.path);
     }
 
+    console.error("❌ Resume upload error:", error.message);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Resume processing failed: " + error.message,
     });
   }
 };

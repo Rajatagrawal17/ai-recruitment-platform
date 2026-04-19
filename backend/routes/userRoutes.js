@@ -36,7 +36,18 @@ router.get("/profile", protect, async (req, res) => {
 router.get("/profile-info", protect, getUserProfile);
 router.put("/profile-update", protect, updateProfile);
 router.put("/linkedin", protect, updateLinkedInUrl);
-router.post("/resume/upload", protect, upload.single("resume"), uploadResume);
+router.post("/resume/upload", protect, (req, res, next) => {
+  upload.single("resume")(req, res, (err) => {
+    if (err) {
+      console.error("📁 Multer error:", err.message);
+      return res.status(400).json({
+        success: false,
+        message: "File upload error: " + err.message,
+      });
+    }
+    next();
+  });
+}, uploadResume);
 router.delete("/resume", protect, deleteResume);
 router.get("/personalized-jobs", protect, getPersonalizedJobs);
 
