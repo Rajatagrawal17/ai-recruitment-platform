@@ -12,15 +12,35 @@ const UserProfileCard = () => {
     const fetchProfileCompleteness = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("/api/users/profile-info", {
+        if (!token) {
+          console.warn("No token found in localStorage");
+          setLoading(false);
+          return;
+        }
+
+        const apiUrl = process.env.REACT_APP_API_URL || "";
+        const endpoint = `${apiUrl}/api/users/profile-info`;
+        console.log("Fetching profile from:", endpoint);
+
+        const response = await fetch(endpoint, {
           headers: {
             "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         });
         
+        console.log("Response status:", response.status);
         const data = await response.json();
+        console.log("Response data:", data);
+
         if (data.success && data.profileCompleteness !== undefined) {
+          console.log("Setting profileCompleteness to:", data.profileCompleteness);
           setProfileCompleteness(data.profileCompleteness);
+        } else if (data.profileCompleteness !== undefined) {
+          console.log("Setting profileCompleteness to:", data.profileCompleteness);
+          setProfileCompleteness(data.profileCompleteness);
+        } else {
+          console.warn("No profileCompleteness in response:", data);
         }
       } catch (error) {
         console.error("Error fetching profile completeness:", error);
