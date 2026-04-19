@@ -26,6 +26,7 @@ import NotificationSettings from "./pages/NotificationSettings";
 import FilteredJobs from "./pages/FilteredJobs";
 import SearchHistoryManager from "./pages/SearchHistoryManager";
 import AIToolsPage from "./pages/AIToolsPage";
+import ProfileCompletion from "./pages/ProfileCompletion";
 import { useAuth } from "./context/AuthContext";
 
 const pageTransition = {
@@ -188,6 +189,15 @@ const AppRoutes = () => {
           element={(
             <ProtectedRoute allowedRoles={["candidate"]}>
               <AnimatedPage><AIToolsPage /></AnimatedPage>
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route
+          path="/complete-profile"
+          element={(
+            <ProtectedRoute allowedRoles={["candidate"]}>
+              <AnimatedPage><ProfileCompletion /></AnimatedPage>
             </ProtectedRoute>
           )}
         />

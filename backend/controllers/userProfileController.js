@@ -527,3 +527,74 @@ exports.deleteResume = async (req, res) => {
     });
   }
 };
+
+/* =========================
+   UPDATE USER PROFILE
+========================= */
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const {
+      name,
+      phoneNumber,
+      currentLocation,
+      fieldOfInterest,
+      skills,
+      linkedinUrl,
+      resumeUrl,
+    } = req.body;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Update fields
+    if (name) user.name = name;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (currentLocation) user.currentLocation = currentLocation;
+    if (Array.isArray(fieldOfInterest)) user.fieldOfInterest = fieldOfInterest;
+    if (Array.isArray(skills)) user.skills = skills;
+    if (linkedinUrl) user.linkedinUrl = linkedinUrl;
+    if (resumeUrl) user.resumeUrl = resumeUrl;
+
+    await user.save();
+
+    // Calculate profile completeness
+    const profileCompleteness = user.calculateProfileCompleteness();
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        currentLocation: user.currentLocation,
+        fieldOfInterest: user.fieldOfInterest,
+        skills: user.skills,
+        linkedinUrl: user.linkedinUrl,
+        resumeUrl: user.resumeUrl,
+      },
+      profileCompleteness: profileCompleteness,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

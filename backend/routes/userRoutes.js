@@ -10,6 +10,7 @@ const {
   getUserProfile,
   getPersonalizedJobs,
   deleteResume,
+  updateProfile,
 } = require("../controllers/userProfileController");
 
 router.get("/profile", protect, async (req, res) => {
@@ -33,6 +34,7 @@ router.get("/profile", protect, async (req, res) => {
 
 // LinkedIn and Resume Profile Endpoints
 router.get("/profile-info", protect, getUserProfile);
+router.put("/profile-update", protect, updateProfile);
 router.put("/linkedin", protect, updateLinkedInUrl);
 router.post("/resume/upload", protect, upload.single("resume"), uploadResume);
 router.delete("/resume", protect, deleteResume);

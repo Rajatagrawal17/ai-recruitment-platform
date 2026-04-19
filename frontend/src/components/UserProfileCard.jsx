@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const UserProfileCard = () => {
@@ -185,6 +186,28 @@ const UserProfileCard = () => {
               ? "✅ Profile complete! You're ready for AI recommendations"
               : `${100 - profileCompleteness}% to go. Complete your profile to unlock AI-powered recommendations`}
           </p>
+          {profileCompleteness < 100 && (
+            <Link 
+              to="/complete-profile" 
+              style={{
+                display: 'inline-block',
+                marginTop: '1rem',
+                padding: '0.5rem 1rem',
+                background: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+                color: 'white',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontWeight: '600',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+              onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+            >
+              Complete Profile →
+            </Link>
+          )}
         </motion.div>
       </div>
     </motion.div>
