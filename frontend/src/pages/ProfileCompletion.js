@@ -91,7 +91,13 @@ const ProfileCompletion = () => {
         resumeUrl: formData.resumeUrl,
       };
 
-      const response = await fetch('/api/users/profile-update', {
+      const apiUrl = process.env.REACT_APP_API_URL || "";
+      const endpoint = `${apiUrl}/api/users/profile-update`;
+      
+      console.log("📤 Sending profile update to:", endpoint);
+      console.log("📋 Data:", updateData);
+
+      const response = await fetch(endpoint, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +106,20 @@ const ProfileCompletion = () => {
         body: JSON.stringify(updateData),
       });
 
-      const data = await response.json();
+      console.log("📥 Response status:", response.status);
+      const text = await response.text();
+      console.log("📥 Response text:", text.substring(0, 200));
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseError) {
+        console.error("❌ Failed to parse JSON:", parseError);
+        console.error("Response was:", text.substring(0, 500));
+        setError(`Server error: Invalid response. Status: ${response.status}`);
+        setSaving(false);
+        return;
+      }
 
       if (data.success) {
         setSuccess(true);
