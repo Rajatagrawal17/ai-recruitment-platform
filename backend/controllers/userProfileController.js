@@ -267,9 +267,13 @@ exports.getUserProfile = async (req, res) => {
       "name email phoneNumber linkedinUrl resumeUrl fieldOfInterest skills currentLocation"
     );
 
+    // Calculate profile completeness
+    const profileCompleteness = user.calculateProfileCompleteness();
+
     res.status(200).json({
       success: true,
       user: user,
+      profileCompleteness: profileCompleteness,
     });
   } catch (error) {
     res.status(500).json({

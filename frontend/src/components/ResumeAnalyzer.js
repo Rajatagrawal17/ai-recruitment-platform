@@ -7,11 +7,16 @@ const ResumeAnalyzer = () => {
   const [resumeText, setResumeText] = useState('');
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleAnalyze = async () => {
-    if (!resumeText.trim()) return;
+    if (!resumeText.trim()) {
+      setError('Please enter resume text');
+      return;
+    }
 
     setLoading(true);
+    setError(null);
     try {
       const response = await fetch('/api/ai/analyze-resume', {
         method: 'POST',
@@ -25,9 +30,13 @@ const ResumeAnalyzer = () => {
       const data = await response.json();
       if (data.success) {
         setAnalysis(data.data);
+        setError(null);
+      } else {
+        setError(data.message || 'Analysis failed');
       }
     } catch (err) {
       console.error(err);
+      setError('Connection error: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -43,6 +52,13 @@ const ResumeAnalyzer = () => {
         <FileText size={24} className="text-cyan-500" />
         <h3>Resume Analyzer</h3>
       </div>
+
+      {error && (
+        <div className="error-message" style={{ padding: '12px', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '6px', color: '#991b1b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <AlertCircle size={18} />
+          <span>{error}</span>
+        </div>
+      )}
 
       {!analysis ? (
         <div className="analyzer-input">
@@ -66,6 +82,13 @@ const ResumeAnalyzer = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
+          {/* Provider Info */}
+          {analysis.provider && (
+            <div style={{ padding: '8px 12px', background: '#e0f2fe', border: '1px solid #0ea5e9', borderRadius: '4px', fontSize: '12px', color: '#0c4a6e', marginBottom: '16px', textAlign: 'center' }}>
+              Results from: <strong>{analysis.provider}</strong>
+            </div>
+          )}
+
           {/* ATS Score */}
           <div className="ats-score">
             <div className="score-card">

@@ -6,8 +6,17 @@ const {
   InterviewAssistant,
 } = require("../services/aiService");
 const AIResumeAnalyzer = require("../services/aiResumeAnalyzer");
+const MockAIResumeAnalyzer = require("../services/mockAIService");
 const Job = require("../models/Job");
 const User = require("../models/User");
+
+// Determine if we're in demo mode (no Claude API key)
+const IS_DEMO_MODE = !process.env.CLAUDE_API_KEY || process.env.CLAUDE_API_KEY.includes("your_") || process.env.CLAUDE_API_KEY.length < 20;
+
+if (IS_DEMO_MODE) {
+  console.warn("⚠️  DEMO MODE: Claude API key not configured. Using mock data.");
+  console.warn("   To use real Claude AI, set CLAUDE_API_KEY in .env");
+}
 
 // ==================== AI JOB MATCHER ====================
 exports.getJobMatches = async (req, res) => {
@@ -65,8 +74,19 @@ exports.analyzeResume = async (req, res) => {
       });
     }
 
-    // Use Claude AI for genuine analysis
-    const analysis = await AIResumeAnalyzer.analyzeResume(textToAnalyze);
+    // Use Claude AI for genuine analysis (or mock for demo)
+    let analysis;
+    try {
+      if (IS_DEMO_MODE) {
+        analysis = await MockAIResumeAnalyzer.analyzeResume(textToAnalyze);
+      } else {
+        analysis = await AIResumeAnalyzer.analyzeResume(textToAnalyze);
+      }
+    } catch (aiError) {
+      // Fallback to mock if Claude API fails
+      console.warn("Claude API error, falling back to demo mode:", aiError.message);
+      analysis = await MockAIResumeAnalyzer.analyzeResume(textToAnalyze);
+    }
 
     res.status(200).json({
       success: true,
@@ -491,15 +511,25 @@ exports.checkResumeAuthenticity = async (req, res) => {
       });
     }
 
-    // Use Claude AI to detect authenticity issues
-    const authenticity = await AIResumeAnalyzer.detectAuthenticity(resumeText);
+    // Use Claude AI to detect authenticity issues (or mock for demo)
+    let authenticity;
+    try {
+      if (IS_DEMO_MODE) {
+        authenticity = await MockAIResumeAnalyzer.detectAuthenticity(resumeText);
+      } else {
+        authenticity = await AIResumeAnalyzer.detectAuthenticity(resumeText);
+      }
+    } catch (aiError) {
+      console.warn("Claude API error, using demo mode:", aiError.message);
+      authenticity = await MockAIResumeAnalyzer.detectAuthenticity(resumeText);
+    }
 
     res.status(200).json({
       success: true,
       data: {
         ...authenticity,
         timestamp: new Date(),
-        provider: "Claude AI",
+        provider: IS_DEMO_MODE ? "Mock AI (Demo Mode)" : "Claude AI",
       },
     });
   } catch (error) {
@@ -539,12 +569,25 @@ exports.matchResumeToJob = async (req, res) => {
       });
     }
 
-    // Use Claude AI for detailed matching
-    const matchAnalysis = await AIResumeAnalyzer.matchResumeToJob(resumeText, job);
+    // Use Claude AI for detailed matching (or mock for demo)
+    let matchAnalysis;
+    try {
+      if (IS_DEMO_MODE) {
+        matchAnalysis = await MockAIResumeAnalyzer.matchResumeToJob(resumeText, job);
+      } else {
+        matchAnalysis = await AIResumeAnalyzer.matchResumeToJob(resumeText, job);
+      }
+    } catch (aiError) {
+      console.warn("Claude API error, using demo mode:", aiError.message);
+      matchAnalysis = await MockAIResumeAnalyzer.matchResumeToJob(resumeText, job);
+    }
 
     res.status(200).json({
       success: true,
-      data: matchAnalysis,
+      data: {
+        ...matchAnalysis,
+        provider: IS_DEMO_MODE ? "Mock AI (Demo Mode)" : "Claude AI",
+      },
     });
   } catch (error) {
     console.error("Resume matching error:", error);
@@ -568,10 +611,30 @@ exports.generateResumeImprovements = async (req, res) => {
     }
 
     // First analyze the resume
-    const analysis = await AIResumeAnalyzer.analyzeResume(resumeText);
+    let analysis;
+    try {
+      if (IS_DEMO_MODE) {
+        analysis = await MockAIResumeAnalyzer.analyzeResume(resumeText);
+      } else {
+        analysis = await AIResumeAnalyzer.analyzeResume(resumeText);
+      }
+    } catch (aiError) {
+      console.warn("Claude API error, using demo mode:", aiError.message);
+      analysis = await MockAIResumeAnalyzer.analyzeResume(resumeText);
+    }
 
     // Then generate improvements
-    const improvements = await AIResumeAnalyzer.generateImprovements(analysis);
+    let improvements;
+    try {
+      if (IS_DEMO_MODE) {
+        improvements = await MockAIResumeAnalyzer.generateImprovements(analysis);
+      } else {
+        improvements = await AIResumeAnalyzer.generateImprovements(analysis);
+      }
+    } catch (aiError) {
+      console.warn("Claude API error, using demo mode:", aiError.message);
+      improvements = await MockAIResumeAnalyzer.generateImprovements(analysis);
+    }
 
     res.status(200).json({
       success: true,
@@ -583,6 +646,7 @@ exports.generateResumeImprovements = async (req, res) => {
         },
         improvements,
         timestamp: new Date(),
+        provider: IS_DEMO_MODE ? "Mock AI (Demo Mode)" : "Claude AI",
       },
     });
   } catch (error) {

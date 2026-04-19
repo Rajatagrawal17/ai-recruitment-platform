@@ -1,9 +1,39 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 
 const UserProfileCard = () => {
   const { user } = useAuth();
+  const [profileCompleteness, setProfileCompleteness] = useState(75); // Default fallback
+  const [loading, setLoading] = useState(true);
+
+  // Fetch profile completeness from backend
+  useEffect(() => {
+    const fetchProfileCompleteness = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("/api/users/profile-info", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        
+        const data = await response.json();
+        if (data.success && data.profileCompleteness !== undefined) {
+          setProfileCompleteness(data.profileCompleteness);
+        }
+      } catch (error) {
+        console.error("Error fetching profile completeness:", error);
+        // Keep default value on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchProfileCompleteness();
+    }
+  }, [user]);
 
   // Generate initials from user name
   const initials = useMemo(() => {
@@ -120,17 +150,21 @@ const UserProfileCard = () => {
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs sm:text-sm font-medium text-text">Profile Completeness</span>
-            <span className="text-xs font-semibold text-primary">75%</span>
+            <span className="text-xs font-semibold text-primary">{loading ? "..." : `${profileCompleteness}%`}</span>
           </div>
           <div className="w-full h-2 bg-surface-soft rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
               initial={{ width: 0 }}
-              animate={{ width: "75%" }}
+              animate={{ width: `${profileCompleteness}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             />
           </div>
-          <p className="text-xs text-text-muted mt-2">Complete your resume to unlock AI-powered recommendations</p>
+          <p className="text-xs text-text-muted mt-2">
+            {profileCompleteness === 100 
+              ? "✅ Profile complete! You're ready for AI recommendations"
+              : `${100 - profileCompleteness}% to go. Complete your profile to unlock AI-powered recommendations`}
+          </p>
         </motion.div>
       </div>
     </motion.div>

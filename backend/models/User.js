@@ -107,6 +107,38 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
+// 📊 Calculate profile completeness percentage
+userSchema.methods.calculateProfileCompleteness = function () {
+  let score = 0;
+  const maxScore = 100;
+  
+  // Name: 15%
+  if (this.name && this.name.trim().length > 0) score += 15;
+  
+  // Email: 10% (always filled - required)
+  if (this.email) score += 10;
+  
+  // Phone Number: 10%
+  if (this.phoneNumber && this.phoneNumber.trim().length > 0) score += 10;
+  
+  // Current Location: 10%
+  if (this.currentLocation && this.currentLocation.trim().length > 0) score += 10;
+  
+  // Field of Interest: 15%
+  if (this.fieldOfInterest && this.fieldOfInterest.length > 0) score += 15;
+  
+  // Skills: 15%
+  if (this.skills && this.skills.length > 0) score += 15;
+  
+  // Resume URL: 12%
+  if (this.resumeUrl && this.resumeUrl.trim().length > 0) score += 12;
+  
+  // LinkedIn URL: 8%
+  if (this.linkedinUrl && this.linkedinUrl.trim().length > 0) score += 8;
+  
+  return Math.min(score, maxScore); // Cap at 100%
+};
+
 module.exports = mongoose.model("User", userSchema);
 
 

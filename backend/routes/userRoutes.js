@@ -12,11 +12,23 @@ const {
   deleteResume,
 } = require("../controllers/userProfileController");
 
-router.get("/profile", protect, (req, res) => {
-  res.json({
-    message: "Profile data fetched successfully",
-    user: req.user
-  });
+router.get("/profile", protect, async (req, res) => {
+  try {
+    const user = req.user;
+    const profileCompleteness = user.calculateProfileCompleteness();
+    
+    res.json({
+      success: true,
+      message: "Profile data fetched successfully",
+      user: user,
+      profileCompleteness: profileCompleteness,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 });
 
 // LinkedIn and Resume Profile Endpoints
