@@ -1,11 +1,29 @@
 import axios from "axios";
 
+// Smart API URL detection with fallback
+const getApiUrl = () => {
+  // 1. Try environment variable
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+
+  // 2. If on Render production, construct backend URL
+  if (typeof window !== "undefined" && window.location.hostname.includes("onrender.com")) {
+    const backendHost = window.location.hostname.replace("frontend", "backend");
+    return `https://${backendHost}`;
+  }
+
+  // 3. Fallback to localhost
+  return "http://localhost:5000";
+};
+
 const API_URL_CANDIDATES = [
-  process.env.REACT_APP_API_URL,
-  "https://ai-recruitment-backend.onrender.com/api",
-  "https://cognifit-backend.onrender.com/api",
-  "http://localhost:5000/api",
+  getApiUrl(),
+  "https://cognifit-backend-n0gx.onrender.com",
+  "http://localhost:5000",
 ].filter((url, index, arr) => url && arr.indexOf(url) === index);
+
+console.log("🌐 API_URL_CANDIDATES:", API_URL_CANDIDATES);
 
 const API = axios.create({
   baseURL: API_URL_CANDIDATES[0],
@@ -71,6 +89,7 @@ API.interceptors.response.use(
     }
 
     const nextBaseUrl = API_URL_CANDIDATES[nextIndex];
+    console.log("🔄 Switching API URL from", currentBaseUrl, "to", nextBaseUrl);
     originalRequest.baseURL = nextBaseUrl;
     API.defaults.baseURL = nextBaseUrl;
 

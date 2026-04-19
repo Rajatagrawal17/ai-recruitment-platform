@@ -20,15 +20,22 @@ const UserProfileCard = () => {
         }
 
         const apiUrl = process.env.REACT_APP_API_URL || "";
-        const endpoint = `${apiUrl}/api/users/profile-info`;
-        console.log("Fetching profile from:", endpoint);
-        console.log("REACT_APP_API_URL:", process.env.REACT_APP_API_URL);
-
-        if (!endpoint || !endpoint.includes('http')) {
-          console.warn("Invalid endpoint, using fallback");
-          setLoading(false);
-          return;
+        
+        // Fallback: if on Render production, construct backend URL
+        let finalApiUrl = apiUrl;
+        if (!apiUrl && window.location.hostname.includes('onrender.com')) {
+          const backendHost = window.location.hostname.replace('frontend', 'backend');
+          finalApiUrl = `https://${backendHost}`;
         }
+        
+        // Fallback for localhost
+        if (!finalApiUrl) {
+          finalApiUrl = 'http://localhost:5000';
+        }
+
+        const endpoint = `${finalApiUrl}/api/users/profile-info`;
+        console.log("Fetching profile from:", endpoint);
+        console.log("Hostname:", window.location.hostname);
 
         const response = await fetch(endpoint, {
           headers: {

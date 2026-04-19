@@ -32,17 +32,30 @@ const ProfileCompletion = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const apiUrl = process.env.REACT_APP_API_URL || "";
+      
+      // Get API URL - with production fallback
+      let apiUrl = process.env.REACT_APP_API_URL || "";
+      
+      // Fallback: if on Render production, construct backend URL
+      if (!apiUrl && window.location.hostname.includes('onrender.com')) {
+        // Frontend: cognifit-frontend-6coo.onrender.com
+        // Backend: cognifit-backend-n0gx.onrender.com
+        // Replace "frontend" with "backend" in hostname
+        const backendHost = window.location.hostname.replace('frontend', 'backend');
+        apiUrl = `https://${backendHost}`;
+      }
+      
+      // Fallback for localhost
+      if (!apiUrl) {
+        apiUrl = 'http://localhost:5000';
+      }
+
       const endpoint = `${apiUrl}/api/users/profile-info`;
       
       console.log("📥 Fetching profile from:", endpoint);
+      console.log("📍 Environment:", window.location.hostname);
       console.log("🔐 Token exists:", !!token);
-      console.log("📍 REACT_APP_API_URL:", process.env.REACT_APP_API_URL);
       
-      if (!apiUrl) {
-        console.warn("⚠️ REACT_APP_API_URL is empty! Using relative path as fallback");
-      }
-
       if (!token) {
         console.error("❌ No token found!");
         setError('No authentication token found');
@@ -132,6 +145,18 @@ const ProfileCompletion = () => {
       };
 
       const apiUrl = process.env.REACT_APP_API_URL || "";
+      
+      // Fallback: if on Render production, construct backend URL
+      if (!apiUrl && window.location.hostname.includes('onrender.com')) {
+        const backendHost = window.location.hostname.replace('frontend', 'backend');
+        apiUrl = `https://${backendHost}`;
+      }
+      
+      // Fallback for localhost
+      if (!apiUrl) {
+        apiUrl = 'http://localhost:5000';
+      }
+
       const endpoint = `${apiUrl}/api/users/profile-update`;
       
       console.log("📤 Sending profile update to:", endpoint);
