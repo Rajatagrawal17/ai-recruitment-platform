@@ -68,21 +68,24 @@ const ProfileCompletion = () => {
       const data = await response.json();
       console.log("📥 Response data:", data);
       
-      if (data.success) {
-        setFormData({
-          name: data.user?.name || '',
-          phoneNumber: data.user?.phoneNumber || '',
-          currentLocation: data.user?.currentLocation || '',
-          fieldOfInterest: (data.user?.fieldOfInterest || []).join(', '),
-          skills: (data.user?.skills || []).join(', '),
-          linkedinUrl: data.user?.linkedinUrl || '',
+      if (data.success && data.user) {
+        console.log("✅ User data received:", data.user);
+        const newFormData = {
+          name: data.user.name || '',
+          phoneNumber: data.user.phoneNumber || '',
+          currentLocation: data.user.currentLocation || '',
+          fieldOfInterest: (Array.isArray(data.user.fieldOfInterest) ? data.user.fieldOfInterest : []).join(', '),
+          skills: (Array.isArray(data.user.skills) ? data.user.skills : []).join(', '),
+          linkedinUrl: data.user.linkedinUrl || '',
           resumeFile: null, // Files can't be set in state
-          resumeUrl: data.user?.resumeUrl ? data.user.resumeUrl.split('/').pop() : '', // Show filename
-        });
+          resumeUrl: data.user.resumeUrl ? data.user.resumeUrl.split('/').pop() : '', // Show filename
+        };
+        console.log("📝 Setting form data:", newFormData);
+        setFormData(newFormData);
         setProfileCompleteness(data.profileCompleteness || 0);
         console.log("✅ Profile loaded successfully");
       } else {
-        console.warn("⚠️ Success flag false in response:", data);
+        console.warn("⚠️ Success flag false or no user in response:", data);
         setError(data.message || 'Failed to load profile');
       }
     } catch (err) {
@@ -97,11 +100,16 @@ const ProfileCompletion = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: value,
+      };
+      console.log("✏️ Field updated:", name, "=", value);
+      return updated;
+    });
     setSuccess(false);
+    setError(null);
   };
 
   const handleFileChange = (e) => {
@@ -190,19 +198,25 @@ const ProfileCompletion = () => {
 
       // Then update profile with other data
       const updateData = {
-        name: formData.name,
-        phoneNumber: formData.phoneNumber,
-        currentLocation: formData.currentLocation,
+        name: formData.name || '',
+        phoneNumber: formData.phoneNumber || '',
+        currentLocation: formData.currentLocation || '',
         fieldOfInterest: formData.fieldOfInterest
-          .split(',')
-          .map((item) => item.trim())
-          .filter((item) => item.length > 0),
+          ? formData.fieldOfInterest
+              .split(',')
+              .map((item) => item.trim())
+              .filter((item) => item.length > 0)
+          : [],
         skills: formData.skills
-          .split(',')
-          .map((item) => item.trim())
-          .filter((item) => item.length > 0),
-        linkedinUrl: formData.linkedinUrl,
+          ? formData.skills
+              .split(',')
+              .map((item) => item.trim())
+              .filter((item) => item.length > 0)
+          : [],
+        linkedinUrl: formData.linkedinUrl || '',
       };
+      
+      console.log("📦 Prepared update data:", updateData);
 
       const endpoint = getApiEndpoint('/users/profile-update');
       
@@ -239,13 +253,32 @@ const ProfileCompletion = () => {
       }
 
       if (data.success) {
-        setSuccess(true);
+        console.log("✅ Profile updated successfully:", data);
         setProfileCompleteness(data.profileCompleteness || 0);
-        console.log("✅ Profile updated successfully");
-        // Refresh user data
+        
+        // Update form with returned data to show what was saved
+        if (data.user) {
+          setFormData({
+            name: data.user?.name || '',
+            phoneNumber: data.user?.phoneNumber || '',
+            currentLocation: data.user?.currentLocation || '',
+            fieldOfInterest: (data.user?.fieldOfInterest || []).join(', '),
+            skills: (data.user?.skills || []).join(', '),
+            linkedinUrl: data.user?.linkedinUrl || '',
+            resumeFile: null,
+            resumeUrl: data.user?.resumeUrl ? data.user.resumeUrl.split('/').pop() : '',
+          });
+          console.log("📝 Form updated with saved data");
+        }
+        
+        setSuccess(true);
+        console.log("📋 Profile completeness updated to:", data.profileCompleteness);
+        
+        // Reload page after short delay to show success message
         setTimeout(() => {
+          console.log("🔄 Reloading page...");
           window.location.reload();
-        }, 1500);
+        }, 2000);
       } else {
         setError(data.message || 'Failed to update profile');
         console.warn("⚠️ Update failed:", data);

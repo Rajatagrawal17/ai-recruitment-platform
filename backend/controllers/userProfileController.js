@@ -569,6 +569,16 @@ exports.updateProfile = async (req, res) => {
       resumeUrl,
     } = req.body;
 
+    console.log("📝 Updating profile with data:", {
+      name,
+      phoneNumber,
+      currentLocation,
+      fieldOfInterest,
+      skills,
+      linkedinUrl,
+      resumeUrl,
+    });
+
     const user = await User.findById(userId);
 
     if (!user) {
@@ -578,16 +588,27 @@ exports.updateProfile = async (req, res) => {
       });
     }
 
-    // Update fields
-    if (name) user.name = name;
-    if (phoneNumber) user.phoneNumber = phoneNumber;
-    if (currentLocation) user.currentLocation = currentLocation;
-    if (Array.isArray(fieldOfInterest)) user.fieldOfInterest = fieldOfInterest;
-    if (Array.isArray(skills)) user.skills = skills;
-    if (linkedinUrl) user.linkedinUrl = linkedinUrl;
-    if (resumeUrl) user.resumeUrl = resumeUrl;
+    // Update all fields (even if empty string, to allow clearing fields)
+    if (name !== undefined) user.name = name;
+    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
+    if (currentLocation !== undefined) user.currentLocation = currentLocation;
+    if (fieldOfInterest !== undefined) user.fieldOfInterest = Array.isArray(fieldOfInterest) ? fieldOfInterest : [];
+    if (skills !== undefined) user.skills = Array.isArray(skills) ? skills : [];
+    if (linkedinUrl !== undefined) user.linkedinUrl = linkedinUrl;
+    if (resumeUrl !== undefined) user.resumeUrl = resumeUrl;
+
+    console.log("💾 Saving user with updated fields:", {
+      name: user.name,
+      phoneNumber: user.phoneNumber,
+      currentLocation: user.currentLocation,
+      fieldOfInterest: user.fieldOfInterest,
+      skills: user.skills,
+      linkedinUrl: user.linkedinUrl,
+      resumeUrl: user.resumeUrl,
+    });
 
     await user.save();
+    console.log("✅ User saved successfully");
 
     // Calculate profile completeness
     const profileCompleteness = user.calculateProfileCompleteness();
