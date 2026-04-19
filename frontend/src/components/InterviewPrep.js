@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, BookOpen, Lightbulb, ChevronRight } from 'lucide-react';
+import { getApiEndpoint } from '../utils/apiConfig';
 import './InterviewPrep.css';
 
 const InterviewPrep = ({ jobId, jobTitle }) => {
@@ -13,7 +14,8 @@ const InterviewPrep = ({ jobId, jobTitle }) => {
   const handleGenerateQuestions = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/ai/interview-questions', {
+      const endpoint = getApiEndpoint('/ai/interview-questions');
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,7 +39,8 @@ const InterviewPrep = ({ jobId, jobTitle }) => {
   const handleGenerateTips = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/ai/interview-tips', {
+      const endpoint = getApiEndpoint('/ai/interview-tips');
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

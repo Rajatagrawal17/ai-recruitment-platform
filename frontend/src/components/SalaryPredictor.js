@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DollarSign, TrendingUp } from 'lucide-react';
+import { getApiEndpoint } from '../utils/apiConfig';
 import './SalaryPredictor.css';
 
 const SalaryPredictor = () => {
@@ -26,7 +27,8 @@ const SalaryPredictor = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/ai/predict-salary', {
+      const endpoint = getApiEndpoint('/ai/predict-salary');
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

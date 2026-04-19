@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, BookOpen, Award } from 'lucide-react';
+import { getApiEndpoint } from '../utils/apiConfig';
 import './SkillGapAnalyzer.css';
 
 const SkillGapAnalyzer = () => {
@@ -23,7 +24,8 @@ const SkillGapAnalyzer = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/ai/skill-gap', {
+      const endpoint = getApiEndpoint('/ai/skill-gap');
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

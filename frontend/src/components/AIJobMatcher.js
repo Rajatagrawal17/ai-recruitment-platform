@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, TrendingUp, AlertCircle } from 'lucide-react';
+import { getApiEndpoint } from '../utils/apiConfig';
 import './AIJobMatcher.css';
 
 const AIJobMatcher = ({ candidateId, onJobsMatched }) => {
@@ -17,7 +18,8 @@ const AIJobMatcher = ({ candidateId, onJobsMatched }) => {
   const fetchMatchedJobs = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/ai/match-jobs', {
+      const endpoint = getApiEndpoint('/ai/match-jobs');
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

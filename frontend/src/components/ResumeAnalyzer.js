@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Zap, CheckCircle, AlertCircle } from 'lucide-react';
+import { getApiEndpoint } from '../utils/apiConfig';
 import './ResumeAnalyzer.css';
 
 const ResumeAnalyzer = () => {
@@ -18,7 +19,8 @@ const ResumeAnalyzer = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/ai/analyze-resume', {
+      const endpoint = getApiEndpoint('/ai/analyze-resume');
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
