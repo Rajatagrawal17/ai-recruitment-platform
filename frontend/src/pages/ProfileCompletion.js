@@ -32,7 +32,12 @@ const ProfileCompletion = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/users/profile-info', {
+      const apiUrl = process.env.REACT_APP_API_URL || "";
+      const endpoint = `${apiUrl}/api/users/profile-info`;
+      
+      console.log("📥 Fetching profile from:", endpoint);
+      
+      const response = await fetch(endpoint, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
