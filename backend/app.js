@@ -68,8 +68,15 @@ app.use(cors({
       return;
     }
 
+    // Allow all origins in production (Render may have different URL patterns)
+    if (process.env.NODE_ENV === "production") {
+      console.log(`✅ CORS allowing production origin: ${origin}`);
+      callback(null, true);
+      return;
+    }
+
     console.error(`CORS blocked origin: ${origin}`);
-    callback(new Error("Not allowed by CORS"));
+    callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -103,6 +110,15 @@ app.get("/api/health", (req, res) => {
     status: "ok",
     timestamp: new Date().toISOString(),
     dbConnected,
+  });
+});
+
+// 404 handler for undefined routes
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+    code: "ROUTE_NOT_FOUND",
   });
 });
 

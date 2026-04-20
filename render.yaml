@@ -32,6 +32,7 @@ services:
     autoDeploy: true
     envVars:
       - key: REACT_APP_API_URL
+        value: https://cognifit-backend.onrender.com
         scope: run
         sync: false
       - key: NODE_ENV
