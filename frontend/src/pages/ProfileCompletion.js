@@ -126,6 +126,8 @@ const ProfileCompletion = () => {
     setSuccess(false);
 
     try {
+      let uploadedResumeUrl = '';
+
       // If there's a new resume file, upload it first
       if (formData.resumeFile) {
         const uploadFormData = new FormData();
@@ -141,6 +143,8 @@ const ProfileCompletion = () => {
         });
 
         console.log("✅ Resume uploaded successfully:", uploadResponse.data);
+        uploadedResumeUrl = uploadResponse.data.data?.resume || '';
+        console.log("📄 Resume URL from upload:", uploadedResumeUrl);
       }
 
       // Then update profile with other data
@@ -161,6 +165,7 @@ const ProfileCompletion = () => {
               .filter((item) => item.length > 0)
           : [],
         linkedinUrl: formData.linkedinUrl || '',
+        ...(uploadedResumeUrl && { resumeUrl: uploadedResumeUrl }),
       };
       
       console.log("📦 Prepared update data:", updateData);
@@ -172,15 +177,18 @@ const ProfileCompletion = () => {
       
       if (response.data.success) {
         console.log("✅ Profile updated successfully");
-        setSuccess(true);
+        console.log("📊 New profile completeness:", response.data.profileCompleteness);
         setProfileCompleteness(response.data.profileCompleteness || 0);
+        setSuccess(true);
         
-        // Reset form after successful save
+        // Give user feedback before redirecting
         setTimeout(() => {
+          console.log("🔄 Redirecting to dashboard...");
           navigate('/candidate-dashboard', { replace: true });
-        }, 1500);
+        }, 2000);
       } else {
         setError(response.data.message || 'Failed to update profile');
+        console.error("❌ Update failed:", response.data);
       }
     } catch (err) {
       console.error('❌ Error updating profile:', err);
@@ -228,10 +236,10 @@ const ProfileCompletion = () => {
     },
     {
       name: 'linkedinUrl',
-      label: 'LinkedIn URL',
-      type: 'url',
+      label: 'LinkedIn URL (optional)',
+      type: 'text',
       weight: 8,
-      placeholder: 'https://linkedin.com/in/yourprofile',
+      placeholder: 'https://linkedin.com/in/yourprofile or linkedin.com/in/yourprofile',
     },
     {
       name: 'resumeFile',
