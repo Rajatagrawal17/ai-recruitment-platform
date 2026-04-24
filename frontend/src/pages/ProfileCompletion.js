@@ -135,17 +135,42 @@ const ProfileCompletion = () => {
 
         console.log("📤 Uploading resume...");
         console.log("📋 File:", formData.resumeFile.name, "Size:", formData.resumeFile.size, "Type:", formData.resumeFile.type);
+        console.log("📦 FormData entries:", Array.from(uploadFormData.entries()).map(([k, v]) => [k, v instanceof File ? `File(${v.name}, ${v.size}b)` : v]));
 
-        // IMPORTANT: Do NOT set Content-Type header manually for FormData!
-        // Axios will automatically set it with the correct boundary
-        const uploadResponse = await API.post('/users/resume/upload', uploadFormData);
+        try {
+          // IMPORTANT: Do NOT set Content-Type header manually for FormData!
+          // Axios will automatically set it with the correct boundary
+          console.log("🔄 Starting resume upload to /users/resume/upload...");
+          const uploadResponse = await API.post('/users/resume/upload', uploadFormData);
 
-        console.log("✅ Resume upload response:", JSON.stringify(uploadResponse.data, null, 2));
-        uploadedResumeUrl = uploadResponse.data.data?.resume || '';
-        console.log("📄 Extracted resume URL:", uploadedResumeUrl);
-        
-        if (!uploadedResumeUrl) {
-          console.warn("⚠️ No resume URL in response!");
+          console.log("✅ Resume upload response received:", {
+            status: uploadResponse.status,
+            success: uploadResponse.data.success,
+            message: uploadResponse.data.message,
+          });
+          console.log("📥 Full response data:", JSON.stringify(uploadResponse.data, null, 2));
+          
+          uploadedResumeUrl = uploadResponse.data.data?.resume || '';
+          console.log("📄 Extracted resume URL:", uploadedResumeUrl);
+          
+          if (!uploadedResumeUrl) {
+            console.error("❌ CRITICAL: No resume URL in response! Response structure:", {
+              hasData: !!uploadResponse.data.data,
+              dataKeys: uploadResponse.data.data ? Object.keys(uploadResponse.data.data) : 'N/A',
+            });
+            setError("Resume uploaded but URL not captured. Please try again.");
+            return;
+          }
+        } catch (uploadErr) {
+          console.error("❌ Resume upload failed:", {
+            message: uploadErr.message,
+            status: uploadErr.response?.status,
+            errorData: uploadErr.response?.data,
+            code: uploadErr.code,
+          });
+          setError(`Resume upload failed: ${uploadErr.response?.data?.message || uploadErr.message}`);
+          setSaving(false);
+          return;
         }
       }
 
