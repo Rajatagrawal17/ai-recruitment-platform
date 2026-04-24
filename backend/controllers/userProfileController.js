@@ -240,7 +240,26 @@ exports.uploadResume = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    console.log("✅ Resume processed successfully");
+    console.log("✅ User after update:", {
+      _id: user._id,
+      resumeUrl: user.resumeUrl,
+      skills: user.skills,
+      fieldOfInterest: user.fieldOfInterest,
+      currentLocation: user.currentLocation,
+      resumeDataExtracted: user.resumeDataExtracted,
+    });
+
+    // Verify resume was saved
+    if (!user.resumeUrl) {
+      console.error("❌ ERROR: Resume URL not saved in database!");
+      return res.status(500).json({
+        success: false,
+        message: "Failed to save resume URL to database",
+      });
+    }
+
+    console.log("✅ Resume processed and saved successfully");
+    console.log("📄 Resume URL saved:", user.resumeUrl);
 
     res.status(200).json({
       success: true,
@@ -595,7 +614,12 @@ exports.updateProfile = async (req, res) => {
     if (fieldOfInterest !== undefined) user.fieldOfInterest = Array.isArray(fieldOfInterest) ? fieldOfInterest : [];
     if (skills !== undefined) user.skills = Array.isArray(skills) ? skills : [];
     if (linkedinUrl !== undefined) user.linkedinUrl = linkedinUrl;
-    if (resumeUrl !== undefined) user.resumeUrl = resumeUrl;
+    if (resumeUrl !== undefined) {
+      console.log("📄 Setting resumeUrl:", resumeUrl);
+      user.resumeUrl = resumeUrl;
+    } else {
+      console.log("⚠️ resumeUrl not in request, preserving existing:", user.resumeUrl);
+    }
 
     console.log("💾 Saving user with updated fields:", {
       name: user.name,
@@ -609,6 +633,14 @@ exports.updateProfile = async (req, res) => {
 
     await user.save();
     console.log("✅ User saved successfully");
+    
+    // Verify the save worked
+    const savedUser = await User.findById(userId);
+    console.log("✅ Verified user in database:", {
+      resumeUrl: savedUser.resumeUrl,
+      skills: savedUser.skills.length,
+      fieldOfInterest: savedUser.fieldOfInterest.length,
+    });
 
     // Calculate profile completeness
     const profileCompleteness = user.calculateProfileCompleteness();
