@@ -142,9 +142,13 @@ const ProfileCompletion = () => {
           },
         });
 
-        console.log("✅ Resume uploaded successfully:", uploadResponse.data);
+        console.log("✅ Resume upload response:", JSON.stringify(uploadResponse.data, null, 2));
         uploadedResumeUrl = uploadResponse.data.data?.resume || '';
-        console.log("📄 Resume URL from upload:", uploadedResumeUrl);
+        console.log("📄 Extracted resume URL:", uploadedResumeUrl);
+        
+        if (!uploadedResumeUrl) {
+          console.warn("⚠️ No resume URL in response!");
+        }
       }
 
       // Then update profile with other data
@@ -165,25 +169,32 @@ const ProfileCompletion = () => {
               .filter((item) => item.length > 0)
           : [],
         linkedinUrl: formData.linkedinUrl || '',
-        ...(uploadedResumeUrl && { resumeUrl: uploadedResumeUrl }),
       };
       
-      console.log("📦 Prepared update data:", updateData);
+      // Only add resumeUrl if we have one from upload
+      if (uploadedResumeUrl) {
+        updateData.resumeUrl = uploadedResumeUrl;
+        console.log("✅ Added resumeUrl to update data:", uploadedResumeUrl);
+      }
+      
+      console.log("📦 Final update payload:", JSON.stringify(updateData, null, 2));
       console.log("📤 Sending profile update...");
 
       const response = await API.put('/users/profile-update', updateData);
 
-      console.log("📥 Response data:", response.data);
+      console.log("📥 Profile update response:", JSON.stringify(response.data, null, 2));
       
       if (response.data.success) {
         console.log("✅ Profile updated successfully");
-        console.log("📊 New profile completeness:", response.data.profileCompleteness);
+        console.log("📊 Response profileCompleteness:", response.data.profileCompleteness);
+        console.log("📋 Response resumeUrl:", response.data.user?.resumeUrl);
+        
         setProfileCompleteness(response.data.profileCompleteness || 0);
         setSuccess(true);
         
         // Give user feedback before redirecting
         setTimeout(() => {
-          console.log("🔄 Redirecting to dashboard...");
+          console.log("🔄 Redirecting to dashboard with updated percentage:", response.data.profileCompleteness);
           navigate('/candidate-dashboard', { replace: true });
         }, 2000);
       } else {

@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getApiEndpoint } from "../utils/apiConfig";
+import API from "../services/api";
 
 const UserProfileCard = () => {
   const { user } = useAuth();
@@ -13,45 +13,22 @@ const UserProfileCard = () => {
   useEffect(() => {
     const fetchProfileCompleteness = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          console.warn("No token found in localStorage");
-          setLoading(false);
-          return;
-        }
+        console.log("📊 Fetching profile completeness...");
 
-        const endpoint = getApiEndpoint('/users/profile-info');
-        console.log("Fetching profile from:", endpoint);
+        const response = await API.get('/users/profile-info');
+        console.log("✅ Profile response:", response.data);
 
-        const response = await fetch(endpoint, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        
-        console.log("Response status:", response.status);
-        
-        if (!response.ok) {
-          console.error("Response not OK:", response.status, response.statusText);
-          setLoading(false);
-          return;
-        }
-
-        const data = await response.json();
-        console.log("Response data:", data);
-
-        if (data.success && data.profileCompleteness !== undefined) {
-          console.log("Setting profileCompleteness to:", data.profileCompleteness);
-          setProfileCompleteness(data.profileCompleteness);
-        } else if (data.profileCompleteness !== undefined) {
-          console.log("Setting profileCompleteness to:", data.profileCompleteness);
-          setProfileCompleteness(data.profileCompleteness);
+        if (response.data.success && response.data.profileCompleteness !== undefined) {
+          console.log("📊 Setting profileCompleteness to:", response.data.profileCompleteness);
+          setProfileCompleteness(response.data.profileCompleteness);
+        } else if (response.data.profileCompleteness !== undefined) {
+          console.log("📊 Setting profileCompleteness to:", response.data.profileCompleteness);
+          setProfileCompleteness(response.data.profileCompleteness);
         } else {
-          console.warn("No profileCompleteness in response:", data);
+          console.warn("⚠️ No profileCompleteness in response:", response.data);
         }
       } catch (error) {
-        console.error("Error fetching profile completeness:", error);
+        console.error("❌ Error fetching profile completeness:", error);
         // Keep default value on error
       } finally {
         setLoading(false);
@@ -61,6 +38,13 @@ const UserProfileCard = () => {
     if (user) {
       fetchProfileCompleteness();
     }
+
+    // Refresh every 3 seconds to catch updates
+    const interval = setInterval(() => {
+      if (user) fetchProfileCompleteness();
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [user]);
 
   // Generate initials from user name
