@@ -136,11 +136,9 @@ const ProfileCompletion = () => {
         console.log("📤 Uploading resume...");
         console.log("📋 File:", formData.resumeFile.name, "Size:", formData.resumeFile.size, "Type:", formData.resumeFile.type);
 
-        const uploadResponse = await API.post('/users/resume/upload', uploadFormData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+        // IMPORTANT: Do NOT set Content-Type header manually for FormData!
+        // Axios will automatically set it with the correct boundary
+        const uploadResponse = await API.post('/users/resume/upload', uploadFormData);
 
         console.log("✅ Resume upload response:", JSON.stringify(uploadResponse.data, null, 2));
         uploadedResumeUrl = uploadResponse.data.data?.resume || '';
