@@ -3,11 +3,11 @@ import { motion } from 'framer-motion';
 import { Save, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getApiEndpoint } from '../utils/apiConfig';
+import API from '../services/api';
 import './ProfileCompletion.css';
 
 const ProfileCompletion = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -34,65 +34,37 @@ const ProfileCompletion = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const endpoint = getApiEndpoint('/users/profile-info');
+      setError(null);
       
-      console.log("📥 Fetching profile from:", endpoint);
-      console.log("🔐 Token exists:", !!token);
+      console.log("📥 Fetching profile...");
       
-      if (!token) {
-        console.error("❌ No token found!");
-        setError('No authentication token found');
-        setLoading(false);
-        return;
-      }
+      const response = await API.get('/users/profile-info');
+      console.log("📥 Response data:", response.data);
       
-      const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      console.log("📥 Response status:", response.status);
-
-      if (!response.ok) {
-        console.error("❌ Response not OK:", response.status, response.statusText);
-        const errorText = await response.text();
-        console.error("Response body:", errorText.substring(0, 500));
-        setError(`Server error: ${response.status} ${response.statusText}`);
-        setLoading(false);
-        return;
-      }
-
-      const data = await response.json();
-      console.log("📥 Response data:", data);
-      
-      if (data.success && data.user) {
-        console.log("✅ User data received:", data.user);
+      if (response.data.success && response.data.user) {
+        console.log("✅ User data received:", response.data.user);
         const newFormData = {
-          name: data.user.name || '',
-          phoneNumber: data.user.phoneNumber || '',
-          currentLocation: data.user.currentLocation || '',
-          fieldOfInterest: (Array.isArray(data.user.fieldOfInterest) ? data.user.fieldOfInterest : []).join(', '),
-          skills: (Array.isArray(data.user.skills) ? data.user.skills : []).join(', '),
-          linkedinUrl: data.user.linkedinUrl || '',
-          resumeFile: null, // Files can't be set in state
-          resumeUrl: data.user.resumeUrl ? data.user.resumeUrl.split('/').pop() : '', // Show filename
+          name: response.data.user.name || '',
+          phoneNumber: response.data.user.phoneNumber || '',
+          currentLocation: response.data.user.currentLocation || '',
+          fieldOfInterest: (Array.isArray(response.data.user.fieldOfInterest) ? response.data.user.fieldOfInterest : []).join(', '),
+          skills: (Array.isArray(response.data.user.skills) ? response.data.user.skills : []).join(', '),
+          linkedinUrl: response.data.user.linkedinUrl || '',
+          resumeFile: null,
+          resumeUrl: response.data.user.resumeUrl ? response.data.user.resumeUrl.split('/').pop() : '',
         };
         console.log("📝 Setting form data:", newFormData);
         setFormData(newFormData);
-        setProfileCompleteness(data.profileCompleteness || 0);
+        setProfileCompleteness(response.data.profileCompleteness || 0);
         console.log("✅ Profile loaded successfully");
       } else {
-        console.warn("⚠️ Success flag false or no user in response:", data);
-        setError(data.message || 'Failed to load profile');
+        console.warn("⚠️ Success flag false or no user in response:", response.data);
+        setError(response.data.message || 'Failed to load profile');
       }
     } catch (err) {
       console.error('❌ Error fetching profile:', err);
-      console.error('Error name:', err.name);
       console.error('Error message:', err.message);
-      setError(`Failed to load profile: ${err.message}`);
+      setError(`Failed to update profile: ${err.response?.data?.message || err.message || 'Failed to fetch'}`);
     } finally {
       setLoading(false);
     }
@@ -159,41 +131,16 @@ const ProfileCompletion = () => {
         const uploadFormData = new FormData();
         uploadFormData.append('resume', formData.resumeFile);
 
-        const uploadEndpoint = getApiEndpoint('/users/resume/upload');
-        console.log("📤 Uploading resume to:", uploadEndpoint);
+        console.log("📤 Uploading resume...");
         console.log("📋 File:", formData.resumeFile.name, "Size:", formData.resumeFile.size, "Type:", formData.resumeFile.type);
 
-        const uploadResponse = await fetch(uploadEndpoint, {
-          method: 'POST',
+        const uploadResponse = await API.post('/users/resume/upload', uploadFormData, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
           },
-          body: uploadFormData,
         });
 
-        console.log("📥 Upload response status:", uploadResponse.status);
-
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          console.error("❌ Upload failed - Status:", uploadResponse.status);
-          console.error("❌ Error response:", errorText);
-          
-          let errorMsg = 'Failed to upload resume';
-          try {
-            const errorJson = JSON.parse(errorText);
-            errorMsg = errorJson.message || errorMsg;
-          } catch (e) {
-            // Not JSON, use raw text
-            errorMsg = errorText || errorMsg;
-          }
-          
-          setError(errorMsg);
-          setSaving(false);
-          return;
-        }
-
-        const uploadData = await uploadResponse.json();
-        console.log("✅ Resume uploaded successfully:", uploadData);
+        console.log("✅ Resume uploaded successfully:", uploadResponse.data);
       }
 
       // Then update profile with other data
@@ -217,78 +164,27 @@ const ProfileCompletion = () => {
       };
       
       console.log("📦 Prepared update data:", updateData);
+      console.log("📤 Sending profile update...");
 
-      const endpoint = getApiEndpoint('/users/profile-update');
+      const response = await API.put('/users/profile-update', updateData);
+
+      console.log("📥 Response data:", response.data);
       
-      console.log("📤 Sending profile update to:", endpoint);
-      console.log("📋 Data:", updateData);
-
-      const response = await fetch(endpoint, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      console.log("📥 Response status:", response.status);
-      
-      if (!response.ok) {
-        console.error("❌ Response not OK:", response.status, response.statusText);
-      }
-
-      const text = await response.text();
-      console.log("📥 Response text (first 300 chars):", text.substring(0, 300));
-
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (parseError) {
-        console.error("❌ Failed to parse JSON:", parseError);
-        console.error("Response was:", text.substring(0, 500));
-        setError(`Server error: Invalid response. Status: ${response.status} ${response.statusText}`);
-        setSaving(false);
-        return;
-      }
-
-      if (data.success) {
-        console.log("✅ Profile updated successfully:", data);
-        setProfileCompleteness(data.profileCompleteness || 0);
-        
-        // Update form with returned data to show what was saved
-        if (data.user) {
-          setFormData({
-            name: data.user?.name || '',
-            phoneNumber: data.user?.phoneNumber || '',
-            currentLocation: data.user?.currentLocation || '',
-            fieldOfInterest: (data.user?.fieldOfInterest || []).join(', '),
-            skills: (data.user?.skills || []).join(', '),
-            linkedinUrl: data.user?.linkedinUrl || '',
-            resumeFile: null,
-            resumeUrl: data.user?.resumeUrl ? data.user.resumeUrl.split('/').pop() : '',
-          });
-          console.log("📝 Form updated with saved data");
-        }
-        
+      if (response.data.success) {
+        console.log("✅ Profile updated successfully");
         setSuccess(true);
-        console.log("📋 Profile completeness updated to:", data.profileCompleteness);
+        setProfileCompleteness(response.data.profileCompleteness || 0);
         
-        // Reload page after short delay to show success message
+        // Reset form after successful save
         setTimeout(() => {
-          console.log("🔄 Reloading page...");
-          window.location.reload();
-        }, 2000);
+          navigate('/candidate-dashboard', { replace: true });
+        }, 1500);
       } else {
-        setError(data.message || 'Failed to update profile');
-        console.warn("⚠️ Update failed:", data);
+        setError(response.data.message || 'Failed to update profile');
       }
     } catch (err) {
       console.error('❌ Error updating profile:', err);
-      console.error('Error type:', err.name);
-      console.error('Error message:', err.message);
-      console.error('Error stack:', err.stack);
-      setError('Failed to update profile: ' + err.message);
+      setError('Failed to update profile: ' + (err.response?.data?.message || err.message));
     } finally {
       setSaving(false);
     }
