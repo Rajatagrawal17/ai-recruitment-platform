@@ -25,11 +25,16 @@ const getApiUrl = () => {
 // Get primary API URL
 const primaryApiUrl = getApiUrl();
 
-const API_URL_CANDIDATES = [
+// Create BASE URLs (without /api) for fallback logic
+const BASE_URL_CANDIDATES = [
   primaryApiUrl,
   "http://localhost:5000",
 ].filter((url, index, arr) => url && arr.indexOf(url) === index);
 
+// Create API URLs (with /api) for axios operations
+const API_URL_CANDIDATES = BASE_URL_CANDIDATES.map(url => `${url}/api`);
+
+console.log("✅ [Axios] Base URL candidates:", BASE_URL_CANDIDATES);
 console.log("✅ [Axios] API URL candidates:", API_URL_CANDIDATES);
 
 const API = axios.create({
