@@ -7,7 +7,6 @@ import NavbarFixed from "./components/NavbarFixed";
 import ScrollProgress from "./components/ScrollProgress";
 import ThemeToggle from "./components/ThemeToggle";
 import HelpChatbot from "./components/HelpChatbot";
-import ConnectionStatus from "./components/ConnectionStatus";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { getBackendUrl, getApiEndpoint } from "./utils/apiConfig";
 import API from "./services/api"; // ✅ Import API for health check
@@ -30,7 +29,6 @@ import FilteredJobs from "./pages/FilteredJobs";
 import SearchHistoryManager from "./pages/SearchHistoryManager";
 import AIToolsPage from "./pages/AIToolsPage";
 import ProfileCompletion from "./pages/ProfileCompletion";
-import DebugPage from "./pages/DebugPage";
 import { useAuth } from "./context/AuthContext";
 
 // Log API configuration on app start
@@ -236,10 +234,6 @@ const AppRoutes = () => {
         <Route path="/candidate" element={<Navigate to="/candidate/dashboard" replace />} />
         <Route path="/recruiter" element={<Navigate to="/dashboard" replace />} />
         <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
-        
-        {/* Debug page for troubleshooting */}
-        <Route path="/debug" element={<DebugPage />} />
-        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
@@ -303,7 +297,6 @@ function App() {
     <ColdStartHandler>
       <MotionConfig reducedMotion="user">
         <Router>
-          <ConnectionStatus />
           <ScrollProgress />
           <NavbarFixed />
           <AppRoutes />

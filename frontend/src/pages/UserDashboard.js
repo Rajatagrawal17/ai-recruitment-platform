@@ -8,7 +8,6 @@ import LoadingAnimation from "../components/LoadingAnimation";
 import StatsChart from "../components/StatsChart";
 import Achievements from "../components/Achievements";
 import AnimatedBackground from "../components/AnimatedBackground";
-import { FALLBACK_CANDIDATE_APPLICATIONS, FALLBACK_PROFILE } from "../data/fallbackData";
 
 const UserDashboard = () => {
   const [applications, setApplications] = useState([]);
@@ -16,7 +15,6 @@ const UserDashboard = () => {
   const [error, setError] = useState("");
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("applications");
-  const [isDemo, setIsDemo] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,37 +29,14 @@ const UserDashboard = () => {
 
   const fetchUserData = async () => {
     try {
-      console.log("👤 Loading user dashboard data...");
-      
-      const userRes = await API.get("/users/profile").catch((err) => {
-        console.error("❌ Failed to fetch profile:", err.message);
-        return { data: { user: FALLBACK_PROFILE } };
-      });
-      
-      const appRes = await API.get("/applications/my-applications").catch((err) => {
-        console.error("❌ Failed to fetch applications:", err.message);
-        return { data: { applications: FALLBACK_CANDIDATE_APPLICATIONS } };
-      });
+      const userRes = await API.get("/users/profile");
+      setUser(userRes.data.user);
 
-      const profile = userRes.data?.user || FALLBACK_PROFILE;
-      const apps = appRes.data?.applications || FALLBACK_CANDIDATE_APPLICATIONS;
-      
-      setUser(profile);
-      setApplications(apps);
-      
-      if (profile === FALLBACK_PROFILE || apps === FALLBACK_CANDIDATE_APPLICATIONS) {
-        console.log("⚠️ Using demo data");
-        setIsDemo(true);
-      }
-      
-      console.log("✅ User dashboard loaded");
+      const appRes = await API.get("/applications/my-applications");
+      setApplications(appRes.data.applications || []);
     } catch (error) {
-      console.error("❌ Dashboard error:", error);
-      // Always fallback to demo data
-      setUser(FALLBACK_PROFILE);
-      setApplications(FALLBACK_CANDIDATE_APPLICATIONS);
-      setIsDemo(true);
-      setError("Loading demo data...");
+      setError("Failed to load dashboard");
+      console.error(error);
     } finally {
       setLoading(false);
     }

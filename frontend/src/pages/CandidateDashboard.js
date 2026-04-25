@@ -15,7 +15,6 @@ import ProfileSetupCard from "../components/ProfileSetupCard";
 import PersonalizedJobs from "../components/PersonalizedJobs";
 import UserProfileCard from "../components/UserProfileCard";
 import { getCandidateApplications, getRecommendedJobs } from "../services/api";
-import { FALLBACK_CANDIDATE_APPLICATIONS, FALLBACK_RECOMMENDED_JOBS } from "../data/fallbackData";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { useIsMobile } from "../components/MobileOptimizedAnimations";
 
@@ -77,39 +76,15 @@ const CandidateDashboard = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        setLoading(true);
-        setRecommendationLoading(true);
-        
-        console.log("📊 Loading candidate dashboard data...");
-        
         const [appsRes, recommendationRes] = await Promise.all([
-          getCandidateApplications().catch((err) => {
-            console.error("❌ Failed to fetch applications:", err.message);
-            return { data: { applications: FALLBACK_CANDIDATE_APPLICATIONS } };
-          }),
-          getRecommendedJobs().catch((err) => {
-            console.error("❌ Failed to fetch recommendations:", err.message);
-            return { data: { recommendations: FALLBACK_RECOMMENDED_JOBS } };
-          }),
+          getCandidateApplications(),
+          getRecommendedJobs().catch(() => ({ data: { recommendations: [] } })),
         ]);
 
-        console.log("✅ Dashboard data loaded");
-        
-        const apps = appsRes.data?.applications || FALLBACK_CANDIDATE_APPLICATIONS;
-        const recs = recommendationRes.data?.recommendations || FALLBACK_RECOMMENDED_JOBS;
-        
-        setApplications(apps);
-        setRecommendations(recs);
-        
-        if (apps.length === 0 && recs.length === 0) {
-          console.log("⚠️ No real data found, using demo data");
-        }
+        setApplications(appsRes.data.applications || []);
+        setRecommendations(recommendationRes.data.recommendations || []);
       } catch (err) {
-        console.error("❌ Dashboard error:", err);
-        // Always fallback to demo data
-        setApplications(FALLBACK_CANDIDATE_APPLICATIONS);
-        setRecommendations(FALLBACK_RECOMMENDED_JOBS);
-        setError("Loading demo data...");
+        setError(err.response?.data?.message || "Could not load your candidate dashboard.");
       } finally {
         setLoading(false);
         setRecommendationLoading(false);
