@@ -22,8 +22,7 @@ const ProfileCompletion = () => {
     fieldOfInterest: '',
     skills: '',
     linkedinUrl: '',
-    resumeFile: null, // Store actual file
-    resumeUrl: '', // Display filename
+    // ✅ resumeFile and resumeUrl removed - upload via job application instead
   });
 
   // Fetch current profile data
@@ -50,8 +49,7 @@ const ProfileCompletion = () => {
           fieldOfInterest: (Array.isArray(response.data.user.fieldOfInterest) ? response.data.user.fieldOfInterest : []).join(', '),
           skills: (Array.isArray(response.data.user.skills) ? response.data.user.skills : []).join(', '),
           linkedinUrl: response.data.user.linkedinUrl || '',
-          resumeFile: null,
-          resumeUrl: response.data.user.resumeUrl ? response.data.user.resumeUrl.split('/').pop() : '',
+          // ✅ Resume removed from profile completion form
         };
         console.log("📝 Setting form data:", newFormData);
         setFormData(newFormData);
@@ -84,40 +82,8 @@ const ProfileCompletion = () => {
     setError(null);
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Check file type
-      if (file.type !== 'application/pdf' && !file.type.includes('wordprocessingml')) {
-        setError('Only PDF and DOCX files are allowed');
-        e.target.value = '';
-        return;
-      }
-      
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('File size must be less than 5MB');
-        e.target.value = '';
-        return;
-      }
-      
-      // Check file extension as backup
-      const ext = file.name.split('.').pop().toLowerCase();
-      if (!['pdf', 'docx'].includes(ext)) {
-        setError('Only PDF and DOCX files are allowed');
-        e.target.value = '';
-        return;
-      }
-      
-      setFormData((prev) => ({
-        ...prev,
-        resumeFile: file,
-        resumeUrl: file.name,
-      }));
-      setError(null);
-      console.log("✅ File selected:", file.name, "Size:", file.size);
-    }
-  };
+  // ✅ handleFileChange removed - resume upload moved to job application
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -126,58 +92,9 @@ const ProfileCompletion = () => {
     setSuccess(false);
 
     try {
-      let uploadedResumeUrl = '';
+      // ✅ Resume upload removed - users can upload from job application instead
 
-      // If there's a new resume file, upload it first
-      if (formData.resumeFile) {
-        const uploadFormData = new FormData();
-        uploadFormData.append('resume', formData.resumeFile);
-
-        console.log("📤 Uploading resume...");
-        console.log("📋 File:", formData.resumeFile.name, "Size:", formData.resumeFile.size, "Type:", formData.resumeFile.type);
-
-        try {
-          // IMPORTANT: Do NOT set Content-Type header manually for FormData!
-          // Axios will automatically set it with the correct boundary
-          const uploadResponse = await API.post('/users/resume/upload', uploadFormData);
-
-          console.log("✅ Resume upload response status:", uploadResponse.status);
-          console.log("✅ Resume upload response data:", JSON.stringify(uploadResponse.data, null, 2));
-          
-          // Check if response has success flag
-          if (!uploadResponse.data.success) {
-            console.error("❌ Upload failed - success flag is false:", uploadResponse.data.message);
-            setError(`Resume upload failed: ${uploadResponse.data.message}`);
-            setSaving(false);
-            return;
-          }
-
-          uploadedResumeUrl = uploadResponse.data.data?.resume || '';
-          console.log("📄 Extracted resume URL:", uploadedResumeUrl);
-          
-          if (!uploadedResumeUrl) {
-            console.error("❌ CRITICAL: No resume URL in response!");
-            console.error("📊 Response structure:", {
-              hasData: !!uploadResponse.data.data,
-              dataKeys: uploadResponse.data.data ? Object.keys(uploadResponse.data.data) : 'undefined',
-              fullData: uploadResponse.data.data
-            });
-            setError("Resume uploaded but URL not captured from response");
-            setSaving(false);
-            return;
-          }
-        } catch (uploadErr) {
-          console.error("❌ Resume upload error:", uploadErr);
-          console.error("❌ Error message:", uploadErr.message);
-          console.error("❌ Error response:", uploadErr.response?.data);
-          console.error("❌ Error status:", uploadErr.response?.status);
-          setError(`Resume upload error: ${uploadErr.response?.data?.message || uploadErr.message}`);
-          setSaving(false);
-          return;
-        }
-      }
-
-      // Then update profile with other data
+      // Update profile with form data
       const updateData = {
         name: formData.name || '',
         phoneNumber: formData.phoneNumber || '',
@@ -197,13 +114,7 @@ const ProfileCompletion = () => {
         linkedinUrl: formData.linkedinUrl || '',
       };
       
-      // Only add resumeUrl if we have one from upload
-      if (uploadedResumeUrl) {
-        updateData.resumeUrl = uploadedResumeUrl;
-        console.log("✅ Added resumeUrl to update data:", uploadedResumeUrl);
-      }
-      
-      console.log("📦 Final update payload:", JSON.stringify(updateData, null, 2));
+      console.log("📦 Updating profile:", JSON.stringify(updateData, null, 2));
       console.log("📤 Sending profile update...");
 
       const response = await API.put('/users/profile-update', updateData);
@@ -213,23 +124,13 @@ const ProfileCompletion = () => {
       if (response.data.success) {
         console.log("✅ Profile updated successfully");
         console.log("📊 Response profileCompleteness:", response.data.profileCompleteness);
-        console.log("📋 Response resumeUrl:", response.data.user?.resumeUrl);
-        
-        // Update form data with the saved resume URL
-        if (uploadedResumeUrl) {
-          setFormData(prev => ({
-            ...prev,
-            resumeUrl: uploadedResumeUrl.split('/').pop() || '',
-            resumeFile: null, // Clear the file object after successful save
-          }));
-        }
         
         setProfileCompleteness(response.data.profileCompleteness || 0);
         setSuccess(true);
         
         // Give user feedback before redirecting
         setTimeout(() => {
-          console.log("🔄 Redirecting to dashboard with updated percentage:", response.data.profileCompleteness);
+          console.log("🔄 Redirecting to dashboard");
           navigate('/candidate-dashboard', { replace: true });
         }, 2000);
       } else {
@@ -287,24 +188,20 @@ const ProfileCompletion = () => {
       weight: 8,
       placeholder: 'https://linkedin.com/in/yourprofile or linkedin.com/in/yourprofile',
     },
-    {
-      name: 'resumeFile',
-      label: 'Resume (PDF)',
-      type: 'file',
-      weight: 12,
-      accept: '.pdf',
-      isFile: true,
-    },
+    // ✅ Resume upload removed from profile completion
+    // Users can upload resume separately from job application or dashboard
+    // {
+    //   name: 'resumeFile',
+    //   label: 'Resume (PDF)',
+    //   type: 'file',
+    //   weight: 12,
+    //   accept: '.pdf',
+    //   isFile: true,
+    // },
   ];
 
   const calculateFieldStatus = (fieldName) => {
-    // Special handling for resume field - check both file and saved URL
-    if (fieldName === 'resumeFile') {
-      const hasFile = formData.resumeFile && formData.resumeFile.name;
-      const hasSavedUrl = formData.resumeUrl && formData.resumeUrl.trim().length > 0;
-      return (hasFile || hasSavedUrl) ? 'filled' : 'empty';
-    }
-    
+    // ✅ Resume field removed
     const field = formData[fieldName];
     if (!field) return 'empty';
     if (typeof field === 'string') return field.trim().length > 0 ? 'filled' : 'empty';
