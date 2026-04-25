@@ -62,13 +62,23 @@ API.interceptors.request.use((req) => {
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
-    console.error("❌ [Axios] API Error:", {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message,
-      code: error.code,
-    });
+    const status = error.response?.status;
+    const errorCode = error.response?.data?.code;
+    const message = error.response?.data?.message || error.message;
+    
+    // Log database connection errors
+    if (status === 503 && errorCode === "DB_DISCONNECTED") {
+      console.error("🚨 [Database Error]:", message);
+      console.error("📋 To fix: Set MONGO_URI in Render environment variables");
+    } else {
+      console.error("❌ [Axios] API Error:", {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: status,
+        message: message,
+        code: error.code,
+      });
+    }
     
     const originalRequest = error.config;
 
@@ -76,15 +86,14 @@ API.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    const status = error.response?.status;
-    const message = String(error.response?.data?.message || "").toLowerCase();
+    const errorMessage = String(message || "").toLowerCase();
     const isAuthError =
       status === 401 &&
-      (message.includes("token failed") ||
-        message.includes("no token") ||
-        message.includes("not authorized") ||
-        message.includes("jwt") ||
-        message.includes("expired"));
+      (errorMessage.includes("token failed") ||
+        errorMessage.includes("no token") ||
+        errorMessage.includes("not authorized") ||
+        errorMessage.includes("jwt") ||
+        errorMessage.includes("expired"));
 
     if (isAuthError) {
       localStorage.removeItem("token");

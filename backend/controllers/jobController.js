@@ -126,17 +126,37 @@ exports.getJob = async (req, res) => {
 ========================= */
 exports.getAllJobs = async (req, res) => {
   try {
+    console.log("📋 Fetching all jobs...");
+    
     const jobs = await Job.find().populate("createdBy", "name email");
+    
+    console.log(`✅ Found ${jobs.length} jobs in database`);
 
     res.status(200).json({
       success: true,
       count: jobs.length,
       jobs,
+      message: jobs.length === 0 ? "No jobs available yet" : "Jobs fetched successfully",
     });
   } catch (error) {
+    console.error("❌ Error fetching jobs:", error.message);
+    
+    // Check if it's a database connection error
+    if (error.message.includes("connect") || error.name === "MongoNetworkError") {
+      console.error("🚨 Database connection failed!");
+      return res.status(503).json({
+        success: false,
+        message: "Database not connected. Please set MONGO_URI in environment variables.",
+        error: error.message,
+        code: "DB_DISCONNECTED",
+      });
+    }
+    
+    // Generic error
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Failed to fetch jobs: " + error.message,
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
