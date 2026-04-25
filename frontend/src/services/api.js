@@ -2,18 +2,30 @@ import axios from "axios";
 
 // Smart API URL detection with fallback
 const getApiUrl = () => {
-  // 1. Try environment variable (preferred in production)
-  if (process.env.REACT_APP_API_URL) {
-    const url = process.env.REACT_APP_API_URL.replace(/\/api\/?$/, ''); // Remove trailing /api
-    console.log("✅ [Axios] Using REACT_APP_API_URL from env:", url);
-    return url;
+  // 1. If on Render production, use DYNAMIC hostname-based detection
+  //    This ensures we always find the backend service regardless of naming
+  if (typeof window !== "undefined" && window.location.hostname.includes("onrender.com")) {
+    const hostname = window.location.hostname;
+    
+    if (hostname.includes("frontend")) {
+      // Auto-detect: cognifit-frontend-6coo.onrender.com → cognifit-backend-6coo.onrender.com
+      const backendHost = hostname.replace("frontend", "backend");
+      const apiUrl = `https://${backendHost}`;
+      console.log("✅ [Axios] Auto-detected Render backend:", apiUrl);
+      return apiUrl;
+    }
+    
+    // Fallback pattern matching for other hostname formats
+    const fallbackUrl = "https://cognifit-backend.onrender.com";
+    console.log("⚠️ [Axios] Using fallback Render URL:", fallbackUrl);
+    return fallbackUrl;
   }
 
-  // 2. If on Render production, use hardcoded backend URL
-  if (typeof window !== "undefined" && window.location.hostname.includes("onrender.com")) {
-    const apiUrl = "https://cognifit-backend.onrender.com";
-    console.log("✅ [Axios] Detected Render production, using backend:", apiUrl);
-    return apiUrl;
+  // 2. Try environment variable (for non-Render environments or overrides)
+  if (process.env.REACT_APP_API_URL) {
+    const url = process.env.REACT_APP_API_URL.replace(/\/api\/?$/, '');
+    console.log("✅ [Axios] Using REACT_APP_API_URL from env:", url);
+    return url;
   }
 
   // 3. If on localhost frontend, use localhost backend
