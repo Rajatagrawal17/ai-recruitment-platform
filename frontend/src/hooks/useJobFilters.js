@@ -15,6 +15,7 @@ export const useJobFilters = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [allJobs, setAllJobs] = useState([]);
 
   const applyFilters = useCallback(async (updatedFilters) => {
     setFilters(updatedFilters);
@@ -22,78 +23,78 @@ export const useJobFilters = () => {
     setCurrentPage(1);
 
     try {
-      // Build query string
-      const params = new URLSearchParams();
-      
-      if (updatedFilters.keywords) params.append('keyword', updatedFilters.keywords);
-      if (updatedFilters.experience) params.append('experience', updatedFilters.experience);
-      if (updatedFilters.salaryMin) params.append('salaryMin', updatedFilters.salaryMin);
-      if (updatedFilters.salaryMax) params.append('salaryMax', updatedFilters.salaryMax);
-      if (updatedFilters.location) params.append('location', updatedFilters.location);
-      if (updatedFilters.jobType.length > 0) {
-        updatedFilters.jobType.forEach(type => params.append('jobType', type));
+      // Fetch all jobs first if not already fetched
+      let jobsToFilter = allJobs;
+      if (jobsToFilter.length === 0) {
+        const response = await fetch('http://localhost:5000/api/jobs');
+        if (!response.ok) throw new Error('Failed to fetch jobs');
+        const data = await response.json();
+        jobsToFilter = data.jobs || [];
+        setAllJobs(jobsToFilter);
       }
+
+      // Client-side filtering
+      let filtered = jobsToFilter;
+
+      // Keywords filter
+      if (updatedFilters.keywords) {
+        const keyword = updatedFilters.keywords.toLowerCase();
+        filtered = filtered.filter(job =>
+          job.title?.toLowerCase().includes(keyword) ||
+          job.company?.toLowerCase().includes(keyword) ||
+          job.description?.toLowerCase().includes(keyword)
+        );
+      }
+
+      // Skills filter
       if (updatedFilters.skills.length > 0) {
-        updatedFilters.skills.forEach(skill => params.append('skills', skill));
+        filtered = filtered.filter(job => {
+          const jobSkills = (job.skills || []).map(s => s.toLowerCase());
+          return updatedFilters.skills.some(skill =>
+            jobSkills.some(js => js.includes(skill.toLowerCase()))
+          );
+        });
       }
 
-      params.append('page', 1);
-      params.append('limit', 10);
+      // Salary filter
+      if (updatedFilters.salaryMin || updatedFilters.salaryMax) {
+        filtered = filtered.filter(job => {
+          const salary = job.salary || 0;
+          const min = updatedFilters.salaryMin ? parseInt(updatedFilters.salaryMin) : 0;
+          const max = updatedFilters.salaryMax ? parseInt(updatedFilters.salaryMax) : Infinity;
+          return salary >= min && salary <= max;
+        });
+      }
 
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/jobs/advanced-search?${params}`
-      );
+      // Location filter
+      if (updatedFilters.location) {
+        filtered = filtered.filter(job =>
+          job.location?.toLowerCase().includes(updatedFilters.location.toLowerCase())
+        );
+      }
 
-      if (!response.ok) throw new Error('Search failed');
+      // Job type filter
+      if (updatedFilters.jobType.length > 0) {
+        filtered = filtered.filter(job =>
+          updatedFilters.jobType.includes(job.type)
+        );
+      }
 
-      const data = await response.json();
-      setResults(data.jobs || []);
-      setTotalPages(data.totalPages || 1);
+      setResults(filtered);
+      setTotalPages(Math.ceil(filtered.length / 10));
     } catch (error) {
       console.error('Filter error:', error);
       setResults([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [allJobs]);
 
-  const handlePageChange = useCallback(async (page) => {
+  const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
-    setIsLoading(true);
-
-    try {
-      const params = new URLSearchParams();
-      
-      if (filters.keywords) params.append('keyword', filters.keywords);
-      if (filters.experience) params.append('experience', filters.experience);
-      if (filters.salaryMin) params.append('salaryMin', filters.salaryMin);
-      if (filters.salaryMax) params.append('salaryMax', filters.salaryMax);
-      if (filters.location) params.append('location', filters.location);
-      if (filters.jobType.length > 0) {
-        filters.jobType.forEach(type => params.append('jobType', type));
-      }
-      if (filters.skills.length > 0) {
-        filters.skills.forEach(skill => params.append('skills', skill));
-      }
-
-      params.append('page', page);
-      params.append('limit', 10);
-
-      const response = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}/api/jobs/advanced-search?${params}`
-      );
-
-      if (!response.ok) throw new Error('Pagination failed');
-
-      const data = await response.json();
-      setResults(data.jobs || []);
-      setTotalPages(data.totalPages || 1);
-    } catch (error) {
-      console.error('Pagination error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [filters]);
+    // Page change is handled by displaying paginated results from the filtered list
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   return {
     filters,
