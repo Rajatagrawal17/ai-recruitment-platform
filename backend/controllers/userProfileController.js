@@ -199,9 +199,17 @@ exports.uploadResume = async (req, res) => {
       });
     }
 
-    console.log("📁 File received:", req.file.filename, "Size:", req.file.size);
+    console.log("📁 File received from Cloudinary:", {
+      filename: req.file.originalname,
+      cloudinaryUrl: req.file.path,
+      cloudinaryPublicId: req.file.filename,
+      size: req.file.size,
+    });
 
-    // Extract text from resume
+    // Cloudinary provides secure_url - use it directly
+    const resumeUrl = req.file.path; // This is the Cloudinary secure URL
+
+    // Extract text from resume (using the downloaded buffer from Cloudinary)
     const resumeText = await extractTextFromResume(req.file.path);
 
     // Extract skills
@@ -217,10 +225,6 @@ exports.uploadResume = async (req, res) => {
     const existingUser = await User.findById(userId);
 
     if (!existingUser) {
-      // Clean up uploaded file
-      if (fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
       return res.status(404).json({
         success: false,
         message: "User not found",
@@ -231,7 +235,7 @@ exports.uploadResume = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       userId,
       {
-        resumeUrl: `/uploads/${req.file.filename}`,
+        resumeUrl: resumeUrl, // Store the Cloudinary secure URL
         skills: skills,
         fieldOfInterest: fieldOfInterest.length > 0 ? fieldOfInterest : existingUser?.fieldOfInterest || [],
         currentLocation: currentLocation || existingUser?.currentLocation || "",
@@ -243,10 +247,9 @@ exports.uploadResume = async (req, res) => {
     console.log("✅ User after update:", {
       _id: user._id,
       resumeUrl: user.resumeUrl,
-      skills: user.skills,
-      fieldOfInterest: user.fieldOfInterest,
+      skills: user.skills.length,
+      fieldOfInterest: user.fieldOfInterest.length,
       currentLocation: user.currentLocation,
-      resumeDataExtracted: user.resumeDataExtracted,
     });
 
     // Verify resume was saved
@@ -259,7 +262,7 @@ exports.uploadResume = async (req, res) => {
     }
 
     console.log("✅ Resume processed and saved successfully");
-    console.log("📄 Resume URL saved:", user.resumeUrl);
+    console.log("📄 Resume Cloudinary URL:", user.resumeUrl);
 
     res.status(200).json({
       success: true,
@@ -269,14 +272,10 @@ exports.uploadResume = async (req, res) => {
         skills: user.skills,
         fieldOfInterest: user.fieldOfInterest,
         currentLocation: user.currentLocation,
+        resumeDataExtracted: user.resumeDataExtracted,
       },
     });
   } catch (error) {
-    // Clean up uploaded file on error
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-
     console.error("❌ Resume upload error:", error.message);
     res.status(500).json({
       success: false,

@@ -1,50 +1,71 @@
 const multer = require("multer");
 const path = require("path");
-const fs = require("fs");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("cloudinary").v2;
+
+// Verify Cloudinary is configured
+if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+  console.warn("⚠️  WARNING: Cloudinary environment variables not set. Resume uploads will fail!");
+  console.warn("   Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET in .env");
+}
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const ALLOWED_MIME_TYPES = new Set([
   "application/pdf",
+  "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
 
-const ALLOWED_EXTENSIONS = new Set([".pdf", ".docx"]);
-const UPLOAD_DIR = path.resolve(__dirname, "..", "uploads");
+const ALLOWED_EXTENSIONS = new Set([".pdf", ".doc", ".docx"]);
 
-// storage config
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    try {
-      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-      cb(null, UPLOAD_DIR);
-    } catch (error) {
-      cb(error);
-    }
-  },
-
-  filename: function (req, file, cb) {
-    const uniqueName = Date.now() + path.extname(file.originalname);
-    cb(null, uniqueName);
+// Cloudinary storage configuration
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    return {
+      folder: "cognifit-resumes", // Organize uploads in folder
+      resource_type: "raw", // Important for PDFs and documents
+      public_id: `${req.user._id}-${Date.now()}-${path.parse(file.originalname).name}`,
+      format: path.extname(file.originalname).toLowerCase().slice(1),
+    };
   },
 });
 
-// file filter (pdf/docx allowed)
+// File filter (PDF/DOC/DOCX only)
 const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname || "").toLowerCase();
   const isAllowedMime = ALLOWED_MIME_TYPES.has(file.mimetype);
   const isAllowedExt = ALLOWED_EXTENSIONS.has(ext);
 
+  console.log("📄 File validation:", {
+    filename: file.originalname,
+    mimetype: file.mimetype,
+    ext: ext,
+    isAllowedMime,
+    isAllowedExt,
+  });
+
   if (isAllowedMime || isAllowedExt) {
     cb(null, true);
   } else {
-    cb(new Error("Only PDF or DOCX files are allowed"), false);
+    const error = new Error(`Invalid file type: ${file.mimetype}. Only PDF, DOC, DOCX allowed`);
+    console.error("❌ File filter rejected:", error.message);
+    cb(error, false);
   }
 };
 
+// Multer configuration with Cloudinary storage
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 8 * 1024 * 1024,
+    fileSize: 10 * 1024 * 1024, // 10MB limit
   },
 });
 

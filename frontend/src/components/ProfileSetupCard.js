@@ -69,9 +69,12 @@ const ProfileSetupCard = ({ onProfileUpdate }) => {
 
     setLoading(true);
     try {
-      const response = await API.post("/users/resume/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      // IMPORTANT: Do NOT set Content-Type header manually for FormData!
+      // Axios will automatically set it with the correct boundary
+      // Manual header breaks multipart parsing on backend
+      const response = await API.post("/users/resume/upload", formData);
+
+      console.log("✅ Resume upload successful:", response.data);
 
       if (response.data.success) {
         setSuccess("Resume uploaded and processed successfully!");
@@ -82,8 +85,11 @@ const ProfileSetupCard = ({ onProfileUpdate }) => {
         });
         if (onProfileUpdate) onProfileUpdate();
         setTimeout(() => setSuccess(""), 3000);
+      } else {
+        setError(response.data.message || "Upload failed");
       }
     } catch (err) {
+      console.error("❌ Resume upload error:", err.response?.data || err.message);
       setError(
         err.response?.data?.message || "Failed to upload resume"
       );

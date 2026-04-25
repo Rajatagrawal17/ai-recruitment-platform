@@ -84,10 +84,16 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// Serve uploaded files statically
+// Serve uploaded files statically (for backwards compatibility if using disk storage)
 const path = require("path");
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+console.log("🔧 Middleware configured:");
+console.log("  ✓ JSON/URL-encoded body parser");
+console.log("  ✓ Static file serving (/uploads)");
+console.log("  ✓ Cloudinary resume upload ready");
 
 app.use("/api/auth", authLimiter, require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
@@ -122,32 +128,61 @@ app.use((req, res, next) => {
   });
 });
 
-// Centralized API error handling for upload and runtime errors.
+// Centralized error handling for upload and runtime errors
 app.use((error, req, res, next) => {
   if (!error) {
     next();
     return;
   }
 
+  console.error("🔴 Error handler triggered:", {
+    name: error.name,
+    message: error.message,
+    code: error.code,
+  });
+
+  // Handle Multer-specific errors
   if (error.name === "MulterError") {
     if (error.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({
+        success: false,
+        message: "Resume file is too large. Maximum allowed size is 10MB.",
+        code: "FILE_TOO_LARGE",
+      });
+    }
+
+    if (error.code === "LIMIT_PART_COUNT") {
       return res.status(400).json({
         success: false,
-        message: "Resume file is too large. Maximum allowed size is 8MB.",
+        message: "Too many parts in request",
+        code: "TOO_MANY_PARTS",
       });
     }
 
     return res.status(400).json({
       success: false,
       message: error.message || "File upload failed",
+      code: error.code || "MULTER_ERROR",
     });
   }
 
-  const status = error.statusCode || 500;
+  // Handle file filter errors (invalid file type)
+  if (error.message && error.message.includes("file type")) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+      code: "INVALID_FILE_TYPE",
+    });
+  }
+
+  // Generic error handler
+  const status = error.statusCode || error.status || 500;
   return res.status(status).json({
     success: false,
     message: error.message || "Internal server error",
+    code: error.code || "INTERNAL_ERROR",
   });
+});
 });
 
 const setDbConnected = (value) => {
