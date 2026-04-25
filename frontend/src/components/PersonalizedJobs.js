@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, MapPin, Briefcase, Code } from "lucide-react";
 import API from "../services/api";
+import { FALLBACK_RECOMMENDED_JOBS } from "../data/fallbackData";
 import "./PersonalizedJobs.css";
 
 const PersonalizedJobs = ({ triggerRefresh }) => {
@@ -9,6 +10,7 @@ const PersonalizedJobs = ({ triggerRefresh }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [userProfile, setUserProfile] = useState(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     fetchPersonalizedJobs();
@@ -17,22 +19,29 @@ const PersonalizedJobs = ({ triggerRefresh }) => {
   const fetchPersonalizedJobs = async () => {
     setLoading(true);
     setError("");
+    setIsDemo(false);
     try {
       const response = await API.get("/users/personalized-jobs");
       if (response.data.success) {
-        setJobs(response.data.jobs || []);
+        const jobList = response.data.jobs || [];
+        setJobs(jobList);
         setUserProfile(response.data.userProfile);
-        // If no jobs and there's a message, show it as info
-        if ((!response.data.jobs || response.data.jobs.length === 0) && response.data.message) {
+        
+        // If no jobs but we have a message, it might be "upload resume first"
+        if (jobList.length === 0 && response.data.message) {
           setError(response.data.message);
         }
       } else {
-        setError(response.data.message || "Failed to load personalized jobs");
+        setError(response.data.message || "");
+        setJobs(FALLBACK_RECOMMENDED_JOBS);
+        setIsDemo(true);
       }
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Failed to load personalized jobs"
-      );
+      console.error("❌ Personalized jobs error:", err.message);
+      // Silently use fallback data instead of showing error
+      setJobs(FALLBACK_RECOMMENDED_JOBS);
+      setIsDemo(true);
+      setError(""); // Don't show error, just use demo data
     } finally {
       setLoading(false);
     }
