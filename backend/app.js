@@ -183,7 +183,6 @@ app.use((error, req, res, next) => {
     code: error.code || "INTERNAL_ERROR",
   });
 });
-});
 
 const setDbConnected = (value) => {
   dbConnected = Boolean(value);
