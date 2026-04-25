@@ -22,6 +22,12 @@ const PersonalizedJobs = ({ triggerRefresh }) => {
       if (response.data.success) {
         setJobs(response.data.jobs || []);
         setUserProfile(response.data.userProfile);
+        // If no jobs and there's a message, show it as info
+        if ((!response.data.jobs || response.data.jobs.length === 0) && response.data.message) {
+          setError(response.data.message);
+        }
+      } else {
+        setError(response.data.message || "Failed to load personalized jobs");
       }
     } catch (err) {
       setError(

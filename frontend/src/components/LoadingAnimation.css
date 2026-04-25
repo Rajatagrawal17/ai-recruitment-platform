@@ -1,128 +1,73 @@
-.orbital-loader-wrapper {
+/* Loading Animation Component */
+.loading-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 1.5rem;
-  padding: 2rem;
+  align-items: center;
+  padding: 3rem 1rem;
+  gap: 2rem;
 }
 
-.orbital-loader-wrapper.fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(11, 19, 38, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.loading-container.fullscreen {
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #0a0e1a 0%, #16213e 100%);
 }
 
-.orbital-spinner {
-  position: relative;
-  width: 120px;
-  height: 120px;
+/* Dots Loader */
+.dots-loader {
   display: flex;
-  align-items: center;
+  gap: 1rem;
   justify-content: center;
+  align-items: center;
 }
 
-.orbital-core {
-  width: 24px;
-  height: 24px;
-  background: #3cddc7;
+.dot {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  box-shadow: 0 0 20px #3cddc7, 0 0 40px #3cddc7, inset 0 0 10px #fff;
-  animation: core-pulse 2s ease-in-out infinite alternate;
+  box-shadow: 0 0 20px currentColor;
 }
 
-@keyframes core-pulse {
-  0% { transform: scale(0.8); opacity: 0.8; }
-  100% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 30px #3cddc7, 0 0 60px #3cddc7, inset 0 0 15px #fff; }
+/* Loading Text */
+.loading-text {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  text-align: center;
+  margin: 0;
+  font-weight: 500;
+  letter-spacing: 1px;
 }
 
-.orbital-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  border: 2px solid transparent;
+/* Skeleton Cards */
+.skeleton-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 600px;
 }
 
-.orbital-ring.ring-1 {
-  width: 60px;
-  height: 60px;
-  border-top-color: #3cddc7;
-  border-bottom-color: #7bd0ff;
-  animation: spin-ring 3s linear infinite;
-}
-
-.orbital-ring.ring-2 {
-  width: 90px;
-  height: 90px;
-  border-left-color: rgba(60, 221, 199, 0.5);
-  border-right-color: rgba(123, 208, 255, 0.5);
-  animation: spin-ring-reverse 4s linear infinite;
-}
-
-.orbital-ring.ring-3 {
-  width: 120px;
+.skeleton-card {
+  width: 100%;
   height: 120px;
-  border: 1px dashed rgba(60, 221, 199, 0.3);
-  animation: spin-ring 8s linear infinite;
+  background: linear-gradient(
+    90deg,
+    rgba(79, 70, 229, 0.1),
+    rgba(79, 70, 229, 0.2),
+    rgba(79, 70, 229, 0.1)
+  );
+  background-size: 200% 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  animation: shimmer 2s infinite;
 }
 
-.orbital-satellite {
-  position: absolute;
-  top: -4px;
-  left: 50%;
-  width: 8px;
-  height: 8px;
-  background: #7bd0ff;
-  border-radius: 50%;
-  box-shadow: 0 0 10px #7bd0ff;
-  transform: translateX(-50%);
-}
-
-.orbital-ring.ring-2 .orbital-satellite {
-  top: 50%;
-  left: -4px;
-  transform: translateY(-50%);
-  background: #3cddc7;
-  box-shadow: 0 0 10px #3cddc7;
-}
-
-@keyframes spin-ring {
-  0% { transform: translate(-50%, -50%) rotate(0deg); }
-  100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-@keyframes spin-ring-reverse {
-  0% { transform: translate(-50%, -50%) rotate(360deg); }
-  100% { transform: translate(-50%, -50%) rotate(0deg); }
-}
-
-.orbital-text {
-  font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  background: linear-gradient(90deg, #3cddc7, #7bd0ff);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: text-pulse 2s ease-in-out infinite;
-}
-
-@keyframes text-pulse {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
-}
-
-/* Data stream particles */
-.data-particle {
-  position: absolute;
-  background: #fff;
-  border-radius: 50%;
-  opacity: 0;
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
