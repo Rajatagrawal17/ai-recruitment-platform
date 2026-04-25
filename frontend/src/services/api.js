@@ -9,17 +9,22 @@ const getApiUrl = () => {
     return url;
   }
 
-  // 2. If on Render production, construct backend URL
+  // 2. If on Render production, use hardcoded backend URL
   if (typeof window !== "undefined" && window.location.hostname.includes("onrender.com")) {
-    const backendHost = window.location.hostname.replace("frontend", "backend");
-    const apiUrl = `https://${backendHost}`;
-    console.log("✅ [Axios] Detected Render backend:", apiUrl);
+    const apiUrl = "https://cognifit-backend.onrender.com";
+    console.log("✅ [Axios] Detected Render production, using backend:", apiUrl);
     return apiUrl;
   }
 
-  // 3. Fallback to localhost for development
-  console.log("✅ [Axios] Using localhost fallback");
-  return "http://localhost:5000";
+  // 3. If on localhost frontend, use localhost backend
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    console.log("✅ [Axios] Detected localhost development");
+    return "http://localhost:5000";
+  }
+
+  // 4. Default fallback
+  console.log("⚠️ [Axios] Using default Render backend URL");
+  return "https://cognifit-backend.onrender.com";
 };
 
 // Get primary API URL
