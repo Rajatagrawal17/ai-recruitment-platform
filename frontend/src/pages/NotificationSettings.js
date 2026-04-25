@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Bell, Save, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import API from "../services/api"; // ✅ Use API service
 import "./NotificationSettings.css";
 
 const NotificationSettings = () => {
@@ -17,14 +18,10 @@ const NotificationSettings = () => {
 
   const fetchPreferences = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `/api/notifications/preferences/${user._id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const response = await API.get(
+        `/notifications/preferences/${user._id}` // ✅ Use API service with proper base URL
       );
-      const data = await response.json();
+      const data = response.data;
       setPreferences(data);
       setLoading(false);
     } catch (error) {
@@ -66,20 +63,12 @@ const NotificationSettings = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `/api/notifications/preferences/${user._id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(preferences),
-        }
+      const response = await API.put(
+        `/notifications/preferences/${user._id}`, // ✅ Use API service
+        preferences
       );
 
-      if (response.ok) {
+      if (response.status === 200 || response.data?.success) {
         setMessage("✅ Preferences saved successfully!");
         setTimeout(() => setMessage(""), 3000);
       } else {

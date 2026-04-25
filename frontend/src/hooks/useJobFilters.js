@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import API from '../services/api'; // ✅ Use API service instead of fetch
 
 export const useJobFilters = () => {
   const [filters, setFilters] = useState({
@@ -26,9 +27,9 @@ export const useJobFilters = () => {
       // Fetch all jobs first if not already fetched
       let jobsToFilter = allJobs;
       if (jobsToFilter.length === 0) {
-        const response = await fetch('http://localhost:5000/api/jobs');
-        if (!response.ok) throw new Error('Failed to fetch jobs');
-        const data = await response.json();
+        const response = await API.get('/jobs'); // ✅ Use API service with Render backend
+        if (!response.data) throw new Error('Failed to fetch jobs');
+        const data = response.data;
         jobsToFilter = data.jobs || [];
         setAllJobs(jobsToFilter);
       }

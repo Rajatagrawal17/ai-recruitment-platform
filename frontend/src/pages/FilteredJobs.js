@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import AdvancedJobFilters from "../components/AdvancedJobFilters";
 import JobCard from "../components/JobCard";
+import API from "../services/api"; // ✅ Use API service
 import "./Jobs.css";
 
 const FilteredJobs = () => {
@@ -17,11 +18,8 @@ const FilteredJobs = () => {
   const fetchAllJobs = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await fetch("/api/jobs", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const data = await response.json();
+      const response = await API.get("/jobs"); // ✅ Use API service with proper Render backend URL
+      const data = response.data;
       setJobs(Array.isArray(data) ? data : data.jobs || []);
     } catch (error) {
       console.error("Error fetching jobs:", error);
