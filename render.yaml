@@ -8,16 +8,62 @@ services:
     startCommand: cd backend && npm start
     autoDeploy: true
     envVars:
+      # Database
       - key: MONGO_URI
         scope: run
         sync: false
+      
+      # Authentication
       - key: JWT_SECRET
         scope: run
         sync: false
+      
+      # Environment & Server
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 5000
+      
+      # ✅ CLOUDINARY (Resume Upload Storage)
+      - key: CLOUDINARY_CLOUD_NAME
+        scope: run
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        scope: run
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        scope: run
+        sync: false
+      
+      # ✅ TWILIO (SMS OTP)
+      - key: TWILIO_ACCOUNT_SID
+        scope: run
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        scope: run
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        scope: run
+        sync: false
+      
+      # ✅ SMTP (Email)
+      - key: SMTP_USER
+        scope: run
+        sync: false
+      - key: SMTP_PASSWORD
+        scope: run
+        sync: false
+      
+      # ✅ RECAPTCHA (Form Protection)
+      - key: RECAPTCHA_SECRET
+        scope: run
+        sync: false
+      
+      # ✅ AI & CLAUDE
+      - key: CLAUDE_API_KEY
+        scope: run
+        sync: false
+    
     healthCheckPath: /api/health
     healthCheckDomain: localhost
     preDeployCommand: cd backend && npm install
@@ -31,12 +77,16 @@ services:
     startCommand: cd frontend && npx serve -s build -l 0.0.0.0:$PORT
     autoDeploy: true
     envVars:
+      # ✅ Backend API URL (CRITICAL)
       - key: REACT_APP_API_URL
         value: https://cognifit-backend.onrender.com
-        scope: run
+        scope: build
         sync: false
+      
+      # Environment & Server
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
+    
     preDeployCommand: cd frontend && npm install

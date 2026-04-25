@@ -1,6 +1,7 @@
 const Application = require("../models/Application");
 const Job = require("../models/Job");
 const Candidate = require("../models/Candidate");
+const User = require("../models/User"); // ✅ Import User model
 const { calculateMatchScore } = require("../../ai-service/matcher");
 const { sendNotificationEmail } = require("../utils/notificationService");
 const {
@@ -15,7 +16,6 @@ const {
 =========================*/
 exports.applyJob = async (req, res) => {
   try {
-
     const { jobId, fullName, email, phone, linkedinUrl, portfolioUrl, yearsExperience, coverLetter, resumeText } = req.body;
 
     // check job exists
@@ -42,20 +42,33 @@ exports.applyJob = async (req, res) => {
     }
 
     /* =========================
-       RESUME FILE
+       RESUME FILE & USER PROFILE
     ========================= */
-
+    
     let resumePath = null;
+    let finalResumeText = String(resumeText || "").trim();
 
+    // ✅ If no resume uploaded with application, check user's profile
     if (req.file) {
       resumePath = req.file.path;
+    } else if (!finalResumeText && req.user._id) {
+      // ✅ Try to get resume from user profile
+      try {
+        const userProfile = await User.findById(req.user._id).select("resumeUrl skills fieldOfInterest currentLocation");
+        if (userProfile?.resumeUrl) {
+          console.log("📄 Using user's saved resume:", userProfile.resumeUrl);
+          resumePath = userProfile.resumeUrl;
+        }
+      } catch (err) {
+        console.warn("Could not load user profile resume:", err.message);
+      }
     }
 
     /* =========================
        RESUME PARSING
     ========================= */
 
-    let normalizedResumeText = String(resumeText || "").trim();
+    let normalizedResumeText = finalResumeText;
     let parsedResume = parseResumeText(normalizedResumeText);
 
     if (!normalizedResumeText && resumePath) {

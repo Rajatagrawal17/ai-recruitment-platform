@@ -39,7 +39,7 @@ console.log("✅ [Axios] API URL candidates:", API_URL_CANDIDATES);
 
 const API = axios.create({
   baseURL: `${primaryApiUrl}/api`,
-  timeout: 15000,
+  timeout: 30000, // ✅ 30 seconds for Render cold start
 });
 
 console.log("✅ [Axios] Created instance with baseURL:", `${primaryApiUrl}/api`);

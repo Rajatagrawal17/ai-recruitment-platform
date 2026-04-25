@@ -14,41 +14,61 @@ try {
   }
 }
 const mammoth = require("mammoth");
+const axios = require("axios"); // ✅ Add for downloading Cloudinary files
 
-// Extract text from resume file
-const extractTextFromResume = async (filePath) => {
+// ✅ ENHANCED: Extract text from resume file (handles both local and Cloudinary URLs)
+const extractTextFromResume = async (filePathOrUrl) => {
   try {
-    const fileExtension = path.extname(filePath).toLowerCase();
-    const fileBuffer = fs.readFileSync(filePath);
+    let fileBuffer;
+    const fileExtension = path.extname(filePathOrUrl).toLowerCase();
+
+    // ✅ Check if it's a Cloudinary URL or local path
+    if (filePathOrUrl.startsWith("http")) {
+      // ✅ Download from Cloudinary
+      console.log("📥 Downloading resume from Cloudinary:", filePathOrUrl);
+      const response = await axios.get(filePathOrUrl, { 
+        responseType: "arraybuffer",
+        timeout: 10000 
+      });
+      fileBuffer = Buffer.from(response.data);
+      console.log("✅ Downloaded:", fileBuffer.length, "bytes");
+    } else {
+      // Local file (for backwards compatibility)
+      fileBuffer = fs.readFileSync(filePathOrUrl);
+    }
 
     if (fileExtension === ".pdf") {
-      // Check if pdfParse is available
       if (!pdfParse) {
-        console.warn("PDF parsing not available, extracting basic text");
-        // Fallback: return a message indicating PDF couldn't be parsed
+        console.warn("⚠️  PDF parsing not available, returning fallback text");
         return "PDF file uploaded successfully. Text extraction limited.";
       }
 
       try {
-        // pdf-parse usage
         const pdfModule = require("pdf-parse/lib/pdf");
         const pdfData = await pdfModule(fileBuffer);
-        return pdfData.text || "";
+        const extractedText = pdfData.text || "";
+        console.log("✅ PDF parsed successfully:", extractedText.length, "characters");
+        return extractedText;
       } catch (pdfError) {
-        console.warn("PDF parsing failed:", pdfError.message);
-        // Fallback for PDF parsing
+        console.warn("⚠️  PDF parsing failed:", pdfError.message);
         return "PDF file uploaded. Please ensure it contains text.";
       }
     }
 
     if (fileExtension === ".docx") {
-      const result = await mammoth.extractRawText({ buffer: fileBuffer });
-      return result.value || "";
+      try {
+        const result = await mammoth.extractRawText({ buffer: fileBuffer });
+        console.log("✅ DOCX parsed successfully:", result.value.length, "characters");
+        return result.value || "";
+      } catch (docxError) {
+        console.warn("⚠️  DOCX parsing failed:", docxError.message);
+        return "DOCX file uploaded. Please ensure it contains text.";
+      }
     }
 
     return "";
   } catch (error) {
-    console.error("Error extracting text from resume:", error);
+    console.error("❌ Error extracting text from resume:", error.message);
     return "";
   }
 };
