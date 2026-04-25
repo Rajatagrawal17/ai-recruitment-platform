@@ -136,16 +136,44 @@ const ProfileCompletion = () => {
         console.log("📤 Uploading resume...");
         console.log("📋 File:", formData.resumeFile.name, "Size:", formData.resumeFile.size, "Type:", formData.resumeFile.type);
 
-        // IMPORTANT: Do NOT set Content-Type header manually for FormData!
-        // Axios will automatically set it with the correct boundary
-        const uploadResponse = await API.post('/users/resume/upload', uploadFormData);
+        try {
+          // IMPORTANT: Do NOT set Content-Type header manually for FormData!
+          // Axios will automatically set it with the correct boundary
+          const uploadResponse = await API.post('/users/resume/upload', uploadFormData);
 
-        console.log("✅ Resume upload response:", JSON.stringify(uploadResponse.data, null, 2));
-        uploadedResumeUrl = uploadResponse.data.data?.resume || '';
-        console.log("📄 Extracted resume URL:", uploadedResumeUrl);
-        
-        if (!uploadedResumeUrl) {
-          console.warn("⚠️ No resume URL in response!");
+          console.log("✅ Resume upload response status:", uploadResponse.status);
+          console.log("✅ Resume upload response data:", JSON.stringify(uploadResponse.data, null, 2));
+          
+          // Check if response has success flag
+          if (!uploadResponse.data.success) {
+            console.error("❌ Upload failed - success flag is false:", uploadResponse.data.message);
+            setError(`Resume upload failed: ${uploadResponse.data.message}`);
+            setSaving(false);
+            return;
+          }
+
+          uploadedResumeUrl = uploadResponse.data.data?.resume || '';
+          console.log("📄 Extracted resume URL:", uploadedResumeUrl);
+          
+          if (!uploadedResumeUrl) {
+            console.error("❌ CRITICAL: No resume URL in response!");
+            console.error("📊 Response structure:", {
+              hasData: !!uploadResponse.data.data,
+              dataKeys: uploadResponse.data.data ? Object.keys(uploadResponse.data.data) : 'undefined',
+              fullData: uploadResponse.data.data
+            });
+            setError("Resume uploaded but URL not captured from response");
+            setSaving(false);
+            return;
+          }
+        } catch (uploadErr) {
+          console.error("❌ Resume upload error:", uploadErr);
+          console.error("❌ Error message:", uploadErr.message);
+          console.error("❌ Error response:", uploadErr.response?.data);
+          console.error("❌ Error status:", uploadErr.response?.status);
+          setError(`Resume upload error: ${uploadErr.response?.data?.message || uploadErr.message}`);
+          setSaving(false);
+          return;
         }
       }
 
@@ -186,6 +214,15 @@ const ProfileCompletion = () => {
         console.log("✅ Profile updated successfully");
         console.log("📊 Response profileCompleteness:", response.data.profileCompleteness);
         console.log("📋 Response resumeUrl:", response.data.user?.resumeUrl);
+        
+        // Update form data with the saved resume URL
+        if (uploadedResumeUrl) {
+          setFormData(prev => ({
+            ...prev,
+            resumeUrl: uploadedResumeUrl.split('/').pop() || '',
+            resumeFile: null, // Clear the file object after successful save
+          }));
+        }
         
         setProfileCompleteness(response.data.profileCompleteness || 0);
         setSuccess(true);
@@ -261,6 +298,13 @@ const ProfileCompletion = () => {
   ];
 
   const calculateFieldStatus = (fieldName) => {
+    // Special handling for resume field - check both file and saved URL
+    if (fieldName === 'resumeFile') {
+      const hasFile = formData.resumeFile && formData.resumeFile.name;
+      const hasSavedUrl = formData.resumeUrl && formData.resumeUrl.trim().length > 0;
+      return (hasFile || hasSavedUrl) ? 'filled' : 'empty';
+    }
+    
     const field = formData[fieldName];
     if (!field) return 'empty';
     if (typeof field === 'string') return field.trim().length > 0 ? 'filled' : 'empty';
