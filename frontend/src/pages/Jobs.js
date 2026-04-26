@@ -7,6 +7,7 @@ import Pagination from "../components/Pagination";
 import EnhancedNotificationCenter from "../components/EnhancedNotificationCenter";
 import useJobFilters from "../hooks/useJobFilters";
 import { getJobs } from "../services/api";
+import { FAKE_JOBS } from "../data/fakeData";
 import "./Jobs.css";
 
 const Jobs = () => {
@@ -21,11 +22,17 @@ const Jobs = () => {
     const loadJobs = async () => {
       try {
         const res = await getJobs();
-        setJobs(res.data.jobs || []);
-        setInitialLoadComplete(true);
+        if (res.data.jobs && res.data.jobs.length > 0) {
+          setJobs(res.data.jobs);
+          setInitialLoadComplete(true);
+        } else {
+          console.warn("⚠️ No jobs returned from API, using sample data");
+          setJobs(FAKE_JOBS);
+          setInitialLoadComplete(true);
+        }
       } catch (error) {
-        console.error("❌ Error fetching jobs:", error.message);
-        setJobs([]);
+        console.log("⚠️ Backend unavailable, showing sample data");
+        setJobs(FAKE_JOBS);
         setInitialLoadComplete(true);
       }
     };
