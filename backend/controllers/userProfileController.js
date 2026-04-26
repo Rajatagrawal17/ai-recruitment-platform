@@ -37,11 +37,16 @@ const getSignedResumeUrl = (resumeUrl) => {
   const format = match[2].toLowerCase();
   const expiresAt = Math.floor(Date.now() / 1000) + 10 * 60;
 
-  return cloudinary.utils.private_download_url(publicId, format, {
-    resource_type: "raw",
-    type: "upload",
-    expires_at: expiresAt,
-  });
+  try {
+    return cloudinary.utils.private_download_url(publicId, format, {
+      resource_type: "raw",
+      type: "upload",
+      expires_at: expiresAt,
+    });
+  } catch (error) {
+    console.warn("⚠️ Failed to generate signed resume URL, falling back to stored URL:", error.message);
+    return resumeUrl;
+  }
 };
 
 // ✅ ENHANCED: Extract text from resume file (handles both local and Cloudinary URLs)

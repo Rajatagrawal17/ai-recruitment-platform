@@ -31,6 +31,8 @@ const storage = new CloudinaryStorage({
     return {
       folder: "cognifit-resumes", // Organize uploads in folder
       resource_type: "raw", // Important for PDFs and documents
+      type: "upload", // Explicitly public upload delivery type
+      access_mode: "public", // Ensure URL is publicly retrievable
       public_id: `${req.user._id}-${Date.now()}-${path.parse(file.originalname).name}`,
       format: path.extname(file.originalname).toLowerCase().slice(1),
     };
