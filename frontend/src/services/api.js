@@ -1,58 +1,85 @@
 import axios from "axios";
 
-// Smart API URL detection with fallback
+// 🔧 BULLETPROOF API URL DETECTION - Logs everything for debugging
 const getApiUrl = () => {
-  // 1. If on Render production, use DYNAMIC hostname-based detection
-  //    This ensures we always find the backend service regardless of naming
+  console.log("🔍 [URL Detection] Starting URL detection...");
+  console.log("   window.location.hostname:", typeof window !== "undefined" ? window.location.hostname : "N/A");
+  console.log("   REACT_APP_API_URL env:", process.env.REACT_APP_API_URL);
+  console.log("   NODE_ENV:", process.env.NODE_ENV);
+
+  // PRIORITY 1: RENDER PRODUCTION (onrender.com domains)
   if (typeof window !== "undefined" && window.location.hostname.includes("onrender.com")) {
-    const hostname = window.location.hostname;
+    console.log("✅ [URL Detection] Detected RENDER PRODUCTION domain");
     
+    const hostname = window.location.hostname;
+    console.log("   Hostname:", hostname);
+
     if (hostname.includes("frontend")) {
       // Auto-detect: cognifit-frontend-6coo.onrender.com → cognifit-backend-6coo.onrender.com
       const backendHost = hostname.replace("frontend", "backend");
       const apiUrl = `https://${backendHost}`;
-      console.log("✅ [Axios] Auto-detected Render backend:", apiUrl);
+      console.log("✅ [URL Detection] AUTO-DETECTED backend:", apiUrl);
       return apiUrl;
     }
     
-    // Fallback pattern matching for other hostname formats
+    // Fallback for other Render hostname formats
     const fallbackUrl = "https://cognifit-backend.onrender.com";
-    console.log("⚠️ [Axios] Using fallback Render URL:", fallbackUrl);
+    console.log("⚠️ [URL Detection] Using FALLBACK Render URL:", fallbackUrl);
     return fallbackUrl;
   }
 
-  // 2. Try environment variable (for non-Render environments or overrides)
-  if (process.env.REACT_APP_API_URL) {
-    const url = process.env.REACT_APP_API_URL.replace(/\/api\/?$/, '');
-    console.log("✅ [Axios] Using REACT_APP_API_URL from env:", url);
-    return url;
+  // PRIORITY 2: HARDCODED FOR PRODUCTION (ALWAYS use this for deployed frontend)
+  // This is a safety net to ensure we never hit localhost in production
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    if (hostname && !hostname.includes("localhost") && !hostname.includes("127.0.0.1")) {
+      // We're on production (not localhost), but didn't match onrender above
+      // Use hardcoded production backend
+      const productionUrl = "https://cognifit-backend.onrender.com";
+      console.log("✅ [URL Detection] Production hostname detected, using:", productionUrl);
+      return productionUrl;
+    }
   }
 
-  // 3. If on localhost frontend, use localhost backend
-  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
-    console.log("✅ [Axios] Detected localhost development");
+  // PRIORITY 3: LOCALHOST DEVELOPMENT
+  if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+    console.log("✅ [URL Detection] Localhost development detected");
     return "http://localhost:5000";
   }
 
-  // 4. Default fallback
-  console.log("⚠️ [Axios] Using default Render backend URL");
-  return "https://cognifit-backend.onrender.com";
+  // PRIORITY 4: ENVIRONMENT VARIABLE (if set)
+  if (process.env.REACT_APP_API_URL) {
+    const url = process.env.REACT_APP_API_URL.replace(/\/api\/?$/, '');
+    console.log("✅ [URL Detection] Using REACT_APP_API_URL:", url);
+    return url;
+  }
+
+  // DEFAULT FALLBACK
+  const defaultUrl = "https://cognifit-backend.onrender.com";
+  console.log("⚠️ [URL Detection] Using DEFAULT production URL:", defaultUrl);
+  return defaultUrl;
 };
 
 // Get primary API URL
 const primaryApiUrl = getApiUrl();
 
-// Create BASE URLs (without /api) for fallback logic
-const BASE_URL_CANDIDATES = [
-  primaryApiUrl,
-  "http://localhost:5000",
-].filter((url, index, arr) => url && arr.indexOf(url) === index);
+// 🔴 IMPORTANT: DO NOT INCLUDE LOCALHOST AS FALLBACK ON PRODUCTION!
+// This prevents accidentally trying localhost when backend is sleeping
+const isProduction = typeof window !== "undefined" && 
+  !window.location.hostname.includes("localhost") && 
+  !window.location.hostname.includes("127.0.0.1");
+
+// Only include localhost as fallback in development
+const BASE_URL_CANDIDATES = isProduction 
+  ? [primaryApiUrl]  // PRODUCTION: Only use detected URL, no localhost fallback
+  : [primaryApiUrl, "http://localhost:5000"]; // DEV: Try localhost if primary fails
 
 // Create API URLs (with /api) for axios operations
 const API_URL_CANDIDATES = BASE_URL_CANDIDATES.map(url => `${url}/api`);
 
-console.log("✅ [Axios] Base URL candidates:", BASE_URL_CANDIDATES);
-console.log("✅ [Axios] API URL candidates:", API_URL_CANDIDATES);
+console.log("🌍 [Axios] Environment:", isProduction ? "PRODUCTION" : "DEVELOPMENT");
+console.log("📍 [Axios] Base URL candidates:", BASE_URL_CANDIDATES);
+console.log("📍 [Axios] API URL candidates:", API_URL_CANDIDATES);
 
 const API = axios.create({
   baseURL: `${primaryApiUrl}/api`,
@@ -128,20 +155,23 @@ API.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    const currentBaseUrl = originalRequest.baseURL || API.defaults.baseURL;
-    const currentIndex = Math.max(API_URL_CANDIDATES.indexOf(currentBaseUrl), 0);
-    const nextIndex = currentIndex + 1;
-
-    if (nextIndex >= API_URL_CANDIDATES.length) {
-      return Promise.reject(error);
+    // 🔄 RETRY LOGIC: Instead of switching URLs, retry the same URL (wait for backend to wake)
+    const retryCount = originalRequest._retryCount || 0;
+    const MAX_RETRIES = 3;
+    
+    if (retryCount < MAX_RETRIES) {
+      originalRequest._retryCount = retryCount + 1;
+      const delayMs = 2000 * (retryCount + 1); // 2s, 4s, 6s delays
+      
+      console.log(`⏳ [Retry ${retryCount + 1}/${MAX_RETRIES}] Waiting ${delayMs}ms before retrying...`);
+      console.log(`   URL: ${originalRequest.url}`);
+      
+      await sleep(delayMs);
+      return API.request(originalRequest);
     }
 
-    const nextBaseUrl = API_URL_CANDIDATES[nextIndex];
-    console.log("🔄 Switching API URL from", currentBaseUrl, "to", nextBaseUrl);
-    originalRequest.baseURL = nextBaseUrl;
-    API.defaults.baseURL = nextBaseUrl;
-
-    return API.request(originalRequest);
+    console.error("❌ [Axios] Max retries exceeded. Backend not responding.");
+    return Promise.reject(error);
   }
 );
 
