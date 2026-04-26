@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 
@@ -242,9 +242,6 @@ const AppRoutes = () => {
 
 // ✅ Cold start handler - ping backend health check on app load
 const ColdStartHandler = ({ children }) => {
-  const [serverReady, setServerReady] = useState(true); // Assume ready by default
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const wakeupServer = async () => {
       try {
@@ -255,39 +252,14 @@ const ColdStartHandler = ({ children }) => {
         
         const duration = Date.now() - startTime;
         console.log(`✅ [Cold Start] Server responded in ${duration}ms`);
-        setServerReady(true);
       } catch (error) {
         console.warn("⚠️ [Cold Start] Server not responding yet, will retry on first request");
-        // Don't block the app - API interceptor will handle retries
-        setServerReady(true);
-      } finally {
-        setLoading(false);
       }
     };
 
     // Ping on load
     wakeupServer();
   }, []);
-
-  // If cold start is taking too long, show a message but don't block
-  if (loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        background: 'var(--bg-primary, #fff)',
-        color: 'var(--text-primary, #000)',
-        fontSize: '14px'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ marginBottom: '10px' }}>⏳ Loading...</div>
-          <div style={{ fontSize: '12px', opacity: 0.6 }}>Waking up server on free tier</div>
-        </div>
-      </div>
-    );
-  }
 
   return <>{children}</>;
 };
