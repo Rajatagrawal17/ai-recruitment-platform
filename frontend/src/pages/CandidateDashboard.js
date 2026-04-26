@@ -9,9 +9,9 @@ import {
   Sparkles,
   TrendingUp,
   ChevronRight,
+  UserRoundPen,
 } from "lucide-react";
 import MatchScoreBadge from "../components/MatchScoreBadge";
-import ProfileSetupCard from "../components/ProfileSetupCard";
 import PersonalizedJobs from "../components/PersonalizedJobs";
 import UserProfileCard from "../components/UserProfileCard";
 import { getCandidateApplications, getRecommendedJobs } from "../services/api";
@@ -70,7 +70,6 @@ const CandidateDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [recommendationLoading, setRecommendationLoading] = useState(true);
   const [error, setError] = useState("");
-  const [profileRefresh, setProfileRefresh] = useState(0);
   const [expandedApp, setExpandedApp] = useState(null);
 
   useEffect(() => {
@@ -175,11 +174,23 @@ const CandidateDashboard = () => {
         />
       </motion.section>
 
-      {/* Profile Setup Card */}
-      <ProfileSetupCard onProfileUpdate={() => setProfileRefresh(prev => prev + 1)} />
+      <section className="glass-card p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Profile Setup</h2>
+            <p className="text-sm text-text-muted">
+              Manage your profile details and upload resume from one place.
+            </p>
+          </div>
+          <Link to="/complete-profile" className="btn-primary">
+            <UserRoundPen size={16} className="mr-2" />
+            Open Profile Completion
+          </Link>
+        </div>
+      </section>
 
       {/* Personalized Jobs Section */}
-      <PersonalizedJobs triggerRefresh={profileRefresh} />
+      <PersonalizedJobs />
 
       <section className="glass-card p-5">
         <div className="mb-4 flex items-center justify-between">
