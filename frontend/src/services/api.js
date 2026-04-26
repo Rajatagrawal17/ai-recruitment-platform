@@ -1,84 +1,10 @@
 import axios from "axios";
+import { getBackendUrl } from "../utils/backendUrl";
 
-// 🔧 BULLETPROOF API URL DETECTION - Logs everything for debugging
-const getApiUrl = () => {
-  console.log("🔍 [URL Detection] Starting URL detection...");
-  console.log("   window.location.hostname:", typeof window !== "undefined" ? window.location.hostname : "N/A");
-  console.log("   REACT_APP_API_URL env:", process.env.REACT_APP_API_URL);
-  console.log("   NODE_ENV:", process.env.NODE_ENV);
+const primaryApiUrl = getBackendUrl();
+const API_URL_CANDIDATES = [`${primaryApiUrl}/api`];
 
-  // PRIORITY 1: RENDER PRODUCTION (onrender.com domains)
-  if (typeof window !== "undefined" && window.location.hostname.includes("onrender.com")) {
-    console.log("✅ [URL Detection] Detected RENDER PRODUCTION domain");
-    
-    const hostname = window.location.hostname;
-    console.log("   Hostname:", hostname);
-
-    if (hostname.includes("frontend")) {
-      // Auto-detect: cognifit-frontend-6coo.onrender.com → cognifit-backend-6coo.onrender.com
-      const backendHost = hostname.replace("frontend", "backend");
-      const apiUrl = `https://${backendHost}`;
-      console.log("✅ [URL Detection] AUTO-DETECTED backend:", apiUrl);
-      return apiUrl;
-    }
-    
-    // Fallback for other Render hostname formats
-    const fallbackUrl = "https://cognifit-backend.onrender.com";
-    console.log("⚠️ [URL Detection] Using FALLBACK Render URL:", fallbackUrl);
-    return fallbackUrl;
-  }
-
-  // PRIORITY 2: HARDCODED FOR PRODUCTION (ALWAYS use this for deployed frontend)
-  // This is a safety net to ensure we never hit localhost in production
-  if (typeof window !== "undefined") {
-    const hostname = window.location.hostname;
-    if (hostname && !hostname.includes("localhost") && !hostname.includes("127.0.0.1")) {
-      // We're on production (not localhost), but didn't match onrender above
-      // Use hardcoded production backend
-      const productionUrl = "https://cognifit-backend.onrender.com";
-      console.log("✅ [URL Detection] Production hostname detected, using:", productionUrl);
-      return productionUrl;
-    }
-  }
-
-  // PRIORITY 3: LOCALHOST DEVELOPMENT
-  if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
-    console.log("✅ [URL Detection] Localhost development detected");
-    return "http://localhost:5000";
-  }
-
-  // PRIORITY 4: ENVIRONMENT VARIABLE (if set)
-  if (process.env.REACT_APP_API_URL) {
-    const url = process.env.REACT_APP_API_URL.replace(/\/api\/?$/, '');
-    console.log("✅ [URL Detection] Using REACT_APP_API_URL:", url);
-    return url;
-  }
-
-  // DEFAULT FALLBACK
-  const defaultUrl = "https://cognifit-backend.onrender.com";
-  console.log("⚠️ [URL Detection] Using DEFAULT production URL:", defaultUrl);
-  return defaultUrl;
-};
-
-// Get primary API URL
-const primaryApiUrl = getApiUrl();
-
-// 🔴 IMPORTANT: DO NOT INCLUDE LOCALHOST AS FALLBACK ON PRODUCTION!
-// This prevents accidentally trying localhost when backend is sleeping
-const isProduction = typeof window !== "undefined" && 
-  !window.location.hostname.includes("localhost") && 
-  !window.location.hostname.includes("127.0.0.1");
-
-// Only include localhost as fallback in development
-const BASE_URL_CANDIDATES = isProduction 
-  ? [primaryApiUrl]  // PRODUCTION: Only use detected URL, no localhost fallback
-  : [primaryApiUrl, "http://localhost:5000"]; // DEV: Try localhost if primary fails
-
-// Create API URLs (with /api) for axios operations
-const API_URL_CANDIDATES = BASE_URL_CANDIDATES.map(url => `${url}/api`);
-
-console.log("🌍 [Axios] Environment:", isProduction ? "PRODUCTION" : "DEVELOPMENT");
-console.log("📍 [Axios] Base URL candidates:", BASE_URL_CANDIDATES);
+console.log("🌍 [Axios] API base URL:", primaryApiUrl);
 console.log("📍 [Axios] API URL candidates:", API_URL_CANDIDATES);
 
 const API = axios.create({
@@ -155,7 +81,7 @@ API.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // 🔄 RETRY LOGIC: Instead of switching URLs, retry the same URL (wait for backend to wake)
+    // 🔄 Retry the same URL with backoff so cold starts can recover.
     const retryCount = originalRequest._retryCount || 0;
     const MAX_RETRIES = 3;
     
@@ -188,24 +114,9 @@ const wakeBaseUrl = async (baseUrl) => {
 };
 
 export const warmupBackend = async () => {
-  let lastError;
-
-  for (const baseUrl of API_URL_CANDIDATES) {
-    try {
-      await wakeBaseUrl(baseUrl);
-      API.defaults.baseURL = baseUrl;
-      return true;
-    } catch (err) {
-      lastError = err;
-      await sleep(1500);
-    }
-  }
-
-  if (lastError) {
-    throw lastError;
-  }
-
-  return false;
+  await wakeBaseUrl(API_URL_CANDIDATES[0]);
+  API.defaults.baseURL = API_URL_CANDIDATES[0];
+  return true;
 };
 
 export const loginUser = (data) => API.post("/auth/login", data);

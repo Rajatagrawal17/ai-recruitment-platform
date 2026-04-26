@@ -1,6 +1,7 @@
 import io from 'socket.io-client';
+import { getBackendUrl } from "../utils/backendUrl";
 
-const SOCKET_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+const SOCKET_URL = getBackendUrl();
 
 class SocketService {
   constructor() {
