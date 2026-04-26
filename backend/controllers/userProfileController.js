@@ -15,6 +15,34 @@ try {
 }
 const mammoth = require("mammoth");
 const axios = require("axios"); // ✅ Add for downloading Cloudinary files
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const getSignedResumeUrl = (resumeUrl) => {
+  if (!resumeUrl || !String(resumeUrl).startsWith("http")) {
+    return resumeUrl;
+  }
+
+  const match = String(resumeUrl).match(/\/upload\/(?:v\d+\/)?(.+)\.(pdf|doc|docx)$/i);
+  if (!match) {
+    return resumeUrl;
+  }
+
+  const publicId = decodeURIComponent(match[1]);
+  const format = match[2].toLowerCase();
+  const expiresAt = Math.floor(Date.now() / 1000) + 10 * 60;
+
+  return cloudinary.utils.private_download_url(publicId, format, {
+    resource_type: "raw",
+    type: "upload",
+    expires_at: expiresAt,
+  });
+};
 
 // ✅ ENHANCED: Extract text from resume file (handles both local and Cloudinary URLs)
 const extractTextFromResume = async (filePathOrUrl) => {
@@ -332,6 +360,43 @@ exports.getUserProfile = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/* =========================
+   GET SIGNED RESUME VIEW URL
+========================= */
+exports.getResumeViewUrl = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await User.findById(userId).select("resumeUrl");
+
+    if (!user || !user.resumeUrl) {
+      return res.status(404).json({
+        success: false,
+        message: "No resume found",
+      });
+    }
+
+    const signedUrl = getSignedResumeUrl(user.resumeUrl);
+
+    return res.status(200).json({
+      success: true,
+      url: signedUrl,
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
       message: error.message,
     });

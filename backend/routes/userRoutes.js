@@ -12,6 +12,7 @@ const {
   getPersonalizedJobs,
   deleteResume,
   updateProfile,
+  getResumeViewUrl,
 } = require("../controllers/userProfileController");
 
 router.get("/profile", protect, asyncHandler(async (req, res) => {
@@ -42,6 +43,7 @@ router.post("/resume/upload", protect, (req, res, next) => {
     next();
   });
 }, asyncHandler(uploadResume));
+router.get("/resume/view-url", protect, asyncHandler(getResumeViewUrl));
 router.delete("/resume", protect, asyncHandler(deleteResume));
 router.get("/personalized-jobs", protect, asyncHandler(getPersonalizedJobs));
 

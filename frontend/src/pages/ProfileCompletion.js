@@ -97,9 +97,7 @@ const ProfileCompletion = () => {
       const payload = new FormData();
       payload.append('resume', resumeFile);
 
-      const response = await API.post('/users/resume/upload', payload, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const response = await API.post('/users/resume/upload', payload);
 
       if (response.data?.success) {
         setSuccess(true);
@@ -128,6 +126,23 @@ const ProfileCompletion = () => {
       setError(err.response?.data?.message || err.message || 'Failed to delete resume');
     } finally {
       setResumeUploading(false);
+    }
+  };
+
+  const handleViewResume = async () => {
+    try {
+      setError(null);
+      const response = await API.get('/users/resume/view-url');
+      const signedUrl = response.data?.url;
+
+      if (!signedUrl) {
+        setError('Unable to open resume right now');
+        return;
+      }
+
+      window.open(signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Unable to open resume');
     }
   };
 
@@ -448,9 +463,14 @@ const ProfileCompletion = () => {
             )}
 
             {formData.resumeUrl && (
-              <a href={formData.resumeUrl} target="_blank" rel="noreferrer" className="back-button">
+              <button
+                type="button"
+                className="back-button"
+                disabled={resumeUploading}
+                onClick={handleViewResume}
+              >
                 View Resume
-              </a>
+              </button>
             )}
           </div>
         </motion.div>
