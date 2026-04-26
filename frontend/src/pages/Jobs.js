@@ -7,6 +7,7 @@ import Pagination from "../components/Pagination";
 import EnhancedNotificationCenter from "../components/EnhancedNotificationCenter";
 import useJobFilters from "../hooks/useJobFilters";
 import { getJobs } from "../services/api";
+import SystemDiagnostics from "../components/SystemDiagnostics";
 import "./Jobs.css";
 
 const Jobs = () => {
@@ -15,16 +16,21 @@ const Jobs = () => {
   const [jobs, setJobs] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [error, setError] = useState(null);
 
   // Load initial jobs
   useEffect(() => {
     const loadJobs = async () => {
       try {
+        console.log("🔄 Fetching jobs from API...");
         const res = await getJobs();
+        console.log("✅ Jobs API Response:", res.data);
         setJobs(res.data.jobs || []);
+        setError(null);
         setInitialLoadComplete(true);
       } catch (error) {
-        console.error("Error fetching jobs:", error.message);
+        console.error("❌ Error fetching jobs:", error);
+        setError(`Failed to load jobs: ${error.message}`);
         setJobs([]);
         setInitialLoadComplete(true);
       }
@@ -102,6 +108,37 @@ const Jobs = () => {
               : "Explore amazing job opportunities tailored to your skills"}
           </p>
         </motion.div>
+
+        {/* Error Message */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg"
+          >
+            <p className="text-red-800 font-semibold">⚠️ Error: {error}</p>
+            <p className="text-red-700 text-sm mt-1">Check browser console (F12) for more details</p>
+          </motion.div>
+        )}
+
+        {/* No Jobs Message */}
+        {!error && initialLoadComplete && jobs.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+          >
+            <p className="text-blue-800 font-semibold">ℹ️ No jobs available yet</p>
+            <p className="text-blue-700 text-sm mt-1">
+              Check back soon or contact your administrator
+            </p>
+          </motion.div>
+        )}
+
+        {/* Diagnostics */}
+        {(error || (initialLoadComplete && jobs.length === 0)) && (
+          <SystemDiagnostics />
+        )}
 
         {/* Advanced Filters */}
         <AdvancedJobFilters
