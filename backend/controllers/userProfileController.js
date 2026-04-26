@@ -319,7 +319,7 @@ exports.getUserProfile = async (req, res) => {
     }
 
     const user = await User.findById(userId).select(
-      "name email phoneNumber linkedinUrl resumeUrl fieldOfInterest skills currentLocation"
+      "name email phoneNumber linkedinUrl resumeUrl fieldOfInterest skills currentLocation resumeDataExtracted"
     );
 
     // Calculate profile completeness

@@ -130,8 +130,8 @@ userSchema.methods.calculateProfileCompleteness = function () {
   // Skills: 15%
   if (this.skills && this.skills.length > 0) score += 15;
   
-  // Resume URL: 12%
-  if (this.resumeUrl && this.resumeUrl.trim().length > 0) score += 12;
+  // Resume URL: 17%
+  if (this.resumeUrl && this.resumeUrl.trim().length > 0) score += 17;
   
   // LinkedIn URL: 8%
   if (this.linkedinUrl && this.linkedinUrl.trim().length > 0) score += 8;

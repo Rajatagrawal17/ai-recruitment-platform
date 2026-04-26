@@ -11,9 +11,11 @@ const ProfileCompletion = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [resumeUploading, setResumeUploading] = useState(false);
   const [profileCompleteness, setProfileCompleteness] = useState(0);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [resumeFile, setResumeFile] = useState(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -22,7 +24,7 @@ const ProfileCompletion = () => {
     fieldOfInterest: '',
     skills: '',
     linkedinUrl: '',
-    // ✅ resumeFile and resumeUrl removed - upload via job application instead
+    resumeUrl: '',
   });
 
   // Fetch current profile data
@@ -49,7 +51,7 @@ const ProfileCompletion = () => {
           fieldOfInterest: (Array.isArray(response.data.user.fieldOfInterest) ? response.data.user.fieldOfInterest : []).join(', '),
           skills: (Array.isArray(response.data.user.skills) ? response.data.user.skills : []).join(', '),
           linkedinUrl: response.data.user.linkedinUrl || '',
-          // ✅ Resume removed from profile completion form
+          resumeUrl: response.data.user.resumeUrl || '',
         };
         console.log("📝 Setting form data:", newFormData);
         setFormData(newFormData);
@@ -82,7 +84,52 @@ const ProfileCompletion = () => {
     setError(null);
   };
 
-  // ✅ handleFileChange removed - resume upload moved to job application
+  const handleResumeUpload = async () => {
+    if (!resumeFile) {
+      setError('Please select a PDF or DOCX resume file');
+      return;
+    }
+
+    try {
+      setResumeUploading(true);
+      setError(null);
+
+      const payload = new FormData();
+      payload.append('resume', resumeFile);
+
+      const response = await API.post('/users/resume/upload', payload, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (response.data?.success) {
+        setSuccess(true);
+        setResumeFile(null);
+        await fetchProfile();
+      } else {
+        setError(response.data?.message || 'Resume upload failed');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Resume upload failed');
+    } finally {
+      setResumeUploading(false);
+    }
+  };
+
+  const handleDeleteResume = async () => {
+    if (!window.confirm('Delete uploaded resume from your profile?')) return;
+
+    try {
+      setResumeUploading(true);
+      setError(null);
+      await API.delete('/users/resume');
+      setResumeFile(null);
+      await fetchProfile();
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to delete resume');
+    } finally {
+      setResumeUploading(false);
+    }
+  };
 
 
   const handleSubmit = async (e) => {
@@ -92,8 +139,6 @@ const ProfileCompletion = () => {
     setSuccess(false);
 
     try {
-      // ✅ Resume upload removed - users can upload from job application instead
-
       // Update profile with form data
       const updateData = {
         name: formData.name || '',
@@ -131,7 +176,7 @@ const ProfileCompletion = () => {
         // Give user feedback before redirecting
         setTimeout(() => {
           console.log("🔄 Redirecting to dashboard");
-          navigate('/candidate-dashboard', { replace: true });
+          navigate('/candidate/dashboard', { replace: true });
         }, 2000);
       } else {
         setError(response.data.message || 'Failed to update profile');
@@ -188,20 +233,9 @@ const ProfileCompletion = () => {
       weight: 8,
       placeholder: 'https://linkedin.com/in/yourprofile or linkedin.com/in/yourprofile',
     },
-    // ✅ Resume upload removed from profile completion
-    // Users can upload resume separately from job application or dashboard
-    // {
-    //   name: 'resumeFile',
-    //   label: 'Resume (PDF)',
-    //   type: 'file',
-    //   weight: 12,
-    //   accept: '.pdf',
-    //   isFile: true,
-    // },
   ];
 
   const calculateFieldStatus = (fieldName) => {
-    // ✅ Resume field removed
     const field = formData[fieldName];
     if (!field) return 'empty';
     if (typeof field === 'string') return field.trim().length > 0 ? 'filled' : 'empty';
@@ -325,19 +359,6 @@ const ProfileCompletion = () => {
                 rows="3"
                 className={`form-input ${calculateFieldStatus(field.name)}`}
               />
-            ) : field.isFile ? (
-              <div className="file-input-wrapper">
-                <input
-                  id={field.name}
-                  type="file"
-                  accept={field.accept}
-                  onChange={handleFileChange}
-                  className="file-input"
-                />
-                <label htmlFor={field.name} className="file-label">
-                  {formData.resumeUrl || 'Click to upload PDF'}
-                </label>
-              </div>
             ) : (
               <input
                 id={field.name}
@@ -365,6 +386,74 @@ const ProfileCompletion = () => {
             </div>
           </motion.div>
         ))}
+
+        <motion.div
+          className="form-group"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="field-header">
+            <label htmlFor="resumeFile">Resume (PDF/DOCX)</label>
+            <span className="field-weight">+17%</span>
+          </div>
+
+          <div className="file-input-wrapper">
+            <input
+              id="resumeFile"
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
+              className="file-input"
+            />
+            <label htmlFor="resumeFile" className="file-label">
+              {resumeFile ? resumeFile.name : (formData.resumeUrl ? 'Resume uploaded (change file)' : 'Choose resume file')}
+            </label>
+          </div>
+
+          <div className="field-status">
+            {formData.resumeUrl ? (
+              <>
+                <CheckCircle size={14} className="status-icon filled" />
+                <span className="status-text">Uploaded</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle size={14} className="status-icon empty" />
+                <span className="status-text">Not uploaded</span>
+              </>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="submit-button"
+              style={{ marginTop: 0, width: 'auto', padding: '0.65rem 1rem' }}
+              disabled={resumeUploading || !resumeFile}
+              onClick={handleResumeUpload}
+            >
+              {resumeUploading ? 'Uploading...' : 'Upload Resume'}
+            </button>
+
+            {formData.resumeUrl && (
+              <button
+                type="button"
+                className="back-button"
+                disabled={resumeUploading}
+                onClick={handleDeleteResume}
+              >
+                Delete Resume
+              </button>
+            )}
+
+            {formData.resumeUrl && (
+              <a href={formData.resumeUrl} target="_blank" rel="noreferrer" className="back-button">
+                View Resume
+              </a>
+            )}
+          </div>
+        </motion.div>
 
         {/* Submit Button */}
         <motion.button
