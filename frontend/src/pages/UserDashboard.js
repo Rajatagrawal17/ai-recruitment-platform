@@ -8,7 +8,6 @@ import LoadingAnimation from "../components/LoadingAnimation";
 import StatsChart from "../components/StatsChart";
 import Achievements from "../components/Achievements";
 import AnimatedBackground from "../components/AnimatedBackground";
-import { FALLBACK_CANDIDATE_APPLICATIONS, FALLBACK_PROFILE } from "../data/fallbackData";
 
 const UserDashboard = () => {
   const [applications, setApplications] = useState([]);
@@ -36,10 +35,8 @@ const UserDashboard = () => {
       const appRes = await API.get("/applications/my-applications");
       setApplications(appRes.data.applications || []);
     } catch (error) {
-      console.log("⚠️ Backend unavailable, showing sample data");
-      setUser(FALLBACK_PROFILE);
-      setApplications(FALLBACK_CANDIDATE_APPLICATIONS);
-      setError("Showing sample data - Backend unavailable");
+      setError("Failed to load dashboard. Please refresh or try again.");
+      console.error(error);
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Zap, MapPin, Briefcase, Code } from "lucide-react";
 import API from "../services/api";
-import { FALLBACK_RECOMMENDED_JOBS } from "../data/fallbackData";
 import "./PersonalizedJobs.css";
 
 const PersonalizedJobs = ({ triggerRefresh }) => {
@@ -30,9 +29,9 @@ const PersonalizedJobs = ({ triggerRefresh }) => {
         setError(response.data.message || "Failed to load personalized jobs");
       }
     } catch (err) {
-      console.log("⚠️ Backend unavailable, showing sample jobs");
-      setJobs(FALLBACK_RECOMMENDED_JOBS);
-      setError("Showing sample data - Backend unavailable");
+      setError(
+        err.response?.data?.message || "Failed to load personalized jobs. Please try again."
+      );
     } finally {
       setLoading(false);
     }

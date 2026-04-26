@@ -15,7 +15,6 @@ import ProfileSetupCard from "../components/ProfileSetupCard";
 import PersonalizedJobs from "../components/PersonalizedJobs";
 import UserProfileCard from "../components/UserProfileCard";
 import { getCandidateApplications, getRecommendedJobs } from "../services/api";
-import { FALLBACK_CANDIDATE_APPLICATIONS, FALLBACK_RECOMMENDED_JOBS } from "../data/fallbackData";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { useIsMobile } from "../components/MobileOptimizedAnimations";
 
@@ -85,10 +84,7 @@ const CandidateDashboard = () => {
         setApplications(appsRes.data.applications || []);
         setRecommendations(recommendationRes.data.recommendations || []);
       } catch (err) {
-        console.log("⚠️ Backend unavailable, showing sample data");
-        setApplications(FALLBACK_CANDIDATE_APPLICATIONS);
-        setRecommendations(FALLBACK_RECOMMENDED_JOBS);
-        setError("Showing sample data - Backend unavailable");
+        setError(err.response?.data?.message || "Could not load your candidate dashboard. Please try again.");
       } finally {
         setLoading(false);
         setRecommendationLoading(false);
