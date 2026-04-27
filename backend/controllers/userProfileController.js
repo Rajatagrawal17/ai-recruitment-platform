@@ -23,18 +23,24 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const getSignedResumeUrl = (resumeUrl) => {
+const getResumePublicIdFromUrl = (resumeUrl = "") => {
+  const match = String(resumeUrl).match(/\/upload\/(?:v\d+\/)?(.+)\.[a-z0-9]+(?:\?|$)/i);
+  return match ? decodeURIComponent(match[1]) : "";
+};
+
+const getSignedResumeUrl = (resumeUrl, resumePublicId) => {
   if (!resumeUrl || !String(resumeUrl).startsWith("http")) {
     return resumeUrl;
   }
 
-  const match = String(resumeUrl).match(/\/upload\/(?:v\d+\/)?(.+)\.(pdf|doc|docx)$/i);
-  if (!match) {
+  const extMatch = String(resumeUrl).match(/\.([a-z0-9]+)(?:\?|$)/i);
+  const format = extMatch ? extMatch[1].toLowerCase() : "pdf";
+  const publicId = resumePublicId || getResumePublicIdFromUrl(resumeUrl);
+
+  if (!publicId) {
     return resumeUrl;
   }
 
-  const publicId = decodeURIComponent(match[1]);
-  const format = match[2].toLowerCase();
   const expiresAt = Math.floor(Date.now() / 1000) + 10 * 60;
 
   try {
@@ -261,6 +267,7 @@ exports.uploadResume = async (req, res) => {
 
     // Cloudinary provides secure_url - use it directly
     const resumeUrl = req.file.path; // This is the Cloudinary secure URL
+    const resumePublicId = req.file.filename || getResumePublicIdFromUrl(resumeUrl);
 
     // Extract text from resume (using the downloaded buffer from Cloudinary)
     const resumeText = await extractTextFromResume(req.file.path);
@@ -289,6 +296,7 @@ exports.uploadResume = async (req, res) => {
       userId,
       {
         resumeUrl: resumeUrl, // Store the Cloudinary secure URL
+        resumePublicId: resumePublicId,
         skills: skills,
         fieldOfInterest: fieldOfInterest.length > 0 ? fieldOfInterest : existingUser?.fieldOfInterest || [],
         currentLocation: currentLocation || existingUser?.currentLocation || "",
@@ -322,6 +330,7 @@ exports.uploadResume = async (req, res) => {
       message: "Resume uploaded and processed successfully",
       data: {
         resume: user.resumeUrl,
+        resumePublicId: user.resumePublicId,
         skills: user.skills,
         fieldOfInterest: user.fieldOfInterest,
         currentLocation: user.currentLocation,
@@ -352,7 +361,7 @@ exports.getUserProfile = async (req, res) => {
     }
 
     const user = await User.findById(userId).select(
-      "name email phoneNumber linkedinUrl resumeUrl fieldOfInterest skills currentLocation resumeDataExtracted"
+      "name email phoneNumber linkedinUrl resumeUrl resumePublicId fieldOfInterest skills currentLocation resumeDataExtracted"
     );
 
     // Calculate profile completeness
@@ -385,7 +394,7 @@ exports.getResumeViewUrl = async (req, res) => {
       });
     }
 
-    const user = await User.findById(userId).select("resumeUrl");
+    const user = await User.findById(userId).select("resumeUrl resumePublicId");
 
     if (!user || !user.resumeUrl) {
       return res.status(404).json({
@@ -394,11 +403,12 @@ exports.getResumeViewUrl = async (req, res) => {
       });
     }
 
-    const signedUrl = getSignedResumeUrl(user.resumeUrl);
+    const signedUrl = getSignedResumeUrl(user.resumeUrl, user.resumePublicId);
 
     return res.status(200).json({
       success: true,
       url: signedUrl,
+      resumePublicId: user.resumePublicId,
     });
   } catch (error) {
     return res.status(500).json({
@@ -630,14 +640,18 @@ exports.deleteResume = async (req, res) => {
       });
     }
 
-    // Delete file from uploads folder
-    const filePath = path.join(__dirname, "..", user.resumeUrl);
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    const resumePublicId = user.resumePublicId || getResumePublicIdFromUrl(user.resumeUrl);
+    if (resumePublicId) {
+      try {
+        await cloudinary.uploader.destroy(resumePublicId, { resource_type: "raw" });
+      } catch (err) {
+        console.warn("⚠️ Cloudinary delete warning:", err.message);
+      }
     }
 
     // Update user
     user.resumeUrl = null;
+    user.resumePublicId = null;
     user.resumeDataExtracted = false;
     await user.save();
 
@@ -675,6 +689,7 @@ exports.updateProfile = async (req, res) => {
       skills,
       linkedinUrl,
       resumeUrl,
+      resumePublicId,
     } = req.body;
 
     console.log("📝 Updating profile with data:", {
@@ -685,6 +700,7 @@ exports.updateProfile = async (req, res) => {
       skills,
       linkedinUrl,
       resumeUrl,
+      resumePublicId,
     });
 
     const user = await User.findById(userId);
@@ -710,6 +726,10 @@ exports.updateProfile = async (req, res) => {
       console.log("⚠️ resumeUrl not in request, preserving existing:", user.resumeUrl);
     }
 
+    if (resumePublicId !== undefined) {
+      user.resumePublicId = resumePublicId;
+    }
+
     console.log("💾 Saving user with updated fields:", {
       name: user.name,
       phoneNumber: user.phoneNumber,
@@ -718,6 +738,7 @@ exports.updateProfile = async (req, res) => {
       skills: user.skills,
       linkedinUrl: user.linkedinUrl,
       resumeUrl: user.resumeUrl,
+      resumePublicId: user.resumePublicId,
     });
 
     await user.save();
@@ -747,6 +768,7 @@ exports.updateProfile = async (req, res) => {
         skills: user.skills,
         linkedinUrl: user.linkedinUrl,
         resumeUrl: user.resumeUrl,
+        resumePublicId: user.resumePublicId,
       },
       profileCompleteness: profileCompleteness,
     });

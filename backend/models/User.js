@@ -67,6 +67,11 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
+    resumePublicId: {
+      type: String,
+      trim: true,
+    },
+
     currentLocation: {
       type: String,
       trim: true,
