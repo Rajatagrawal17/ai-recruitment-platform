@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, BookOpen, Award } from 'lucide-react';
+import { TrendingUp, BookOpen, AlertCircle } from 'lucide-react';
 import { getApiEndpoint } from '../utils/apiConfig';
 import './SkillGapAnalyzer.css';
 
@@ -9,6 +9,7 @@ const SkillGapAnalyzer = () => {
   const [requiredSkills, setRequiredSkills] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSkillInput = (value, type) => {
     const skills = value.split(',').map((s) => s.trim()).filter(Boolean);
@@ -20,9 +21,13 @@ const SkillGapAnalyzer = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!candidateSkills.length || !requiredSkills.length) return;
+    if (!candidateSkills.length || !requiredSkills.length) {
+      setError('Please enter both your skills and required skills.');
+      return;
+    }
 
     setLoading(true);
+    setError(null);
     try {
       const endpoint = getApiEndpoint('/ai/skill-gap');
       const response = await fetch(endpoint, {
@@ -35,11 +40,14 @@ const SkillGapAnalyzer = () => {
       });
 
       const data = await response.json();
-      if (data.success) {
-        setAnalysis(data.data);
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Skill gap analysis failed');
       }
+
+      setAnalysis(data.data);
     } catch (err) {
       console.error(err);
+      setError(err.message || 'Skill gap analysis failed');
     } finally {
       setLoading(false);
     }
@@ -55,6 +63,13 @@ const SkillGapAnalyzer = () => {
         <TrendingUp size={24} className="text-purple-500" />
         <h3>Skill Gap Analyzer</h3>
       </div>
+
+      {error && (
+        <div style={{ padding: '10px', borderRadius: '8px', border: '1px solid #fca5a5', background: '#7f1d1d22', color: '#fecaca', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <AlertCircle size={18} />
+          <span>{error}</span>
+        </div>
+      )}
 
       {!analysis ? (
         <div className="gap-input">

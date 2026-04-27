@@ -10,6 +10,11 @@ const ResumeAnalyzer = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const detectedSkills = Array.isArray(analysis?.skills) ? analysis.skills : [];
+  const atsScore = Number(analysis?.atsScore ?? analysis?.ats_score ?? 0);
+  const experienceYears = Number(analysis?.experience?.years ?? 0);
+  const suggestions = Array.isArray(analysis?.suggestions) ? analysis.suggestions : [];
+
   const handleAnalyze = async () => {
     if (!resumeText.trim()) {
       setError('Please enter resume text');
@@ -100,11 +105,11 @@ const ResumeAnalyzer = () => {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
               >
-                <span className="score">{analysis.atsScore}</span>
+                <span className="score">{atsScore}</span>
                 <span className="score-max">/100</span>
               </motion.div>
               <p className="score-status">
-                {analysis.atsScore >= 70
+                {atsScore >= 70
                   ? '✅ Good for ATS'
                   : '⚠️ Needs improvement'}
               </p>
@@ -113,9 +118,9 @@ const ResumeAnalyzer = () => {
 
           {/* Skills */}
           <div className="skills-section">
-            <h4>Detected Skills ({analysis.skills.length})</h4>
+            <h4>Detected Skills ({detectedSkills.length})</h4>
             <div className="skills-grid">
-              {analysis.skills.map((skill) => (
+              {detectedSkills.map((skill) => (
                 <span key={skill} className="skill-badge">
                   {skill}
                 </span>
@@ -126,14 +131,14 @@ const ResumeAnalyzer = () => {
           {/* Experience */}
           <div className="experience-section">
             <h4>Experience</h4>
-            <p>{analysis.experience.years} years detected</p>
+            <p>{experienceYears} years detected</p>
           </div>
 
           {/* Suggestions */}
-          {analysis.suggestions?.length > 0 && (
+          {suggestions.length > 0 && (
             <div className="suggestions">
               <h4>Suggestions for Improvement</h4>
-              {analysis.suggestions.map((suggestion, idx) => (
+              {suggestions.map((suggestion, idx) => (
                 <div key={idx} className={`suggestion ${suggestion.type}`}>
                   {suggestion.type === 'warning' && <AlertCircle size={16} />}
                   {suggestion.type !== 'warning' && <CheckCircle size={16} />}

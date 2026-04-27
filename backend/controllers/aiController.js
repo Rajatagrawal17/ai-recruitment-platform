@@ -18,10 +18,58 @@ if (IS_DEMO_MODE) {
   console.warn("   To use real Claude AI, set CLAUDE_API_KEY in .env");
 }
 
+const normalizeResumeAnalysis = (raw = {}) => {
+  const toArray = (value) => (Array.isArray(value) ? value : []);
+  const toNumber = (value, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+
+  const normalizedSuggestions = toArray(raw.suggestions)
+    .map((item) => {
+      if (typeof item === "string") {
+        return { type: "tip", message: item };
+      }
+
+      if (item && typeof item === "object") {
+        return {
+          type: item.type || "tip",
+          message: item.message || "Improve resume clarity and impact.",
+        };
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+
+  return {
+    atsScore: toNumber(raw.atsScore ?? raw.ats_score, 0),
+    skills: toArray(raw.skills),
+    skillCategories: raw.skillCategories || raw.skill_categories || {},
+    experience:
+      raw.experience && typeof raw.experience === "object"
+        ? {
+            years: toNumber(raw.experience.years, 0),
+            summary: raw.experience.summary || "",
+          }
+        : { years: 0, summary: "" },
+    education:
+      raw.education && typeof raw.education === "object"
+        ? raw.education
+        : { degrees: [], certifications: [] },
+    strengths: toArray(raw.strengths),
+    weaknesses: toArray(raw.weaknesses),
+    redFlags: toArray(raw.redFlags || raw.red_flags),
+    overallQuality: raw.overallQuality || raw.overall_quality || "unknown",
+    authenticityScore: toNumber(raw.authenticityScore ?? raw.authenticity_score, 0),
+    suggestions: normalizedSuggestions,
+  };
+};
+
 // ==================== AI JOB MATCHER ====================
 exports.getJobMatches = async (req, res) => {
   try {
-    const { candidateId } = req.body || { candidateId: req.user?._id };
+    const candidateId = req.body?.candidateId || req.user?._id;
 
     if (!candidateId) {
       return res.status(400).json({
@@ -88,12 +136,14 @@ exports.analyzeResume = async (req, res) => {
       analysis = await MockAIResumeAnalyzer.analyzeResume(textToAnalyze);
     }
 
+    const normalized = normalizeResumeAnalysis(analysis);
+
     res.status(200).json({
       success: true,
       data: {
-        ...analysis,
-        timestamp: new Date(),
-        provider: "Claude AI",
+        ...normalized,
+        timestamp: new Date().toISOString(),
+        provider: analysis.provider || (IS_DEMO_MODE ? "Mock AI (Demo Mode)" : "Claude AI"),
       },
     });
   } catch (error) {
@@ -170,30 +220,38 @@ exports.analyzeSkills = async (req, res) => {
 // ==================== INTERVIEW PREP ====================
 exports.getInterviewQuestions = async (req, res) => {
   try {
-    const { jobId, count = 5 } = req.body;
+    const { jobId, jobTitle, jobDescription, count = 5 } = req.body;
 
-    if (!jobId) {
+    if (!jobId && !jobTitle) {
       return res.status(400).json({
         success: false,
-        message: "Job ID is required",
+        message: "Job ID or Job title is required",
       });
     }
 
-    const job = await Job.findById(jobId);
-    if (!job) {
-      return res.status(404).json({
-        success: false,
-        message: "Job not found",
-      });
+    let job = null;
+    if (jobId) {
+      job = await Job.findById(jobId);
+      if (!job) {
+        return res.status(404).json({
+          success: false,
+          message: "Job not found",
+        });
+      }
     }
 
-    const jobDescription = `${job.title} ${job.description} ${job.requirements || ""}`;
-    const questions = InterviewAssistant.generateInterviewQuestions(jobDescription, count);
+    const resolvedJobTitle = job?.title || jobTitle || "Software Engineer";
+    const resolvedJobDescription = job
+      ? `${job.title} ${job.description} ${job.requirements || ""}`
+      : `${jobTitle || ""} ${jobDescription || ""}`.trim() ||
+        `${resolvedJobTitle} role with modern software engineering responsibilities`;
+
+    const questions = InterviewAssistant.generateInterviewQuestions(resolvedJobDescription, count);
 
     res.status(200).json({
       success: true,
       data: {
-        jobTitle: job.title,
+        jobTitle: resolvedJobTitle,
         questions,
         total: questions.length,
       },
@@ -209,37 +267,65 @@ exports.getInterviewQuestions = async (req, res) => {
 // ==================== INTERVIEW TIPS ====================
 exports.getInterviewTips = async (req, res) => {
   try {
-    const { jobId, candidateId } = req.body;
+    const { jobId, candidateId: candidateIdFromBody, jobTitle, jobDescription } = req.body;
+    const candidateId = candidateIdFromBody || req.user?._id;
 
-    if (!jobId || !candidateId) {
+    if (!candidateId) {
       return res.status(400).json({
         success: false,
-        message: "Job ID and Candidate ID are required",
+        message: "Candidate ID is required",
       });
     }
 
-    const job = await Job.findById(jobId);
     const candidate = await User.findById(candidateId);
 
-    if (!job || !candidate) {
+    let job = null;
+    if (jobId) {
+      job = await Job.findById(jobId);
+      if (!job) {
+        return res.status(404).json({
+          success: false,
+          message: "Job not found",
+        });
+      }
+    }
+
+    if (!candidate) {
       return res.status(404).json({
         success: false,
-        message: "Job or candidate not found",
+        message: "Candidate not found",
       });
     }
 
-    const candidateSkills = SkillExtractor.extractSkills(
-      candidate.bio || candidate.name || ""
-    );
-    const jobDescription = `${job.title} ${job.description} ${job.requirements || ""}`;
+    if (!job && !jobTitle) {
+      return res.status(400).json({
+        success: false,
+        message: "Job ID or Job title is required",
+      });
+    }
 
-    const tips = InterviewAssistant.generateInterviewTips(candidateSkills, jobDescription);
+    const resolvedJobTitle = job?.title || jobTitle || "Software Engineer";
+    const resolvedJobDescription = job
+      ? `${job.title} ${job.description} ${job.requirements || ""}`
+      : `${jobTitle || ""} ${jobDescription || ""}`.trim() ||
+        `${resolvedJobTitle} role with modern software engineering responsibilities`;
+
+    const candidateSkills =
+      Array.isArray(candidate.skills) && candidate.skills.length > 0
+        ? candidate.skills
+        : SkillExtractor.extractSkills(
+            `${candidate.name || ""} ${candidate.email || ""} ${
+              Array.isArray(candidate.fieldOfInterest) ? candidate.fieldOfInterest.join(" ") : ""
+            }`
+          );
+
+    const tips = InterviewAssistant.generateInterviewTips(candidateSkills, resolvedJobDescription);
 
     res.status(200).json({
       success: true,
       data: {
         candidateName: candidate.name,
-        jobTitle: job.title,
+        jobTitle: resolvedJobTitle,
         tips,
       },
     });

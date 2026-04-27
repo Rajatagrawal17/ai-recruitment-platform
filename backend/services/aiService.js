@@ -74,13 +74,21 @@ class JobMatcher {
       const candidate = await User.findById(candidateId);
       if (!candidate) return [];
 
-      // Extract candidate skills from profile + resume
-      const profileSkills = SkillExtractor.extractSkills(
-        `${candidate.name} ${candidate.email} ${candidate.bio || ""}`
+      // Extract candidate skills from profile + resume-derived fields
+      const storedSkills = Array.isArray(candidate.skills)
+        ? candidate.skills.map((skill) => String(skill).toLowerCase())
+        : [];
+      const extractedSkills = SkillExtractor.extractSkills(
+        `${candidate.name || ""} ${candidate.email || ""} ${
+          Array.isArray(candidate.fieldOfInterest) ? candidate.fieldOfInterest.join(" ") : ""
+        } ${storedSkills.join(" ")}`
       );
+      const profileSkills = Array.from(new Set([...storedSkills, ...extractedSkills]));
 
       // Get all active jobs
-      const jobs = await Job.find({ status: "active" }).lean();
+      const jobs = await Job.find({
+        $or: [{ status: "open" }, { status: "active" }, { status: { $exists: false } }],
+      }).lean();
 
       // Calculate match score for each job
       const matchedJobs = jobs.map((job) => {

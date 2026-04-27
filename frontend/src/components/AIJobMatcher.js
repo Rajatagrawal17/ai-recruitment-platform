@@ -10,25 +10,29 @@ const AIJobMatcher = ({ candidateId, onJobsMatched }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (candidateId) {
-      fetchMatchedJobs();
-    }
+    fetchMatchedJobs();
   }, [candidateId]);
 
   const fetchMatchedJobs = async () => {
     setLoading(true);
+    setError(null);
     try {
       const endpoint = getApiEndpoint('/ai/match-jobs');
+      const payload = candidateId ? { candidateId } : {};
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-        body: JSON.stringify({ candidateId }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Unable to fetch matched jobs');
+      }
+
       if (data.success) {
         setMatchedJobs(data.data.slice(0, 5));
         onJobsMatched?.(data.data);

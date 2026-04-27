@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { DollarSign, TrendingUp } from 'lucide-react';
+import { DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
 import { getApiEndpoint } from '../utils/apiConfig';
 import './SalaryPredictor.css';
 
@@ -13,6 +13,7 @@ const SalaryPredictor = () => {
   });
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,9 +24,13 @@ const SalaryPredictor = () => {
   };
 
   const handlePredict = async () => {
-    if (!formData.jobTitle || formData.experience < 0) return;
+    if (!formData.jobTitle || formData.experience < 0) {
+      setError('Please provide a valid job title and experience.');
+      return;
+    }
 
     setLoading(true);
+    setError(null);
     try {
       const endpoint = getApiEndpoint('/ai/predict-salary');
       const response = await fetch(endpoint, {
@@ -41,11 +46,14 @@ const SalaryPredictor = () => {
       });
 
       const data = await response.json();
-      if (data.success) {
-        setPrediction(data.data);
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Salary prediction failed');
       }
+
+      setPrediction(data.data);
     } catch (err) {
       console.error(err);
+      setError(err.message || 'Salary prediction failed');
     } finally {
       setLoading(false);
     }
@@ -61,6 +69,13 @@ const SalaryPredictor = () => {
         <DollarSign size={24} className="text-green-500" />
         <h3>AI Salary Predictor</h3>
       </div>
+
+      {error && (
+        <div style={{ padding: '10px', borderRadius: '8px', border: '1px solid #fca5a5', background: '#7f1d1d22', color: '#fecaca', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <AlertCircle size={18} />
+          <span>{error}</span>
+        </div>
+      )}
 
       {!prediction ? (
         <div className="predictor-form">
@@ -133,7 +148,7 @@ const SalaryPredictor = () => {
             >
               <div className="range-item min">
                 <span className="label">Minimum</span>
-                <span className="amount">{prediction.min} LPA</span>
+                <span className="amount">{prediction.min} {prediction.currency || 'LPA'}</span>
               </div>
 
               <div className="range-item current">
@@ -144,13 +159,13 @@ const SalaryPredictor = () => {
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', delay: 0.3 }}
                 >
-                  {prediction.current} LPA
+                  {prediction.current} {prediction.currency || 'LPA'}
                 </motion.span>
               </div>
 
               <div className="range-item max">
                 <span className="label">Maximum</span>
-                <span className="amount">{prediction.max} LPA</span>
+                <span className="amount">{prediction.max} {prediction.currency || 'LPA'}</span>
               </div>
             </motion.div>
           </div>
