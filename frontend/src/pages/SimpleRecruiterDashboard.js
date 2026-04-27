@@ -58,6 +58,7 @@ const StatCard = ({ label, value, icon: Icon }) => (
 const CandidateRow = ({ candidate, onStatusChange, onSchedule }) => {
   const [dateTime, setDateTime] = useState("");
   const [mode, setMode] = useState("video");
+  const [showDetail, setShowDetail] = useState(false);
 
   return (
     <div className="rounded-lg border border-border bg-surface/40 p-3">
@@ -98,6 +99,16 @@ const CandidateRow = ({ candidate, onStatusChange, onSchedule }) => {
           >
             Schedule
           </button>
+
+          {candidate.resume && (
+            <a href={candidate.resume} target="_blank" rel="noreferrer" className="btn-secondary text-sm">
+              Download Resume
+            </a>
+          )}
+
+          <button className="btn-secondary text-sm" onClick={() => setShowDetail((s) => !s)}>
+            Details
+          </button>
         </div>
       </div>
 
@@ -105,6 +116,18 @@ const CandidateRow = ({ candidate, onStatusChange, onSchedule }) => {
         <p className="mt-2 text-xs text-emerald-300">
           Interview: {new Date(candidate.interview.scheduledAt).toLocaleString()} ({candidate.interview.mode || "video"})
         </p>
+      )}
+
+      {showDetail && (
+        <div className="mt-3 rounded-md border border-border p-3 bg-surface/20 text-sm">
+          <p className="font-semibold">Profile</p>
+          <p className="text-text-muted">Skills: {(candidate.extractedSkills || candidate.parsedResume?.skills || []).join(", ") || "—"}</p>
+          <p className="mt-1">Experience: {candidate.yearsExperience || candidate.experience || "—"} years</p>
+          <div className="mt-2">
+            <p className="font-semibold">Resume snippet</p>
+            <p className="text-xs text-text-muted line-clamp-4">{candidate.resumeText || candidate.parsedResume?.summary || "No resume text available"}</p>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -118,6 +141,8 @@ const SimpleRecruiterDashboard = () => {
 
   const [loading, setLoading] = useState(true);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [saving, setSaving] = useState(false);
 
   const [query, setQuery] = useState("");
@@ -170,10 +195,13 @@ const SimpleRecruiterDashboard = () => {
         sortBy,
         status: statusFilter !== "all" ? statusFilter : undefined,
         search: query || undefined,
-        page: 1,
-        limit: 100,
+        page,
+        limit: 12,
       });
       setCandidates(extractCandidates(res));
+      const meta = res?.data?.meta || {};
+      setPage(meta.page || 1);
+      setTotalPages(meta.totalPages || 1);
     } catch (error) {
       setMessage("error", error?.response?.data?.message || "Failed to load candidates");
       setCandidates([]);
@@ -215,6 +243,28 @@ const SimpleRecruiterDashboard = () => {
 
     return next;
   }, [candidates, query, sortBy, statusFilter]);
+
+  // CSV export
+  const exportCSV = useCallback(() => {
+    const rows = filteredCandidates.map((c) => ({
+      name: c.candidateName || "",
+      email: c.candidateEmail || "",
+      matchScore: c.matchScore || 0,
+      status: c.status || "",
+      appliedAt: c.appliedAt || c.createdAt || "",
+    }));
+
+    const csv = [Object.keys(rows[0] || {}).join(","), ...rows.map((r) => Object.values(r).map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(jobs.find((j) => j._id === selectedJobId)?.title || "candidates").replace(/[^a-z0-9_-]/gi, "_")}_candidates.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [filteredCandidates, jobs, selectedJobId]);
 
   const handleCreateJob = async (e) => {
     e.preventDefault();
@@ -405,14 +455,43 @@ const SimpleRecruiterDashboard = () => {
             ) : filteredCandidates.length === 0 ? (
               <p className="text-sm text-text-muted">No candidates found for current filters.</p>
             ) : (
-              filteredCandidates.map((candidate) => (
-                <CandidateRow
-                  key={candidate._id}
-                  candidate={candidate}
-                  onStatusChange={handleStatusChange}
-                  onSchedule={handleSchedule}
-                />
-              ))
+              <>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <button onClick={exportCSV} className="btn-secondary text-sm">Export CSV</button>
+                    <div className="text-xs text-text-muted">Page {page} of {totalPages}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="btn-secondary text-sm"
+                      onClick={() => {
+                        if (page > 1) setPage((p) => p - 1);
+                      }}
+                      disabled={page <= 1}
+                    >
+                      Prev
+                    </button>
+                    <button
+                      className="btn-secondary text-sm"
+                      onClick={() => {
+                        if (page < totalPages) setPage((p) => p + 1);
+                      }}
+                      disabled={page >= totalPages}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+
+                {filteredCandidates.map((candidate) => (
+                  <CandidateRow
+                    key={candidate._id}
+                    candidate={candidate}
+                    onStatusChange={handleStatusChange}
+                    onSchedule={handleSchedule}
+                  />
+                ))}
+              </>
             )}
           </div>
 
