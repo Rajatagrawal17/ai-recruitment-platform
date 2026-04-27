@@ -175,6 +175,8 @@ const SimpleRecruiterDashboard = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pollIntervalMs, setPollIntervalMs] = useState(15000);
+  const [liveUpdatesEnabled, setLiveUpdatesEnabled] = useState(false);
+  const [errorCount, setErrorCount] = useState(0);
   const [saving, setSaving] = useState(false);
 
   const [query, setQuery] = useState("");
@@ -242,27 +244,40 @@ const SimpleRecruiterDashboard = () => {
     }
   }, [query, setMessage, sortBy, statusFilter]);
 
-  // Polling for live updates
+  // Adaptive polling: opt-in, visibility-aware, exponential backoff on errors
   useEffect(() => {
+    if (!liveUpdatesEnabled) return;
+
     let mounted = true;
+    let localErrorCount = 0;
+
     const tick = async () => {
       if (!mounted) return;
+      // pause when tab is hidden to avoid wasted requests
+      if (typeof document !== "undefined" && document.hidden) return;
       try {
         await loadJobsAndAnalytics();
         if (selectedJobId) await loadCandidates(selectedJobId);
+        localErrorCount = 0;
+        setErrorCount(0);
       } catch (e) {
-        // ignore
+        localErrorCount += 1;
+        setErrorCount(localErrorCount);
+        if (localErrorCount >= 3) {
+          setLiveUpdatesEnabled(false);
+          setMessage("error", "Live updates paused due to repeated backend errors");
+        }
       }
     };
 
-    const id = setInterval(tick, pollIntervalMs);
-    // initial
+    // initial tick
     tick();
+    const id = setInterval(tick, pollIntervalMs);
     return () => {
       mounted = false;
       clearInterval(id);
     };
-  }, [pollIntervalMs, selectedJobId, loadJobsAndAnalytics, loadCandidates]);
+  }, [liveUpdatesEnabled, pollIntervalMs, selectedJobId, loadJobsAndAnalytics, loadCandidates, setMessage]);
 
   useEffect(() => {
     loadJobsAndAnalytics();
@@ -439,9 +454,21 @@ const SimpleRecruiterDashboard = () => {
               Lightweight mode: faster loading, stable updates, no heavy animations.
             </p>
           </div>
-          <button className="btn-primary inline-flex items-center gap-2" onClick={() => setShowJobForm((s) => !s)}>
-            <Plus size={16} /> {showJobForm ? "Close" : "Post Job"}
-          </button>
+          <div className="flex items-center gap-3">
+            <button className="btn-outline text-sm" onClick={() => loadJobsAndAnalytics()} title="Refresh now">
+              Refresh
+            </button>
+            <button
+              className={`text-sm px-3 py-2 rounded-lg ${liveUpdatesEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-surface/10'}`}
+              onClick={() => setLiveUpdatesEnabled((v) => !v)}
+              title="Toggle live updates"
+            >
+              {liveUpdatesEnabled ? 'Live: On' : 'Live: Off'}
+            </button>
+            <button className="btn-primary inline-flex items-center gap-2" onClick={() => setShowJobForm((s) => !s)}>
+              <Plus size={16} /> {showJobForm ? "Close" : "Post Job"}
+            </button>
+          </div>
         </div>
 
         {notice.message && (
