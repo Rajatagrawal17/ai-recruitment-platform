@@ -17,6 +17,7 @@ import {
   scheduleInterview,
   updateApplicationStatus,
 } from "../services/api";
+import Sparkline from "../components/Sparkline";
 
 const initialForm = {
   title: "",
@@ -127,6 +128,36 @@ const CandidateRow = ({ candidate, onStatusChange, onSchedule }) => {
             <p className="font-semibold">Resume snippet</p>
             <p className="text-xs text-text-muted line-clamp-4">{candidate.resumeText || candidate.parsedResume?.summary || "No resume text available"}</p>
           </div>
+          {candidate.interview?.scheduledAt && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                className="btn-secondary text-sm"
+                onClick={() =>
+                  downloadICS({
+                    title: `Interview: ${candidate.candidateName || "Candidate"}`,
+                    description: `Interview with ${candidate.candidateName}\nEmail: ${candidate.candidateEmail}`,
+                    startISO: candidate.interview.scheduledAt,
+                    durationMin: 30,
+                  })
+                }
+              >
+                Download .ics
+              </button>
+              <button
+                className="btn-secondary text-sm"
+                onClick={() =>
+                  openGoogleCalendar({
+                    title: `Interview: ${candidate.candidateName || "Candidate"}`,
+                    description: `Interview with ${candidate.candidateName}\nEmail: ${candidate.candidateEmail}`,
+                    startISO: candidate.interview.scheduledAt,
+                    durationMin: 30,
+                  })
+                }
+              >
+                Open Google Calendar
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -143,6 +174,7 @@ const SimpleRecruiterDashboard = () => {
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [pollIntervalMs, setPollIntervalMs] = useState(15000);
   const [saving, setSaving] = useState(false);
 
   const [query, setQuery] = useState("");
@@ -209,6 +241,28 @@ const SimpleRecruiterDashboard = () => {
       setLoadingCandidates(false);
     }
   }, [query, setMessage, sortBy, statusFilter]);
+
+  // Polling for live updates
+  useEffect(() => {
+    let mounted = true;
+    const tick = async () => {
+      if (!mounted) return;
+      try {
+        await loadJobsAndAnalytics();
+        if (selectedJobId) await loadCandidates(selectedJobId);
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    const id = setInterval(tick, pollIntervalMs);
+    // initial
+    tick();
+    return () => {
+      mounted = false;
+      clearInterval(id);
+    };
+  }, [pollIntervalMs, selectedJobId, loadJobsAndAnalytics, loadCandidates]);
 
   useEffect(() => {
     loadJobsAndAnalytics();
@@ -322,9 +376,52 @@ const SimpleRecruiterDashboard = () => {
       });
       setMessage("success", "Interview scheduled");
       await loadCandidates(selectedJobId);
+      // noinspection JSUnusedGlobalSymbols
+      // after scheduling, offer calendar links via client-side ICS generation
     } catch (error) {
       setMessage("error", error?.response?.data?.message || "Failed to schedule interview");
     }
+  };
+
+  // Calendar helpers
+  const formatDateForICS = (iso) => {
+    const d = new Date(iso);
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
+  };
+
+  const createICS = ({ title, description, startISO, durationMin = 30, location = "" }) => {
+    const dtStart = formatDateForICS(startISO);
+    const dtEnd = formatDateForICS(new Date(new Date(startISO).getTime() + durationMin * 60000).toISOString());
+    const uid = `event-${Math.random().toString(36).substring(2, 9)}@cognifit`;
+    return `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//CogniFit//EN\nBEGIN:VEVENT\nUID:${uid}\nDTSTAMP:${dtStart}\nDTSTART:${dtStart}\nDTEND:${dtEnd}\nSUMMARY:${title}\nDESCRIPTION:${description}\nLOCATION:${location}\nEND:VEVENT\nEND:VCALENDAR`;
+  };
+
+  const openGoogleCalendar = ({ title, description, startISO, durationMin = 30, location = "" }) => {
+    const start = new Date(startISO);
+    const end = new Date(start.getTime() + durationMin * 60000);
+    const fmt = (d) => d.toISOString().replace(/-|:|\.\d{3}/g, "");
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text: title,
+      details: description,
+      location,
+      dates: `${fmt(start)}/${fmt(end)}`,
+    });
+    window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, "_blank");
+  };
+
+  const downloadICS = ({ title, description, startISO, durationMin = 30, location = "" }) => {
+    const ics = createICS({ title, description, startISO, durationMin, location });
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title.replace(/[^a-z0-9]/gi, "_") || "event"}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   const totalJobs = jobs.length;
@@ -398,7 +495,7 @@ const SimpleRecruiterDashboard = () => {
             ) : jobs.length === 0 ? (
               <p className="text-sm text-text-muted">No jobs found.</p>
             ) : (
-              jobs.map((job) => (
+                jobs.map((job) => (
                 <button
                   key={job._id}
                   type="button"
@@ -409,8 +506,13 @@ const SimpleRecruiterDashboard = () => {
                       : "border-border bg-surface/30 hover:bg-surface/50"
                   }`}
                 >
-                  <p className="font-semibold text-text line-clamp-1">{job.title}</p>
-                  <p className="text-xs text-text-muted line-clamp-1">{job.company || "Company"}</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-text line-clamp-1">{job.title}</p>
+                      <p className="text-xs text-text-muted line-clamp-1">{job.company || "Company"}</p>
+                    </div>
+                    <Sparkline seed={job._id} width={96} height={28} />
+                  </div>
                   <p className="mt-1 text-xs text-text-muted line-clamp-1">{job.location || "Location"} • {job.type || "type"}</p>
                 </button>
               ))
