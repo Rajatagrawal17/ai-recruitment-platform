@@ -24,16 +24,26 @@ const ALLOWED_MIME_TYPES = new Set([
 
 const ALLOWED_EXTENSIONS = new Set([".pdf", ".doc", ".docx"]);
 
+const sanitizeFileBaseName = (name = "resume") =>
+  String(name)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "resume";
+
 // Cloudinary storage configuration
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
+    const originalBaseName = path.parse(file.originalname).name;
+    const safeBaseName = sanitizeFileBaseName(originalBaseName);
+
     return {
       folder: "cognifit-resumes", // Organize uploads in folder
       resource_type: "raw", // Important for PDFs and documents
       type: "upload", // Explicitly public upload delivery type
       access_mode: "public", // Ensure URL is publicly retrievable
-      public_id: `${req.user._id}-${Date.now()}-${path.parse(file.originalname).name}`,
+      public_id: `${req.user._id}-${Date.now()}-${safeBaseName}`,
       format: path.extname(file.originalname).toLowerCase().slice(1),
     };
   },

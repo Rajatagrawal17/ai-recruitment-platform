@@ -28,7 +28,33 @@ const getResumePublicIdFromUrl = (resumeUrl = "") => {
   return match ? decodeURIComponent(match[1]) : "";
 };
 
-const getSignedResumeUrl = (resumeUrl) => resumeUrl;
+const getSignedResumeUrl = (resumeUrl, resumePublicId) => {
+  if (!resumeUrl || !String(resumeUrl).startsWith("http")) {
+    return resumeUrl;
+  }
+
+  const extMatch = String(resumeUrl).match(/\.([a-z0-9]+)(?:\?|$)/i);
+  const format = extMatch ? extMatch[1].toLowerCase() : "pdf";
+  const publicId = resumePublicId || getResumePublicIdFromUrl(resumeUrl);
+
+  if (!publicId) {
+    return resumeUrl;
+  }
+
+  const expiresAt = Math.floor(Date.now() / 1000) + 10 * 60;
+
+  try {
+    return cloudinary.utils.private_download_url(publicId, format, {
+      resource_type: "raw",
+      type: "upload",
+      expires_at: expiresAt,
+      attachment: false,
+    });
+  } catch (error) {
+    console.warn("⚠️ Failed to generate signed resume URL, falling back to stored URL:", error.message);
+    return resumeUrl;
+  }
+};
 
 // ✅ ENHANCED: Extract text from resume file (handles both local and Cloudinary URLs)
 const extractTextFromResume = async (filePathOrUrl) => {
@@ -378,7 +404,7 @@ exports.getResumeViewUrl = async (req, res) => {
       });
     }
 
-    const signedUrl = getSignedResumeUrl(user.resumeUrl);
+    const signedUrl = getSignedResumeUrl(user.resumeUrl, user.resumePublicId);
 
     return res.status(200).json({
       success: true,
