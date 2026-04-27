@@ -13,6 +13,7 @@ const {
   checkResumeAuthenticity,
   matchResumeToJob,
   generateResumeImprovements,
+  chatHelpAssistant,
 } = require("../controllers/aiController");
 const protect = require("../middleware/authMiddleware");
 
@@ -51,6 +52,9 @@ router.post("/generate-application", protect, generateApplicationContent);
 router.post("/screen-candidates", protect, screenCandidates);
 
 // ==================== NEW CLAUDE AI ENDPOINTS ====================
+
+// Public AI help assistant - interactive product and career support
+router.post("/help-chat", chatHelpAssistant);
 
 // Resume Authenticity - Check if resume is genuine/free of red flags
 router.post("/check-authenticity", checkResumeAuthenticity);

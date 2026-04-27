@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import API from "../services/api";
 import "./HelpChatbot.css";
 
 const getTimeLabel = () => {
@@ -15,6 +16,15 @@ const createMessage = (sender, text, actions = []) => ({
   actions,
   time: getTimeLabel(),
 });
+
+const buildConversationPayload = (messages = []) =>
+  messages
+    .filter((msg) => msg && typeof msg.text === "string")
+    .slice(-8)
+    .map((msg) => ({
+      sender: msg.sender,
+      text: String(msg.text).slice(0, 1000),
+    }));
 
 const getQuickPrompts = (role, isAuthenticated) => {
   if (!isAuthenticated) {
@@ -210,24 +220,64 @@ const HelpChatbot = () => {
     setUnreadCount(0);
   }, [isOpen]);
 
-  const pushBotReply = (text) => {
+  const pushBotReply = async (text, conversationSnapshot) => {
     setIsTyping(true);
 
-    window.setTimeout(() => {
-      const reply = getBotReply({
-        text,
-        role,
-        isAuthenticated,
-        path: location.pathname,
-      });
+    const currentConversation = Array.isArray(conversationSnapshot)
+      ? conversationSnapshot
+      : messages;
 
+    const payload = {
+      message: text,
+      role,
+      isAuthenticated,
+      path: location.pathname,
+      conversation: buildConversationPayload(currentConversation),
+    };
+
+    try {
+      const response = await API.post("/ai/help-chat", payload);
+      const data = response?.data?.data;
+
+      if (!data || typeof data.reply !== "string") {
+        throw new Error("Invalid help-chat response");
+      }
+
+      const actions = Array.isArray(data.actions)
+        ? data.actions
+            .filter((item) => item && typeof item === "object")
+            .map((item) => ({ label: item.label, path: item.path }))
+            .filter((item) => typeof item.label === "string" && typeof item.path === "string")
+            .slice(0, 3)
+        : [];
+
+      const followUps = Array.isArray(data.followUps)
+        ? data.followUps
+            .filter((item) => typeof item === "string" && item.trim())
+            .slice(0, 3)
+            .map((prompt) => ({ label: prompt, prompt }))
+        : [];
+
+      const reply = createMessage("bot", data.reply, [...actions, ...followUps]);
       setMessages((prev) => [...prev, reply]);
+    } catch (error) {
+      // Local deterministic fallback
+      window.setTimeout(() => {
+        const reply = getBotReply({
+          text,
+          role,
+          isAuthenticated,
+          path: location.pathname,
+        });
+        setMessages((prev) => [...prev, reply]);
+      }, 350);
+    } finally {
       setIsTyping(false);
 
       if (!isOpen) {
         setUnreadCount((count) => count + 1);
       }
-    }, 450);
+    }
   };
 
   const handleSend = () => {
@@ -236,18 +286,35 @@ const HelpChatbot = () => {
       return;
     }
 
-    setMessages((prev) => [...prev, createMessage("user", value)]);
+    setMessages((prev) => {
+      const nextMessages = [...prev, createMessage("user", value)];
+      pushBotReply(value, nextMessages);
+      return nextMessages;
+    });
     setInput("");
-    pushBotReply(value);
   };
 
   const handleQuickPrompt = (prompt) => {
-    setMessages((prev) => [...prev, createMessage("user", prompt)]);
-    pushBotReply(prompt);
+    setMessages((prev) => {
+      const nextMessages = [...prev, createMessage("user", prompt)];
+      pushBotReply(prompt, nextMessages);
+      return nextMessages;
+    });
   };
 
-  const handleAction = (path) => {
-    navigate(path);
+  const handleAction = (action) => {
+    if (!action || typeof action !== "object") {
+      return;
+    }
+
+    if (typeof action.prompt === "string" && action.prompt.trim()) {
+      handleQuickPrompt(action.prompt);
+      return;
+    }
+
+    if (typeof action.path === "string" && action.path.trim()) {
+      navigate(action.path);
+    }
   };
 
   const handleKeyDown = (event) => {
@@ -309,9 +376,9 @@ const HelpChatbot = () => {
                   <div className="message-actions">
                     {msg.actions.map((action) => (
                       <button
-                        key={`${msg.id}_${action.path}`}
+                        key={`${msg.id}_${action.path || action.prompt || action.label}`}
                         type="button"
-                        onClick={() => handleAction(action.path)}
+                        onClick={() => handleAction(action)}
                       >
                         {action.label}
                       </button>
