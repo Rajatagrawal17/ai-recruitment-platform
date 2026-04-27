@@ -1,311 +1,439 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Plus,
-  Users,
   Briefcase,
-  TrendingUp,
+  Calendar,
+  CheckCircle2,
+  Clock3,
+  Filter,
+  Plus,
+  Search,
+  Users,
 } from "lucide-react";
-import { createJob, getJobs, getJobCandidates } from "../services/api";
-import toast from "react-hot-toast";
+import {
+  createJob,
+  getAnalytics,
+  getJobCandidates,
+  getJobs,
+  scheduleInterview,
+  updateApplicationStatus,
+} from "../services/api";
+
+const initialForm = {
+  title: "",
+  description: "",
+  company: "",
+  location: "",
+  type: "full-time",
+  salary: "",
+  skills: "",
+};
+
+const statusOptions = ["all", "pending", "shortlisted", "accepted", "rejected"];
+
+const extractJobs = (res) => {
+  const payload = res?.data;
+  if (Array.isArray(payload?.jobs)) return payload.jobs;
+  if (Array.isArray(payload)) return payload;
+  return [];
+};
+
+const extractCandidates = (res) => {
+  const payload = res?.data;
+  if (Array.isArray(payload?.matchedCandidates)) return payload.matchedCandidates;
+  if (Array.isArray(payload?.candidates)) return payload.candidates;
+  if (Array.isArray(payload)) return payload;
+  return [];
+};
+
+const StatCard = ({ label, value, icon: Icon }) => (
+  <div className="rounded-xl border border-border bg-surface/60 p-4">
+    <div className="flex items-center justify-between">
+      <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">{label}</p>
+      <Icon size={18} className="text-primary" />
+    </div>
+    <p className="mt-3 text-2xl font-bold text-text">{value}</p>
+  </div>
+);
+
+const CandidateRow = ({ candidate, onStatusChange, onSchedule }) => {
+  const [dateTime, setDateTime] = useState("");
+  const [mode, setMode] = useState("video");
+
+  return (
+    <div className="rounded-lg border border-border bg-surface/40 p-3">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-text">{candidate.candidateName || "Candidate"}</p>
+          <p className="truncate text-sm text-text-muted">{candidate.candidateEmail || "No email"}</p>
+          <p className="mt-1 text-xs text-text-muted">Match: {candidate.matchScore || 0}%</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="input-modern text-sm"
+            value={candidate.status || "pending"}
+            onChange={(e) => onStatusChange(candidate._id, e.target.value)}
+          >
+            <option value="pending">pending</option>
+            <option value="shortlisted">shortlisted</option>
+            <option value="accepted">accepted</option>
+            <option value="rejected">rejected</option>
+          </select>
+
+          <input
+            type="datetime-local"
+            className="input-modern text-sm"
+            value={dateTime}
+            onChange={(e) => setDateTime(e.target.value)}
+          />
+          <select className="input-modern text-sm" value={mode} onChange={(e) => setMode(e.target.value)}>
+            <option value="video">video</option>
+            <option value="phone">phone</option>
+            <option value="onsite">onsite</option>
+          </select>
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            onClick={() => onSchedule(candidate._id, dateTime, mode)}
+          >
+            Schedule
+          </button>
+        </div>
+      </div>
+
+      {candidate.interview?.scheduledAt && (
+        <p className="mt-2 text-xs text-emerald-300">
+          Interview: {new Date(candidate.interview.scheduledAt).toLocaleString()} ({candidate.interview.mode || "video"})
+        </p>
+      )}
+    </div>
+  );
+};
 
 const SimpleRecruiterDashboard = () => {
   const [jobs, setJobs] = useState([]);
+  const [selectedJobId, setSelectedJobId] = useState("");
   const [candidates, setCandidates] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+
+  const [loading, setLoading] = useState(true);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("score");
+
   const [showJobForm, setShowJobForm] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [selectedJob, setSelectedJob] = useState(null);
+  const [form, setForm] = useState(initialForm);
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    company: "Your Company",
-    location: "Remote",
-    type: "full-time",
-    salary: "",
-    skills: "",
-  });
+  const [notice, setNotice] = useState({ type: "", message: "" });
 
-  useEffect(() => {
-    loadJobs();
+  const setMessage = useCallback((type, message) => {
+    setNotice({ type, message });
+    window.setTimeout(() => {
+      setNotice({ type: "", message: "" });
+    }, 2200);
   }, []);
 
-  useEffect(() => {
-    if (selectedJob) {
-      loadCandidates(selectedJob);
-    }
-  }, [selectedJob]);
-
-  const loadJobs = async () => {
+  const loadJobsAndAnalytics = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await getJobs();
-      setJobs(response.data || response);
+      const [jobsRes, analyticsRes] = await Promise.all([
+        getJobs(),
+        getAnalytics().catch(() => ({ data: { analytics: null } })),
+      ]);
+
+      const nextJobs = extractJobs(jobsRes);
+      setJobs(nextJobs);
+      setAnalytics(analyticsRes?.data?.analytics || null);
+
+      if (nextJobs.length > 0 && !selectedJobId) {
+        setSelectedJobId(nextJobs[0]._id);
+      }
     } catch (error) {
-      console.error("Error loading jobs:", error);
-      toast.error("Failed to load jobs");
+      setMessage("error", error?.response?.data?.message || "Failed to load recruiter data");
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedJobId, setMessage]);
 
-  const loadCandidates = async (jobId) => {
-    try {
-      const response = await getJobCandidates(jobId);
-      setCandidates(response.data || response);
-    } catch (error) {
-      console.error("Error loading candidates:", error);
-      toast.error("Failed to load candidates");
+  const loadCandidates = useCallback(async (jobId) => {
+    if (!jobId) {
+      setCandidates([]);
+      return;
     }
-  };
+
+    setLoadingCandidates(true);
+    try {
+      const res = await getJobCandidates(jobId, {
+        sortBy,
+        status: statusFilter !== "all" ? statusFilter : undefined,
+        search: query || undefined,
+        page: 1,
+        limit: 100,
+      });
+      setCandidates(extractCandidates(res));
+    } catch (error) {
+      setMessage("error", error?.response?.data?.message || "Failed to load candidates");
+      setCandidates([]);
+    } finally {
+      setLoadingCandidates(false);
+    }
+  }, [query, setMessage, sortBy, statusFilter]);
+
+  useEffect(() => {
+    loadJobsAndAnalytics();
+  }, [loadJobsAndAnalytics]);
+
+  useEffect(() => {
+    loadCandidates(selectedJobId);
+  }, [selectedJobId, loadCandidates]);
+
+  const filteredCandidates = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    let next = [...candidates];
+
+    if (q) {
+      next = next.filter((c) => {
+        const text = `${c.candidateName || ""} ${c.candidateEmail || ""}`.toLowerCase();
+        return text.includes(q);
+      });
+    }
+
+    if (statusFilter !== "all") {
+      next = next.filter((c) => (c.status || "pending") === statusFilter);
+    }
+
+    if (sortBy === "name") {
+      next.sort((a, b) => (a.candidateName || "").localeCompare(b.candidateName || ""));
+    } else if (sortBy === "date") {
+      next.sort((a, b) => new Date(b.appliedAt || 0) - new Date(a.appliedAt || 0));
+    } else {
+      next.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
+    }
+
+    return next;
+  }, [candidates, query, sortBy, statusFilter]);
 
   const handleCreateJob = async (e) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
-      toast.error("Job title is required");
+
+    if (!form.title.trim() || !form.company.trim() || !form.description.trim()) {
+      setMessage("error", "Title, company and description are required");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        skills: String(form.skills || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      };
+
+      await createJob(payload);
+      setForm(initialForm);
+      setShowJobForm(false);
+      setMessage("success", "Job posted successfully");
+      await loadJobsAndAnalytics();
+    } catch (error) {
+      setMessage("error", error?.response?.data?.message || "Failed to create job");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStatusChange = async (applicationId, status) => {
+    if (!selectedJobId) return;
+    try {
+      await updateApplicationStatus(applicationId, status);
+      setMessage("success", `Candidate marked as ${status}`);
+      await loadCandidates(selectedJobId);
+    } catch (error) {
+      setMessage("error", error?.response?.data?.message || "Failed to update status");
+    }
+  };
+
+  const handleSchedule = async (applicationId, scheduledAt, mode) => {
+    if (!selectedJobId) return;
+    if (!scheduledAt) {
+      setMessage("error", "Choose interview date and time first");
       return;
     }
 
     try {
-      setLoading(true);
-      await createJob(formData);
-      toast.success("Job posted successfully!");
-      setFormData({
-        title: "",
-        description: "",
-        company: "Your Company",
-        location: "Remote",
-        type: "full-time",
-        salary: "",
-        skills: "",
+      await scheduleInterview(applicationId, {
+        scheduledAt,
+        mode,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
       });
-      setShowJobForm(false);
-      loadJobs();
+      setMessage("success", "Interview scheduled");
+      await loadCandidates(selectedJobId);
     } catch (error) {
-      console.error("Error creating job:", error);
-      toast.error("Failed to create job");
-    } finally {
-      setLoading(false);
+      setMessage("error", error?.response?.data?.message || "Failed to schedule interview");
     }
   };
 
-  const stats = [
-    { label: "Total Jobs", value: jobs.length, icon: Briefcase, color: "from-blue-500 to-blue-600" },
-    { label: "Total Candidates", value: candidates.length, icon: Users, color: "from-emerald-500 to-emerald-600" },
-    { label: "Pending Reviews", value: candidates.filter((c) => c.status === "pending").length, icon: TrendingUp, color: "from-amber-500 to-amber-600" },
-  ];
+  const totalJobs = jobs.length;
+  const openJobs = analytics?.openJobs ?? jobs.filter((j) => j.status !== "closed").length;
+  const topScore = filteredCandidates[0]?.matchScore || 0;
+  const pendingReviews = filteredCandidates.filter((c) => (c.status || "pending") === "pending").length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white p-4 md:p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Recruiter Dashboard</h1>
-        <p className="text-gray-400">Manage your job postings and candidate applications</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {stats.map((stat, idx) => (
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
-            className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm font-medium">{stat.label}</p>
-                <p className="text-3xl font-bold mt-2">{stat.value}</p>
-              </div>
-              <div className={`bg-gradient-to-br ${stat.color} p-3 rounded-lg`}>
-                <stat.icon size={24} />
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left: Jobs List */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Your Job Postings</h2>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowJobForm(!showJobForm)}
-              className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-all"
-            >
-              <Plus size={20} /> Post Job
-            </motion.button>
+    <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
+      <section className="rounded-2xl border border-border bg-surface/40 p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-text">Recruiter Dashboard</h1>
+            <p className="mt-1 text-sm text-text-muted">
+              Lightweight mode: faster loading, stable updates, no heavy animations.
+            </p>
           </div>
+          <button className="btn-primary inline-flex items-center gap-2" onClick={() => setShowJobForm((s) => !s)}>
+            <Plus size={16} /> {showJobForm ? "Close" : "Post Job"}
+          </button>
+        </div>
 
-          {/* Job Form */}
-          {showJobForm && (
-            <motion.form
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              onSubmit={handleCreateJob}
-              className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-xl p-6 space-y-4"
-            >
-              <input
-                type="text"
-                placeholder="Job Title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-              />
-              <textarea
-                placeholder="Job Description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows="3"
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none resize-none"
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Location"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-                />
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="full-time">Full-time</option>
-                  <option value="part-time">Part-time</option>
-                  <option value="contract">Contract</option>
-                  <option value="remote">Remote</option>
-                  <option value="hybrid">Hybrid</option>
-                </select>
-              </div>
-              <input
-                type="text"
-                placeholder="Salary (e.g., $50k-$80k)"
-                value={formData.salary}
-                onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-              />
-              <input
-                type="text"
-                placeholder="Required Skills (comma separated)"
-                value={formData.skills}
-                onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-              />
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-4 py-2 rounded-lg transition-all"
-                >
-                  {loading ? "Posting..." : "Post Job"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowJobForm(false)}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            </motion.form>
-          )}
+        {notice.message && (
+          <div
+            className={`mt-4 rounded-lg px-3 py-2 text-sm ${
+              notice.type === "success" ? "bg-emerald-500/20 text-emerald-300" : "bg-rose-500/20 text-rose-300"
+            }`}
+          >
+            {notice.message}
+          </div>
+        )}
 
-          {/* Jobs List */}
-          <div className="space-y-3">
-            {jobs.length === 0 ? (
-              <div className="text-center py-12 bg-white/5 border border-white/10 rounded-xl">
-                <p className="text-gray-400">No jobs posted yet</p>
-              </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <StatCard label="Total Jobs" value={totalJobs} icon={Briefcase} />
+          <StatCard label="Open Jobs" value={openJobs} icon={CheckCircle2} />
+          <StatCard label="Top Match" value={`${topScore}%`} icon={Users} />
+          <StatCard label="Pending Reviews" value={pendingReviews} icon={Clock3} />
+        </div>
+      </section>
+
+      {showJobForm && (
+        <section className="mt-5 rounded-2xl border border-border bg-surface/40 p-5">
+          <h2 className="text-lg font-semibold text-text">Create Job</h2>
+          <form onSubmit={handleCreateJob} className="mt-4 grid gap-3 md:grid-cols-2">
+            <input className="input-modern" placeholder="Job title" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
+            <input className="input-modern" placeholder="Company" value={form.company} onChange={(e) => setForm((p) => ({ ...p, company: e.target.value }))} />
+            <input className="input-modern" placeholder="Location" value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
+            <select className="input-modern" value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}>
+              <option value="full-time">full-time</option>
+              <option value="part-time">part-time</option>
+              <option value="contract">contract</option>
+              <option value="remote">remote</option>
+              <option value="hybrid">hybrid</option>
+            </select>
+            <input className="input-modern" placeholder="Salary e.g. 8 LPA - 12 LPA" value={form.salary} onChange={(e) => setForm((p) => ({ ...p, salary: e.target.value }))} />
+            <input className="input-modern" placeholder="Skills (comma separated)" value={form.skills} onChange={(e) => setForm((p) => ({ ...p, skills: e.target.value }))} />
+            <textarea className="input-modern min-h-[110px] md:col-span-2" placeholder="Job description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
+            <button type="submit" disabled={saving} className="btn-primary md:col-span-2">
+              {saving ? "Posting..." : "Create Job"}
+            </button>
+          </form>
+        </section>
+      )}
+
+      <section className="mt-5 grid gap-5 lg:grid-cols-[320px_1fr]">
+        <aside className="rounded-2xl border border-border bg-surface/40 p-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Jobs</h2>
+          <div className="mt-3 space-y-2 max-h-[560px] overflow-auto pr-1">
+            {loading ? (
+              <p className="text-sm text-text-muted">Loading jobs...</p>
+            ) : jobs.length === 0 ? (
+              <p className="text-sm text-text-muted">No jobs found.</p>
             ) : (
               jobs.map((job) => (
-                <motion.div
+                <button
                   key={job._id}
-                  whileHover={{ scale: 1.02 }}
-                  onClick={() => setSelectedJob(job._id)}
-                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                    selectedJob === job._id
-                      ? "bg-blue-500/20 border-blue-500/50"
-                      : "bg-white/5 border-white/10 hover:border-white/20"
+                  type="button"
+                  onClick={() => setSelectedJobId(job._id)}
+                  className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                    selectedJobId === job._id
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-surface/30 hover:bg-surface/50"
                   }`}
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg">{job.title}</h3>
-                      <p className="text-gray-400 text-sm">
-                        {job.location} • {job.type} • ₹{job.salary}
-                      </p>
-                      <p className="text-gray-500 text-sm mt-1 line-clamp-2">{job.description}</p>
-                    </div>
-                  </div>
-                </motion.div>
+                  <p className="font-semibold text-text line-clamp-1">{job.title}</p>
+                  <p className="text-xs text-text-muted line-clamp-1">{job.company || "Company"}</p>
+                  <p className="mt-1 text-xs text-text-muted line-clamp-1">{job.location || "Location"} • {job.type || "type"}</p>
+                </button>
               ))
             )}
           </div>
-        </div>
+        </aside>
 
-        {/* Right: Candidates for Selected Job */}
-        <div className="lg:col-span-1">
-          <h2 className="text-2xl font-bold mb-6">
-            {selectedJob ? "Candidates" : "Select a job"}
-          </h2>
+        <div className="rounded-2xl border border-border bg-surface/40 p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <h2 className="text-lg font-semibold text-text">Candidates</h2>
+            <div className="grid w-full gap-2 md:w-auto md:grid-cols-3">
+              <label className="relative">
+                <Search size={14} className="pointer-events-none absolute left-3 top-3 text-text-muted" />
+                <input
+                  className="input-modern w-full pl-9"
+                  placeholder="Search candidate"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </label>
+              <label className="relative">
+                <Filter size={14} className="pointer-events-none absolute left-3 top-3 text-text-muted" />
+                <select className="input-modern w-full pl-9" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  {statusOptions.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
+              <select className="input-modern w-full" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                <option value="score">Sort: score</option>
+                <option value="name">Sort: name</option>
+                <option value="date">Sort: date</option>
+              </select>
+            </div>
+          </div>
 
-          {selectedJob && (
-            <div className="space-y-3">
-              {candidates.length === 0 ? (
-                <div className="text-center py-12 bg-white/5 border border-white/10 rounded-xl">
-                  <p className="text-gray-400">No applications yet</p>
-                </div>
-              ) : (
-                candidates.map((candidate) => (
-                  <motion.div
-                    key={candidate._id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-all"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
-                        {(candidate.candidateName || "C").charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">
-                          {candidate.candidateName || "Candidate"}
-                        </p>
-                        <p className="text-gray-400 text-sm truncate">
-                          {candidate.candidateEmail}
-                        </p>
-                        <div className="flex gap-2 mt-2">
-                          <span
-                            className={`text-xs px-2 py-1 rounded ${
-                              candidate.status === "pending"
-                                ? "bg-amber-500/20 text-amber-300"
-                                : candidate.status === "shortlisted"
-                                ? "bg-blue-500/20 text-blue-300"
-                                : candidate.status === "accepted"
-                                ? "bg-emerald-500/20 text-emerald-300"
-                                : "bg-red-500/20 text-red-300"
-                            }`}
-                          >
-                            {candidate.status || "pending"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))
-              )}
+          <div className="mt-4 space-y-3">
+            {!selectedJobId ? (
+              <p className="text-sm text-text-muted">Select a job to view candidates.</p>
+            ) : loadingCandidates ? (
+              <p className="text-sm text-text-muted">Loading candidates...</p>
+            ) : filteredCandidates.length === 0 ? (
+              <p className="text-sm text-text-muted">No candidates found for current filters.</p>
+            ) : (
+              filteredCandidates.map((candidate) => (
+                <CandidateRow
+                  key={candidate._id}
+                  candidate={candidate}
+                  onStatusChange={handleStatusChange}
+                  onSchedule={handleSchedule}
+                />
+              ))
+            )}
+          </div>
+
+          {analytics && (
+            <div className="mt-5 rounded-xl border border-border bg-surface/20 p-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Quick Analytics</p>
+              <div className="grid gap-2 text-sm md:grid-cols-4">
+                <div className="rounded-lg bg-surface/40 p-2">Applications: {analytics.totalApplications || 0}</div>
+                <div className="rounded-lg bg-surface/40 p-2">Acceptance: {analytics.acceptanceRate || 0}%</div>
+                <div className="rounded-lg bg-surface/40 p-2">Avg Match: {analytics.averageMatchScore || 0}%</div>
+                <div className="rounded-lg bg-surface/40 p-2">Time to Hire: {analytics.avgTimeToHire || 0} days</div>
+              </div>
+              <div className="mt-3 flex items-center gap-2 text-xs text-text-muted">
+                <Calendar size={14} />
+                Updated with live backend analytics
+              </div>
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
 

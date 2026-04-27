@@ -20,7 +20,7 @@ import JobsPage from "./pages/JobsPage";
 import EnhancedJobsPage from "./pages/EnhancedJobsPage";
 import JobDetailPage from "./pages/JobDetailPage";
 import ApplicationForm from "./pages/ApplicationForm";
-import RecruiterDashboard from "./pages/RecruiterDashboard";
+import SimpleRecruiterDashboard from "./pages/SimpleRecruiterDashboard";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import PersonalizedDashboard from "./pages/PersonalizedDashboard";
 import SavedJobs from "./pages/SavedJobs";
@@ -148,7 +148,7 @@ const AppRoutes = () => {
           path="/dashboard"
           element={(
             <ProtectedRoute allowedRoles={["recruiter", "admin"]}>
-              <AnimatedPage><RecruiterDashboard /></AnimatedPage>
+              <AnimatedPage><SimpleRecruiterDashboard /></AnimatedPage>
             </ProtectedRoute>
           )}
         />
