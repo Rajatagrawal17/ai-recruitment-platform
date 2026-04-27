@@ -244,6 +244,21 @@ exports.updateStatus = async (req, res) => {
       application,
     });
 
+    // append to timeline
+    try {
+      application.timeline = application.timeline || [];
+      application.timeline.push({
+        type: "status_change",
+        author: req.user.name || req.user.email || "recruiter",
+        authorId: req.user._id,
+        text: `Status changed to ${status}`,
+        meta: { status },
+        createdAt: new Date(),
+      });
+      await application.save();
+    } catch (e) {
+      console.warn("Failed to append timeline entry:", e.message);
+    }
     if (status === "shortlisted" || status === "rejected") {
       const targetEmail = application?.email || application?.candidate?.email;
       const jobTitle = application?.job?.title || "this role";
@@ -329,6 +344,21 @@ exports.scheduleInterview = async (req, res) => {
       message: "Interview scheduled successfully",
       application,
     });
+    // record interview schedule in timeline
+    try {
+      application.timeline = application.timeline || [];
+      application.timeline.push({
+        type: "system",
+        author: req.user.name || req.user.email || "recruiter",
+        authorId: req.user._id,
+        text: `Interview scheduled on ${new Date(scheduledAt).toISOString()}`,
+        meta: { scheduledAt, mode, meetingLink },
+        createdAt: new Date(),
+      });
+      await application.save();
+    } catch (e) {
+      console.warn("Failed to append interview timeline entry:", e.message);
+    }
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -361,5 +391,53 @@ exports.getMyApplications = async (req, res) => {
       message: error.message,
     });
 
+  }
+};
+
+/* =========================
+   ADD NOTE TO APPLICATION TIMELINE (RECRUITER/ADMIN)
+========================= */
+exports.addApplicationNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if (!text || !String(text).trim()) {
+      return res.status(400).json({ success: false, message: "Note text is required" });
+    }
+
+    const application = await Application.findById(id);
+    if (!application) {
+      return res.status(404).json({ success: false, message: "Application not found" });
+    }
+
+    application.timeline = application.timeline || [];
+    const entry = {
+      type: "note",
+      author: req.user.name || req.user.email || "recruiter",
+      authorId: req.user._id,
+      text: String(text).trim(),
+      createdAt: new Date(),
+    };
+    application.timeline.push(entry);
+    await application.save();
+
+    res.status(200).json({ success: true, message: "Note added", entry });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/* =========================
+   GET APPLICATION TIMELINE (RECRUITER/ADMIN)
+========================= */
+exports.getApplicationTimeline = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const application = await Application.findById(id).select("timeline");
+    if (!application) return res.status(404).json({ success: false, message: "Application not found" });
+    res.status(200).json({ success: true, timeline: application.timeline || [] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

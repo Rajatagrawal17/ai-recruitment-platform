@@ -16,7 +16,7 @@ const upload = require("../middleware/uploadMiddleware");
 /* =========================
    ADMIN CREATE JOB
 ========================= */
-router.post("/create", protect, asyncHandler(createJob));
+router.post("/create", protect, authorizeRoles("recruiter", "admin"), asyncHandler(createJob));
 
 /* =========================
    PUBLIC GET JOBS

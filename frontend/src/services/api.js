@@ -150,8 +150,13 @@ export const updateApplicationStatus = (applicationId, status) =>
   API.put(`/applications/status/${applicationId}`, { status });
 export const scheduleInterview = (applicationId, payload) =>
   API.put(`/applications/schedule/${applicationId}`, payload);
+export const addApplicationNote = (applicationId, data) =>
+  API.post(`/applications/notes/${applicationId}`, data);
+export const getApplicationTimeline = (applicationId) =>
+  API.get(`/applications/timeline/${applicationId}`);
 
-export const getJobCandidates = (jobId) => API.get(`/matching/job/${jobId}/candidates`);
+export const getJobCandidates = (jobId, params = {}) =>
+  API.get(`/matching/job/${jobId}/candidates`, { params });
 export const getCandidateJobMatches = (candidateId) => API.get(`/matching/candidate/${candidateId}/jobs`);
 export const analyzeResume = (data) => API.post("/matching/analyze-resume", data);
 export const scoreCandidate = (data) => API.post("/matching/score", data);

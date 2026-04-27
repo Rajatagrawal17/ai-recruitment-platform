@@ -95,7 +95,7 @@ const AdminDashboard = () => {
   const handleAddJob = async (e) => {
     e.preventDefault();
     try {
-      await API.post("/jobs", newJob);
+      await API.post("/jobs/create", newJob);
       setShowAddJob(false);
       setNewJob({
         title: "",

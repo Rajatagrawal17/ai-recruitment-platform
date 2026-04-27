@@ -9,6 +9,16 @@ const { calculateMatchScore, extractSkills, rankCandidates } = require("../../ai
 exports.getMatchedCandidatesForJob = async (req, res) => {
   try {
     const { jobId } = req.params;
+    // Query params for filtering and pagination
+    const {
+      status,
+      minScore,
+      maxScore,
+      search,
+      sortBy = "score",
+      page = 1,
+      limit = 50,
+    } = req.query;
 
     const job = await Job.findById(jobId).populate("createdBy");
     if (!job) {
@@ -52,18 +62,62 @@ exports.getMatchedCandidatesForJob = async (req, res) => {
     }));
 
     // Sort by match score
-    scoredCandidates.sort((a, b) => b.matchScore - a.matchScore);
+    // Apply server-side filtering
+    let filtered = scoredCandidates;
+
+    if (status) {
+      filtered = filtered.filter((c) => (c.status || "pending") === status);
+    }
+
+    const min = Number(minScore || -Infinity);
+    const max = Number(maxScore || Infinity);
+    if (!isNaN(min) || !isNaN(max)) {
+      filtered = filtered.filter((c) => c.matchScore >= (isFinite(min) ? min : -Infinity) && c.matchScore <= (isFinite(max) ? max : Infinity));
+    }
+
+    if (search) {
+      const s = String(search).toLowerCase();
+      filtered = filtered.filter((c) => (c.candidateName || "").toLowerCase().includes(s) || (c.candidateEmail || "").toLowerCase().includes(s));
+    }
+
+    // Sorting
+    switch (sortBy) {
+      case "name":
+        filtered.sort((a, b) => (a.candidateName || "").localeCompare(b.candidateName || ""));
+        break;
+      case "date":
+        filtered.sort((a, b) => new Date(b.appliedAt || 0) - new Date(a.appliedAt || 0));
+        break;
+      case "score":
+      default:
+        filtered.sort((a, b) => b.matchScore - a.matchScore);
+    }
+
+    // Pagination
+    const p = Math.max(1, Number(page || 1));
+    const lim = Math.min(200, Number(limit || 50));
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / lim));
+    const start = (p - 1) * lim;
+    const end = start + lim;
+    const pageItems = filtered.slice(start, end);
 
     res.status(200).json({
       success: true,
-      message: `Found ${scoredCandidates.length} candidates for job`,
+      message: `Found ${filtered.length} candidates for job`,
       job: {
         _id: job._id,
         title: job.title,
         description: job.description,
         skills: job.skills || [],
       },
-      matchedCandidates: scoredCandidates,
+      matchedCandidates: pageItems,
+      meta: {
+        total,
+        page: p,
+        limit: lim,
+        totalPages,
+      },
     });
 
   } catch (error) {

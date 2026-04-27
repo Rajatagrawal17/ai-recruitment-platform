@@ -72,20 +72,59 @@ const getCandidateInsights = async (user) => {
 ========================= */
 exports.createJob = async (req, res) => {
   try {
-    const { title, description, company } = req.body;
+    const { title, description, company, location, type, salary, skills, experience, yearsOfExperience } = req.body;
+
+    if (!title || !description || !company) {
+      return res.status(400).json({ success: false, message: "title, description and company are required" });
+    }
+
+    // Normalize skills: accept array or comma-separated string
+    let normalizedSkills = [];
+    if (Array.isArray(skills)) {
+      normalizedSkills = skills.map((s) => String(s).trim()).filter(Boolean);
+    } else if (typeof skills === "string") {
+      normalizedSkills = skills
+        .split(",")
+        .map((s) => String(s).trim())
+        .filter(Boolean);
+    }
+
+    // Parse salary: accept numbers or ranges like "$80k - $120k" and convert to number (average)
+    let salaryNumber = 0;
+    if (salary !== undefined && salary !== null && salary !== "") {
+      const s = String(salary);
+      const parts = s.match(/([0-9]+\.?[0-9]*\s*[kKmM]?)/g);
+      if (parts && parts.length > 0) {
+        const nums = parts.map((p) => {
+          const cleaned = p.replace(/[^0-9kKmM\.]/g, "").trim();
+          const mul = /k$/i.test(cleaned) ? 1000 : /m$/i.test(cleaned) ? 1000000 : 1;
+          const n = parseFloat(cleaned.replace(/k|K|m|M/gi, ""));
+          return Number.isFinite(n) ? Math.round(n * mul) : 0;
+        }).filter(Boolean);
+
+        if (nums.length === 1) salaryNumber = nums[0];
+        else if (nums.length > 1) salaryNumber = Math.round(nums.reduce((a, b) => a + b, 0) / nums.length);
+      } else {
+        // fallback numeric parse
+        const n = Number(s.replace(/[^0-9\.]/g, ""));
+        salaryNumber = Number.isFinite(n) ? n : 0;
+      }
+    }
 
     const job = await Job.create({
-      title,
-      description,
-      company,
-      createdBy: req.user._id, // admin id
+      title: String(title).trim(),
+      description: String(description).trim(),
+      company: String(company).trim(),
+      location: String(location || "").trim(),
+      type: String(type || "full-time").trim(),
+      salary: salaryNumber || 0,
+      skills: normalizedSkills,
+      experience: Number(experience) || 0,
+      yearsOfExperience: Number(yearsOfExperience) || 0,
+      createdBy: req.user._id,
     });
 
-    res.status(201).json({
-      success: true,
-      message: "Job created successfully ✅",
-      job,
-    });
+    res.status(201).json({ success: true, message: "Job created successfully ✅", job });
   } catch (error) {
     res.status(500).json({
       success: false,

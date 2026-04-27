@@ -165,6 +165,21 @@ const applicationSchema = new mongoose.Schema(
         ref: "User",
       },
     },
+    // Timeline of notes and status changes for recruiter review
+    timeline: [
+      {
+        type: {
+          type: String,
+          enum: ["note", "status_change", "system"],
+          default: "note",
+        },
+        author: { type: String },
+        authorId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        text: { type: String },
+        meta: { type: mongoose.Schema.Types.Mixed },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true }
 );

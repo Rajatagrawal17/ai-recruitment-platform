@@ -39,4 +39,20 @@ router.put(
   asyncHandler(scheduleInterview)
 );
 
+// Add note to application timeline
+router.post(
+  "/notes/:id",
+  protect,
+  authorizeRoles("recruiter", "admin"),
+  asyncHandler((req, res) => require("../controllers/applicationController").addApplicationNote(req, res))
+);
+
+// Get application timeline
+router.get(
+  "/timeline/:id",
+  protect,
+  authorizeRoles("recruiter", "admin"),
+  asyncHandler((req, res) => require("../controllers/applicationController").getApplicationTimeline(req, res))
+);
+
 module.exports = router;
