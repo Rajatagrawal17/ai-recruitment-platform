@@ -27,8 +27,16 @@ const JobListingsPage = () => {
   return (
     <main className="recruit-page">
       <section className="recruit-shell recruit-hero">
+        <span className="hero-kicker">Open Opportunities</span>
         <h1 className="recruit-title">Open Jobs</h1>
-        <p className="recruit-subtitle">Discover active opportunities and apply in a few steps.</p>
+        <p className="recruit-subtitle">
+          Discover active opportunities, review fit quickly, and apply from a polished mobile-friendly flow.
+        </p>
+        <div className="hero-stat-strip">
+          <span>{jobs.length} live roles</span>
+          <span>Responsive search</span>
+          <span>Fast application</span>
+        </div>
       </section>
 
       <section className="recruit-shell">
@@ -36,20 +44,38 @@ const JobListingsPage = () => {
         {error && <div className="recruit-card">{error}</div>}
 
         {!loading && !error && (
-          <div className="recruit-grid">
-            {jobs.map((job) => (
-              <article key={job._id} className="recruit-card">
-                <h3>{job.title}</h3>
-                <p className="recruit-muted" style={{ marginBottom: 10 }}>{job.company || "Company"}</p>
-                <p className="recruit-muted" style={{ marginBottom: 14 }}>{job.description}</p>
-                <div className="recruit-actions">
-                  <button className="recruit-btn primary" onClick={() => navigate(`/jobs/${job._id}`)}>
-                    View & Apply
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
+          jobs.length > 0 ? (
+            <div className="recruit-grid">
+              {jobs.map((job) => (
+                <article key={job._id} className="recruit-card">
+                  <h3>{job.title}</h3>
+                  <p className="recruit-muted" style={{ marginBottom: 10 }}>
+                    {job.company || "Company"}
+                  </p>
+                  <p className="recruit-muted" style={{ marginBottom: 14 }}>
+                    {job.description}
+                  </p>
+                  <div className="recruit-actions">
+                    <button className="recruit-btn primary" onClick={() => navigate(`/jobs/${job._id}`)}>
+                      View & Apply
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="recruit-card" style={{ textAlign: "center" }}>
+              <h3>No jobs available right now</h3>
+              <p className="recruit-muted" style={{ marginBottom: 14 }}>
+                New opportunities will appear here as recruiters publish them.
+              </p>
+              <div className="recruit-actions" style={{ justifyContent: "center" }}>
+                <button className="recruit-btn primary" onClick={() => navigate("/candidate/dashboard")}>
+                  Back to Dashboard
+                </button>
+              </div>
+            </div>
+          )
         )}
       </section>
     </main>

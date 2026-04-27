@@ -23,8 +23,6 @@ const AIToolsPage = () => {
       name: "AI Job Matcher",
       description: "Find jobs that match your skills perfectly",
       icon: Zap,
-      color: "from-blue-500 to-cyan-500",
-      bgColor: "rgba(59, 130, 246, 0.1)",
       component: <AIJobMatcher />,
     },
     {
@@ -32,8 +30,6 @@ const AIToolsPage = () => {
       name: "Resume Analyzer",
       description: "Get your resume analyzed by AI with ATS scoring",
       icon: FileText,
-      color: "from-purple-500 to-pink-500",
-      bgColor: "rgba(147, 51, 234, 0.1)",
       component: <ResumeAnalyzer />,
     },
     {
@@ -41,8 +37,6 @@ const AIToolsPage = () => {
       name: "Skill Gap Analyzer",
       description: "Identify missing skills and create a learning path",
       icon: TrendingUp,
-      color: "from-green-500 to-emerald-500",
-      bgColor: "rgba(34, 197, 94, 0.1)",
       component: <SkillGapAnalyzer />,
     },
     {
@@ -50,8 +44,6 @@ const AIToolsPage = () => {
       name: "Salary Predictor",
       description: "Predict your salary based on role, experience, and location",
       icon: Briefcase,
-      color: "from-orange-500 to-red-500",
-      bgColor: "rgba(249, 115, 22, 0.1)",
       component: <SalaryPredictor />,
     },
     {
@@ -59,8 +51,6 @@ const AIToolsPage = () => {
       name: "Interview Prep",
       description: "Get interview questions and preparation tips",
       icon: BookOpen,
-      color: "from-indigo-500 to-blue-500",
-      bgColor: "rgba(99, 102, 241, 0.1)",
       component: <InterviewPrep />,
     },
   ];
@@ -71,228 +61,208 @@ const AIToolsPage = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.1 },
+      transition: { staggerChildren: 0.08 },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 16 },
     visible: { opacity: 1, y: 0 },
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4">
-      {/* Header */}
-      <motion.div
-        className="mb-12 text-center"
-        initial={{ opacity: 0, y: -20 }}
+    <main className="mx-auto min-h-screen w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+      <motion.section
+        className="glass-card relative overflow-hidden px-5 py-6 sm:px-8 sm:py-8"
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22 }}
       >
-        <h1 className="mb-4 text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-          🤖 AI-Powered Tools
-        </h1>
-        <p className="text-lg text-slate-400">
-          Leverage artificial intelligence to advance your career
-        </p>
-      </motion.div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(8,145,178,0.14),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(29,78,216,0.10),transparent_34%)]" />
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+              AI Career Studio
+            </p>
+            <h1 className="mt-4 text-3xl font-bold tracking-tight text-text sm:text-4xl lg:text-5xl">
+              Professional AI tools for career decisions.
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-text-muted sm:text-base">
+              Switch between matching, resume feedback, skill planning, salary guidance, and interview preparation in one clean workspace.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[32rem]">
+            <div className="rounded-2xl border border-border bg-surface-soft px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Tools</p>
+              <p className="mt-1 text-lg font-semibold text-text">5</p>
+            </div>
+            <div className="rounded-2xl border border-border bg-surface-soft px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Mode</p>
+              <p className="mt-1 text-lg font-semibold text-text">Responsive</p>
+            </div>
+            <div className="rounded-2xl border border-border bg-surface-soft px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">Focus</p>
+              <p className="mt-1 text-lg font-semibold text-text">Career</p>
+            </div>
+            <div className="rounded-2xl border border-border bg-surface-soft px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-text-muted">UX</p>
+              <p className="mt-1 text-lg font-semibold text-text">Polished</p>
+            </div>
+          </div>
+        </div>
+      </motion.section>
 
-      <div className="mx-auto max-w-7xl">
-        {/* Tool Selector */}
+      <section className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
         <motion.div
-          className="mb-12 grid gap-4"
+          className="glass-card p-4 sm:p-5"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-text-muted">
+                Select a tool
+              </h2>
+              <p className="mt-1 text-sm text-text-muted">
+                Each tool is designed to work well on both phones and large screens.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
             {tools.map((tool) => (
               <motion.button
                 key={tool.id}
                 variants={itemVariants}
                 onClick={() => setSelectedTool(tool.id)}
-                className={`group relative overflow-hidden rounded-lg p-4 transition-all duration-300 ${
+                className={`group relative overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 ${
                   selectedTool === tool.id
-                    ? "ring-2 ring-offset-2 ring-offset-slate-900"
-                    : "hover:shadow-lg"
+                    ? "border-primary/30 bg-primary-soft shadow-card"
+                    : "border-border bg-surface-soft hover:-translate-y-0.5 hover:border-primary/20"
                 }`}
-                style={{
-                  background:
-                    selectedTool === tool.id
-                      ? `linear-gradient(135deg, ${tool.color})`
-                      : tool.bgColor,
-                }}
               >
-                <div className="relative z-10">
-                  <tool.icon
-                    className={`mb-2 size-6 ${
-                      selectedTool === tool.id ? "text-white" : "text-blue-400"
-                    }`}
-                  />
-                  <h3
-                    className={`text-sm font-bold ${
-                      selectedTool === tool.id ? "text-white" : "text-slate-200"
+                <div className="flex items-start gap-3">
+                  <span
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                      selectedTool === tool.id
+                        ? "bg-primary text-white"
+                        : "bg-white/70 text-primary dark:bg-surface-elevated"
                     }`}
                   >
-                    {tool.name}
-                  </h3>
-                  <p
-                    className={`text-xs ${
-                      selectedTool === tool.id ? "text-blue-100" : "text-slate-400"
-                    }`}
-                  >
-                    {tool.description}
-                  </p>
+                    <tool.icon size={20} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-semibold text-text">{tool.name}</h3>
+                    <p className="mt-1 text-xs leading-5 text-text-muted">{tool.description}</p>
+                  </div>
                 </div>
-
-                {/* Animated background glow */}
-                {selectedTool === tool.id && (
-                  <motion.div
-                    className="absolute inset-0 -z-10 opacity-0"
-                    animate={{ opacity: [0.5, 0.8, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    style={{
-                      background: `linear-gradient(135deg, ${tool.color})`,
-                    }}
-                  />
-                )}
               </motion.button>
             ))}
           </div>
         </motion.div>
 
-        {/* Tool Display Area */}
         <AnimatePresence mode="wait">
           {currentTool && (
             <motion.div
               key={currentTool.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="rounded-2xl bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-8"
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+              className="glass-card overflow-hidden p-4 sm:p-6"
             >
+              <div className="mb-4 flex items-center justify-between gap-3 border-b border-border pb-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                    Active tool
+                  </p>
+                  <h2 className="mt-1 text-xl font-semibold text-text">{currentTool.name}</h2>
+                </div>
+                <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
+                  Ready
+                </span>
+              </div>
+
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
+                transition={{ delay: 0.05 }}
               >
                 {currentTool.component}
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
+      </section>
 
-        {/* Features Info Section */}
-        <motion.div
-          className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.div
-            variants={itemVariants}
-            className="rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 p-6"
-          >
-            <div className="mb-4 inline-block rounded-lg bg-blue-500/20 p-3">
-              <Zap className="text-blue-400" size={24} />
-            </div>
-            <h3 className="mb-2 text-lg font-bold text-white">Smart Matching</h3>
-            <p className="text-slate-400">
-              AI analyzes your skills and finds jobs with 60%+ compatibility
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={itemVariants}
-            className="rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 p-6"
-          >
-            <div className="mb-4 inline-block rounded-lg bg-purple-500/20 p-3">
-              <FileText className="text-purple-400" size={24} />
-            </div>
-            <h3 className="mb-2 text-lg font-bold text-white">Resume Insights</h3>
-            <p className="text-slate-400">
-              Get authentic ATS scoring and actionable improvement suggestions
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={itemVariants}
-            className="rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 p-6"
-          >
-            <div className="mb-4 inline-block rounded-lg bg-green-500/20 p-3">
-              <TrendingUp className="text-green-400" size={24} />
-            </div>
-            <h3 className="mb-2 text-lg font-bold text-white">Skill Planning</h3>
-            <p className="text-slate-400">
-              Identify gaps and get personalized learning recommendations
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={itemVariants}
-            className="rounded-xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 p-6"
-          >
-            <div className="mb-4 inline-block rounded-lg bg-orange-500/20 p-3">
-              <Briefcase className="text-orange-400" size={24} />
-            </div>
-            <h3 className="mb-2 text-lg font-bold text-white">Salary Intelligence</h3>
-            <p className="text-slate-400">
-              Predict salary ranges based on role, experience, and market trends
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={itemVariants}
-            className="rounded-xl bg-gradient-to-br from-indigo-500/10 to-blue-500/10 border border-indigo-500/20 p-6"
-          >
-            <div className="mb-4 inline-block rounded-lg bg-indigo-500/20 p-3">
-              <BookOpen className="text-indigo-400" size={24} />
-            </div>
-            <h3 className="mb-2 text-lg font-bold text-white">Interview Ready</h3>
-            <p className="text-slate-400">
-              AI-generated questions and personalized preparation tips
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={itemVariants}
-            className="rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 p-6"
-          >
-            <div className="mb-4 inline-block rounded-lg bg-cyan-500/20 p-3">
-              <ChevronRight className="text-cyan-400" size={24} />
-            </div>
-            <h3 className="mb-2 text-lg font-bold text-white">Powered by Claude AI</h3>
-            <p className="text-slate-400">
-              Enterprise-grade AI analysis for authentic, accurate results
-            </p>
-          </motion.div>
-        </motion.div>
-
-        {/* CTA Section */}
-        <motion.div
-          className="mt-12 rounded-2xl bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 p-8 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <h3 className="mb-2 text-2xl font-bold text-white">
-            Ready to Transform Your Career?
-          </h3>
-          <p className="mb-6 text-slate-300">
-            Use our AI tools to get matched with perfect jobs, improve your resume, and
-            ace interviews
+      <motion.section
+        className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants} className="glass-card p-5">
+          <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
+            <Zap size={20} />
+          </div>
+          <h3 className="text-base font-semibold text-text">Smart Matching</h3>
+          <p className="mt-2 text-sm leading-6 text-text-muted">
+            AI analyzes your profile and surfaces relevant roles with meaningful compatibility.
           </p>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-8 py-3 font-bold text-white transition-all hover:shadow-lg hover:shadow-blue-500/50"
-          >
-            Start Using AI Tools
-            <ChevronRight size={20} />
-          </motion.button>
         </motion.div>
-      </div>
-    </div>
+
+        <motion.div variants={itemVariants} className="glass-card p-5">
+          <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-300">
+            <FileText size={20} />
+          </div>
+          <h3 className="text-base font-semibold text-text">Resume Insights</h3>
+          <p className="mt-2 text-sm leading-6 text-text-muted">
+            Get ATS-style feedback and clear improvements without clutter or fake scores.
+          </p>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="glass-card p-5">
+          <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">
+            <TrendingUp size={20} />
+          </div>
+          <h3 className="text-base font-semibold text-text">Skill Planning</h3>
+          <p className="mt-2 text-sm leading-6 text-text-muted">
+            Identify gaps and get a clear learning path aligned to your target roles.
+          </p>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="glass-card p-5">
+          <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-300">
+            <Briefcase size={20} />
+          </div>
+          <h3 className="text-base font-semibold text-text">Salary Intelligence</h3>
+          <p className="mt-2 text-sm leading-6 text-text-muted">
+            See practical salary ranges based on role, experience, and market context.
+          </p>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="glass-card p-5 sm:col-span-2 xl:col-span-1">
+          <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-300">
+            <BookOpen size={20} />
+          </div>
+          <h3 className="text-base font-semibold text-text">Interview Ready</h3>
+          <p className="mt-2 text-sm leading-6 text-text-muted">
+            Practice with focused questions and preparation notes that are easy to follow on mobile.
+          </p>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="glass-card p-5 sm:col-span-2 xl:col-span-1">
+          <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-300">
+            <ChevronRight size={20} />
+          </div>
+          <h3 className="text-base font-semibold text-text">Career Clarity</h3>
+          <p className="mt-2 text-sm leading-6 text-text-muted">
+            Move from broad suggestions to a focused next step for your specific profile.
+          </p>
+        </motion.div>
+      </motion.section>
+    </main>
   );
 };
 

@@ -343,7 +343,7 @@ const ProfileCompletion = () => {
       {/* Form */}
       <motion.form
         onSubmit={handleSubmit}
-        className="profile-form"
+        className="profile-form form-grid"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
@@ -440,11 +440,10 @@ const ProfileCompletion = () => {
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+          <div className="profile-actions">
             <button
               type="button"
               className="submit-button"
-              style={{ marginTop: 0, width: 'auto', padding: '0.65rem 1rem' }}
               disabled={resumeUploading || !resumeFile}
               onClick={handleResumeUpload}
             >
