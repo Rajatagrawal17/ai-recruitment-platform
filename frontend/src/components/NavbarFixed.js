@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Menu, Moon, Sun, X, LogOut, LayoutDashboard, Zap } from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, Moon, Sparkles, Sun, X, Zap } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { logoutUser } from "../services/api";
@@ -17,28 +17,14 @@ const NavbarFixed = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Check auth on component mount
-  useEffect(() => {
-    const checkAuth = () => {
-      const storedToken = localStorage.getItem("token");
-      console.log("✅ AUTH CHECK: token=", !!storedToken, "isAuthenticated=", isAuthenticated);
-      setAuthReady(true);
-    };
-
-    checkAuth();
-  }, [isAuthenticated]);
-
-  // Scroll effect
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -77,87 +63,91 @@ const NavbarFixed = () => {
     navigate("/", { replace: true });
   };
 
-  // Determine if user is logged in
   const isLoggedIn = isAuthenticated && token;
 
   return (
-    <motion.header 
+    <motion.header
       className={`sticky top-0 z-50 border-b transition-colors duration-300 ${
-        isScrolled 
-          ? 'border-border/50 bg-surface/80 backdrop-blur-xl shadow-sm' 
-          : 'border-transparent bg-transparent'
+        isScrolled
+          ? "border-border/50 bg-surface/80 backdrop-blur-xl shadow-sm"
+          : "border-transparent bg-transparent"
       }`}
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
-      <motion.div 
-        className="mx-auto flex max-w-7xl items-center justify-between px-4 md:px-6 py-4"
-        animate={{ height: isScrolled ? "3.5rem" : "4rem" }}
+      <motion.div
+        className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-6"
+        animate={{ height: isScrolled ? "3.5rem" : "4.25rem" }}
       >
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-          <motion.div 
+        <Link to="/" className="group flex flex-shrink-0 items-center gap-2">
+          <motion.div
             className="rounded-xl bg-gradient-to-tr from-primary to-accent px-2 py-1 text-sm font-extrabold text-white shadow-card"
-            whileHover={{ rotate: 10, scale: 1.1 }}
+            whileHover={reduceMotion ? undefined : { rotate: 10, scale: 1.1 }}
           >
             C
           </motion.div>
-          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-lg font-extrabold text-transparent whitespace-nowrap">
-            CogniFit
-          </span>
+          <div className="leading-tight">
+            <span className="block whitespace-nowrap bg-gradient-to-r from-primary to-accent bg-clip-text text-lg font-extrabold text-transparent">
+              CogniFit
+            </span>
+            <span className="hidden text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted md:block">
+              Intelligent hiring workspace
+            </span>
+          </div>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden items-center gap-1 rounded-full border border-border bg-surface-elevated px-1.5 py-1 shadow-sm backdrop-blur-xl md:flex">
           {!isLoggedIn && (
             <Link
               to="/jobs"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface-soft hover:text-text transition-colors"
+              className="rounded-full px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-soft hover:text-text"
             >
               Jobs
             </Link>
           )}
-          
+
           {isLoggedIn && role === "candidate" && (
             <Link
               to="/apply"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface-soft hover:text-text transition-colors"
+              className="rounded-full px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-soft hover:text-text"
             >
               Apply Jobs
             </Link>
           )}
         </nav>
 
-        {/* Right Side Actions */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Theme Toggle */}
+        <div className="flex flex-shrink-0 items-center gap-3">
+          {isLoggedIn && role && (
+            <span className="hidden items-center gap-1 rounded-full border border-border bg-surface-elevated px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted md:inline-flex">
+              <Sparkles size={12} className="text-accent" />
+              {role}
+            </span>
+          )}
+
           <motion.button
             whileHover={reduceMotion ? undefined : { rotate: isDark ? -12 : 12 }}
             whileTap={reduceMotion ? undefined : { scale: 0.96 }}
             onClick={toggleTheme}
-            className="rounded-lg border border-border bg-surface-elevated p-2 text-text-muted hover:text-text transition-colors"
+            className="rounded-full border border-border bg-surface-elevated p-2.5 text-text-muted shadow-sm transition-all hover:text-text"
             title="Toggle theme"
           >
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </motion.button>
 
-          {/* Auth Section - Desktop */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden items-center gap-2 md:flex">
             {isLoggedIn ? (
               <div className="relative" ref={dropdownRef}>
-                {/* Avatar Circle */}
                 <motion.button
                   whileHover={reduceMotion ? undefined : { scale: 1.08 }}
                   whileTap={reduceMotion ? undefined : { scale: 0.95 }}
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  onClick={() => setDropdownOpen((prev) => !prev)}
                   className="avatar-circle"
                   title={user?.name}
                 >
                   {getUserInitials()}
                 </motion.button>
 
-                {/* Dropdown Menu */}
                 <AnimatePresence>
                   {dropdownOpen && (
                     <motion.div
@@ -166,7 +156,6 @@ const NavbarFixed = () => {
                       exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.95 }}
                       className="avatar-dropdown"
                     >
-                      {/* User Info */}
                       <div className="dropdown-user-info">
                         <div className="name">{user?.name}</div>
                         <div className="email">{user?.email}</div>
@@ -174,7 +163,6 @@ const NavbarFixed = () => {
 
                       <div className="dropdown-divider" />
 
-                      {/* Dashboard Link */}
                       <button
                         onClick={() => {
                           navigate(role === "candidate" ? "/candidate/dashboard" : "/dashboard");
@@ -201,11 +189,7 @@ const NavbarFixed = () => {
 
                       <div className="dropdown-divider" />
 
-                      {/* Logout */}
-                      <button
-                        onClick={handleLogout}
-                        className="dropdown-logout"
-                      >
+                      <button onClick={handleLogout} className="dropdown-logout">
                         <LogOut size={16} />
                         Logout
                       </button>
@@ -217,13 +201,13 @@ const NavbarFixed = () => {
               <>
                 <Link
                   to="/login"
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-text-muted hover:text-text transition-colors"
+                  className="rounded-full px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:text-text"
                 >
                   Login
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors"
+                  className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-card transition-all hover:-translate-y-0.5"
                 >
                   Get Started
                 </Link>
@@ -231,9 +215,8 @@ const NavbarFixed = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <button
-            onClick={() => setMobileOpen(!mobileOpen)}
+            onClick={() => setMobileOpen((prev) => !prev)}
             className="rounded-lg border border-border bg-surface-elevated p-2 text-text-muted md:hidden"
             aria-label="Toggle menu"
           >
@@ -242,7 +225,6 @@ const NavbarFixed = () => {
         </div>
       </motion.div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -251,7 +233,7 @@ const NavbarFixed = () => {
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
             className="border-t border-border bg-surface-elevated/95 md:hidden"
           >
-            <div className="px-4 py-3 space-y-2">
+            <div className="space-y-2 px-4 py-3">
               {!isLoggedIn && (
                 <Link
                   to="/jobs"
@@ -273,18 +255,32 @@ const NavbarFixed = () => {
                       Apply Jobs
                     </Link>
                   )}
+
                   <button
                     onClick={() => {
                       navigate(role === "candidate" ? "/candidate/dashboard" : "/dashboard");
                       closeAll();
                     }}
-                    className="w-full text-left rounded-lg px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface-soft"
+                    className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-text-muted hover:bg-surface-soft"
                   >
                     Dashboard
                   </button>
+
+                  {role === "candidate" && (
+                    <button
+                      onClick={() => {
+                        navigate("/ai-tools");
+                        closeAll();
+                      }}
+                      className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-text-muted hover:bg-surface-soft"
+                    >
+                      AI Tools
+                    </button>
+                  )}
+
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-500/20"
+                    className="flex w-full items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-500/20"
                   >
                     <LogOut size={16} />
                     Logout
@@ -297,14 +293,14 @@ const NavbarFixed = () => {
                   <Link
                     to="/login"
                     onClick={closeAll}
-                    className="block text-center rounded-lg px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface-soft"
+                    className="block rounded-lg px-3 py-2 text-center text-sm font-medium text-text-muted hover:bg-surface-soft"
                   >
                     Login
                   </Link>
                   <Link
                     to="/register"
                     onClick={closeAll}
-                    className="block text-center rounded-lg bg-primary text-white px-3 py-2 text-sm font-medium hover:bg-primary-dark"
+                    className="block rounded-lg bg-primary px-3 py-2 text-center text-sm font-medium text-white hover:bg-primary-dark"
                   >
                     Get Started
                   </Link>

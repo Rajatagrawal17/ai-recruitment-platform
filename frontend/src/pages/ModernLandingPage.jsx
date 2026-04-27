@@ -6,7 +6,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Sparkles,
   ArrowRight,
-  CheckCircle2,
   Users,
   Zap,
   TrendingUp,
@@ -143,7 +142,7 @@ const ModernLandingPage = () => {
             className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-white/5 border border-white/10 rounded-full hover:border-blue-500/50 transition-colors"
           >
             <Sparkles size={16} className="text-blue-400" />
-            <span className="text-sm text-gray-300">Transform Your Hiring Process</span>
+            <span className="text-sm text-gray-300">Structured hiring intelligence for modern teams</span>
           </motion.div>
 
           {/* Main Headline */}
@@ -153,7 +152,7 @@ const ModernLandingPage = () => {
             transition={{ delay: 0.3, duration: 0.8 }}
             className="text-5xl md:text-7xl font-bold mb-6 leading-tight"
           >
-            The Future of{" "}
+            Smarter{" "}
             <GradientText from="from-blue-400" to="to-purple-600">
               Recruitment
             </GradientText>
@@ -166,7 +165,7 @@ const ModernLandingPage = () => {
             transition={{ delay: 0.5, duration: 0.8 }}
             className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto"
           >
-            AI-powered hiring platform that finds and matches the perfect candidates in minutes, not weeks.
+            A clear, AI-assisted workflow for matching candidates, reviewing profiles, and moving faster with better context.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -219,7 +218,7 @@ const ModernLandingPage = () => {
               viewport={{ once: true }}
               className="text-4xl md:text-5xl font-bold mb-4"
             >
-              Why Choose <GradientText>CogniFit</GradientText>?
+              Why teams choose <GradientText>CogniFit</GradientText>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0 }}
@@ -228,7 +227,7 @@ const ModernLandingPage = () => {
               viewport={{ once: true }}
               className="text-gray-400 text-lg max-w-2xl mx-auto"
             >
-              Built for modern teams who demand speed, accuracy, and simplicity
+              Built for teams that want a cleaner workflow, clearer decisions, and less manual coordination.
             </motion.p>
           </div>
 
@@ -273,7 +272,7 @@ const ModernLandingPage = () => {
             >
               <h2 className="text-4xl font-bold mb-4">Ready to Transform Your Hiring?</h2>
               <p className="text-gray-300 mb-8 text-lg">
-                Join thousands of companies that trust CogniFit for their recruitment needs
+                Start with a cleaner workflow for candidate review, job matching, and profile management.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/register">
