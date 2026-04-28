@@ -4,6 +4,8 @@
   "private": true,
   "dependencies": {
     "@floating-ui/react": "^0.27.19",
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.9.1",
     "ajv": "^8.12.0",
     "ajv-keywords": "^5.1.0",
     "axios": "^1.6.0",
@@ -18,16 +20,19 @@
     "micro-interactions": "^0.0.1",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.3.1",
+    "react-countup": "^6.5.3",
     "react-dom": "^18.2.0",
     "react-google-recaptcha": "^3.1.0",
     "react-hot-toast": "^2.6.0",
+    "react-intersection-observer": "^10.0.3",
     "react-router-dom": "^6.8.0",
     "react-scripts": "^5.0.1",
     "react-use-measure": "^2.1.7",
     "recharts": "^2.10.3",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.5.0",
-    "three": "^0.183.2"
+    "three": "^0.183.2",
+    "tsparticles": "^3.9.1"
   },
   "scripts": {
     "start": "react-scripts start",
