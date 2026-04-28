@@ -43,17 +43,20 @@ const Navbar = () => {
     if (!token && !isAuthenticated) {
       return [
         { path: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
+        { path: "/experience", label: "Experience", icon: LayoutDashboard },
       ];
     }
 
     if (role === "candidate") {
       return [
         { path: "/apply", label: "Apply Jobs", icon: BriefcaseBusiness },
+        { path: "/experience", label: "Experience", icon: LayoutDashboard },
       ];
     }
 
     return [
       { path: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
+      { path: "/experience", label: "Experience", icon: LayoutDashboard },
     ];
   }, [token, role, isAuthenticated]);
 

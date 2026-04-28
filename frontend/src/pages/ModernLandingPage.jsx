@@ -81,6 +81,24 @@ const ModernLandingPage = () => {
     },
   ];
 
+  const experienceHighlights = [
+    {
+      icon: Users,
+      title: "Recruiter path",
+      description: "See role-scoped hiring actions, candidate ranking, and interview movement in one smooth flow.",
+    },
+    {
+      icon: Sparkles,
+      title: "Candidate path",
+      description: "Explore applications, match clarity, and job discovery without losing the visual polish.",
+    },
+    {
+      icon: Shield,
+      title: "Shared platform story",
+      description: "Switch between both views to understand how the product feels before signup.",
+    },
+  ];
+
   const stats = [
     { number: "10K+", label: "Active Users" },
     { number: "50K+", label: "Jobs Posted" },
@@ -229,6 +247,56 @@ const ModernLandingPage = () => {
             >
               Built for teams that want a cleaner workflow, clearer decisions, and less manual coordination.
             </motion.p>
+          </div>
+
+          {/* Experience Hub Teaser */}
+          <div className="mt-10 rounded-3xl border border-white/10 bg-white/5 p-6 md:p-8 backdrop-blur">
+            <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200">
+                  <Sparkles size={12} /> Interactive experience hub
+                </div>
+                <h3 className="mt-4 text-3xl font-bold text-white md:text-4xl">
+                  See the product from both sides before you sign in
+                </h3>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300 md:text-base">
+                  Recruiters can preview their command center, while candidates can preview the job discovery and application journey. It keeps the platform story clear and interactive.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <Link
+                    to="/experience"
+                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition-transform hover:-translate-y-0.5"
+                  >
+                    Open experience hub <ArrowRight size={16} />
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                  >
+                    Start free
+                  </Link>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                {experienceHighlights.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.div
+                      key={item.title}
+                      whileHover={{ y: -4 }}
+                      className="rounded-2xl border border-white/10 bg-slate-900/70 p-4"
+                    >
+                      <div className="inline-flex rounded-xl bg-blue-500/20 p-3 text-blue-300">
+                        <Icon size={18} />
+                      </div>
+                      <h4 className="mt-4 text-base font-semibold text-white">{item.title}</h4>
+                      <p className="mt-2 text-sm leading-6 text-slate-300">{item.description}</p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Features Grid */}

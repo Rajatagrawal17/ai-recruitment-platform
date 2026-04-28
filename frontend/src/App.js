@@ -16,6 +16,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import LandingPage from "./pages/LandingPage";
 import ModernLandingPage from "./pages/ModernLandingPage";
+import ExperienceHubPage from "./pages/ExperienceHubPage";
 import JobsPage from "./pages/JobsPage";
 import EnhancedJobsPage from "./pages/EnhancedJobsPage";
 import JobDetailPage from "./pages/JobDetailPage";
@@ -92,6 +93,7 @@ const AppRoutes = () => {
     <AnimatePresence>
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<AnimatedPage><ModernLandingPage /></AnimatedPage>} />
+        <Route path="/experience" element={<AnimatedPage><ExperienceHubPage /></AnimatedPage>} />
         <Route
           path="/jobs"
           element={
