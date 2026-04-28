@@ -135,6 +135,7 @@ export const verifyResetOTP = (data) => API.post("/auth/verify-reset-otp", data)
 export const resetPassword = (data) => API.post("/auth/reset-password", data);
 
 export const getJobs = () => API.get("/jobs");
+export const getCompanies = () => API.get("/companies");
 export const getRecommendedJobs = () => API.get("/jobs/recommendations");
 export const getJobById = (jobId) => API.get(`/jobs/${jobId}`);
 export const createJob = (data) => API.post("/jobs/create", data);

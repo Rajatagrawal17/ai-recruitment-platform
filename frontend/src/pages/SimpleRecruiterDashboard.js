@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {
   createJob,
+  getCompanies,
   getAnalytics,
   getJobCandidates,
   getJobs,
@@ -30,6 +31,8 @@ const initialForm = {
 };
 
 const statusOptions = ["all", "pending", "shortlisted", "accepted", "rejected"];
+
+const companyKey = (value = "") => String(value).trim().toLowerCase();
 
 const extractJobs = (res) => {
   const payload = res?.data;
@@ -54,6 +57,26 @@ const StatCard = ({ label, value, icon: Icon }) => (
     </div>
     <p className="mt-3 text-2xl font-bold text-text">{value}</p>
   </div>
+);
+
+const CompanyBadge = ({ company, active, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`rounded-xl border px-3 py-2 text-left transition-colors ${
+      active ? "border-primary bg-primary/10" : "border-border bg-surface/30 hover:bg-surface/50"
+    }`}
+  >
+    <div className="flex items-center gap-3">
+      <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${company._color || "from-cyan-500 to-blue-600"} text-sm font-bold text-white`}>
+        {(company.name || "C").charAt(0).toUpperCase()}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-text">{company.name}</p>
+        <p className="truncate text-xs text-text-muted">{company.industry || company.location || "Company workspace"}</p>
+      </div>
+    </div>
+  </button>
 );
 
 const CandidateRow = ({ candidate, onStatusChange, onSchedule }) => {
@@ -166,17 +189,16 @@ const CandidateRow = ({ candidate, onStatusChange, onSchedule }) => {
 
 const SimpleRecruiterDashboard = () => {
   const [jobs, setJobs] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState("");
   const [candidates, setCandidates] = useState([]);
   const [analytics, setAnalytics] = useState(null);
+  const [activeCompany, setActiveCompany] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [pollIntervalMs, setPollIntervalMs] = useState(15000);
-  const [liveUpdatesEnabled, setLiveUpdatesEnabled] = useState(false);
-  const [errorCount, setErrorCount] = useState(0);
   const [saving, setSaving] = useState(false);
 
   const [query, setQuery] = useState("");
@@ -198,15 +220,26 @@ const SimpleRecruiterDashboard = () => {
   const loadJobsAndAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      const [jobsRes, analyticsRes] = await Promise.all([
+      const [jobsRes, companiesRes, analyticsRes] = await Promise.all([
         getJobs(),
+        getCompanies().catch(() => ({ data: { companies: [] } })),
         getAnalytics().catch(() => ({ data: { analytics: null } })),
       ]);
 
       const nextJobs = extractJobs(jobsRes);
+      const nextCompanies = Array.isArray(companiesRes?.data?.companies) ? companiesRes.data.companies : [];
       setJobs(nextJobs);
+      setCompanies(nextCompanies);
       setAnalytics(analyticsRes?.data?.analytics || null);
 
+      const workspaceCompanies = [
+        ...new Set([
+          ...nextCompanies.map((company) => company.name),
+          ...nextJobs.map((job) => job.company).filter(Boolean),
+        ]),
+      ];
+
+      setActiveCompany((current) => current || workspaceCompanies[0] || "");
       setSelectedJobId((currentSelectedJobId) => currentSelectedJobId || nextJobs[0]?._id || "");
     } catch (error) {
       setMessage("error", error?.response?.data?.message || "Failed to load recruiter data");
@@ -214,6 +247,34 @@ const SimpleRecruiterDashboard = () => {
       setLoading(false);
     }
   }, [setMessage]);
+
+  const workspaceJobs = useMemo(() => {
+    if (!activeCompany || activeCompany === "all") return jobs;
+    return jobs.filter((job) => companyKey(job.company) === companyKey(activeCompany));
+  }, [activeCompany, jobs]);
+
+  const workspaceCompanies = useMemo(() => {
+    const seen = new Map();
+    [...companies, ...jobs.map((job) => ({ name: job.company, location: job.location, industry: job.industry, website: job.website }))]
+      .filter((company) => company?.name)
+      .forEach((company) => {
+        const key = companyKey(company.name);
+        if (!seen.has(key)) {
+          seen.set(key, company);
+        }
+      });
+    return [...seen.values()];
+  }, [companies, jobs]);
+
+  const selectedCompany = useMemo(() => {
+    if (!activeCompany || activeCompany === "all") return null;
+    return workspaceCompanies.find((company) => companyKey(company.name) === companyKey(activeCompany)) || null;
+  }, [activeCompany, workspaceCompanies]);
+
+  const selectedJob = useMemo(
+    () => workspaceJobs.find((job) => job._id === selectedJobId) || workspaceJobs[0] || null,
+    [selectedJobId, workspaceJobs]
+  );
 
   const loadCandidates = useCallback(async (jobId, targetPage = 1) => {
     if (!jobId) {
@@ -238,41 +299,6 @@ const SimpleRecruiterDashboard = () => {
     }
   }, [setMessage]);
 
-  // Adaptive polling: opt-in, visibility-aware, exponential backoff on errors
-  useEffect(() => {
-    if (!liveUpdatesEnabled) return;
-
-    let mounted = true;
-    let localErrorCount = 0;
-
-    const tick = async () => {
-      if (!mounted) return;
-      // pause when tab is hidden to avoid wasted requests
-      if (typeof document !== "undefined" && document.hidden) return;
-      try {
-        await loadJobsAndAnalytics();
-        if (selectedJobId) await loadCandidates(selectedJobId, page);
-        localErrorCount = 0;
-        setErrorCount(0);
-      } catch (e) {
-        localErrorCount += 1;
-        setErrorCount(localErrorCount);
-        if (localErrorCount >= 3) {
-          setLiveUpdatesEnabled(false);
-          setMessage("error", "Live updates paused due to repeated backend errors");
-        }
-      }
-    };
-
-    // initial tick
-    tick();
-    const id = setInterval(tick, pollIntervalMs);
-    return () => {
-      mounted = false;
-      clearInterval(id);
-    };
-  }, [liveUpdatesEnabled, pollIntervalMs, selectedJobId, page, loadJobsAndAnalytics, loadCandidates, setMessage]);
-
   useEffect(() => {
     loadJobsAndAnalytics();
   }, [loadJobsAndAnalytics]);
@@ -280,6 +306,17 @@ const SimpleRecruiterDashboard = () => {
   useEffect(() => {
     loadCandidates(selectedJobId);
   }, [selectedJobId, page, loadCandidates]);
+
+  useEffect(() => {
+    if (workspaceJobs.length === 0) {
+      setSelectedJobId("");
+      return;
+    }
+
+    if (!workspaceJobs.some((job) => job._id === selectedJobId)) {
+      setSelectedJobId(workspaceJobs[0]._id);
+    }
+  }, [selectedJobId, workspaceJobs]);
 
   const filteredCandidates = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -341,6 +378,7 @@ const SimpleRecruiterDashboard = () => {
     try {
       const payload = {
         ...form,
+        company: activeCompany || form.company,
         skills: String(form.skills || "")
           .split(",")
           .map((s) => s.trim())
@@ -348,7 +386,7 @@ const SimpleRecruiterDashboard = () => {
       };
 
       await createJob(payload);
-      setForm(initialForm);
+      setForm(activeCompany && activeCompany !== "all" ? { ...initialForm, company: activeCompany } : initialForm);
       setShowJobForm(false);
       setMessage("success", "Job posted successfully");
       await loadJobsAndAnalytics();
@@ -433,31 +471,28 @@ const SimpleRecruiterDashboard = () => {
     URL.revokeObjectURL(url);
   };
 
-  const totalJobs = jobs.length;
-  const openJobs = analytics?.openJobs ?? jobs.filter((j) => j.status !== "closed").length;
+  const totalJobs = workspaceJobs.length;
+  const openJobs = analytics?.openJobs ?? workspaceJobs.filter((j) => j.status !== "closed").length;
   const topScore = filteredCandidates[0]?.matchScore || 0;
   const pendingReviews = filteredCandidates.filter((c) => (c.status || "pending") === "pending").length;
+  const activeCompanyLabel = selectedCompany?.name || activeCompany || "All companies";
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
       <section className="rounded-2xl border border-border bg-surface/40 p-5">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-text">Recruiter Dashboard</h1>
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
+              COMPANY WORKSPACE
+            </div>
+            <h1 className="mt-3 text-3xl font-bold text-text">Recruiter Dashboard</h1>
             <p className="mt-1 text-sm text-text-muted">
-              Lightweight mode: faster loading, stable updates, no heavy animations.
+              Manage only the jobs, candidates, and hiring actions for the active company workspace.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button className="btn-outline text-sm" onClick={() => loadJobsAndAnalytics()} title="Refresh now">
               Refresh
-            </button>
-            <button
-              className={`text-sm px-3 py-2 rounded-lg ${liveUpdatesEnabled ? 'bg-emerald-500/20 text-emerald-300' : 'bg-surface/10'}`}
-              onClick={() => setLiveUpdatesEnabled((v) => !v)}
-              title="Toggle live updates"
-            >
-              {liveUpdatesEnabled ? 'Live: On' : 'Live: Off'}
             </button>
             <button className="btn-primary inline-flex items-center gap-2" onClick={() => setShowJobForm((s) => !s)}>
               <Plus size={16} /> {showJobForm ? "Close" : "Post Job"}
@@ -475,7 +510,8 @@ const SimpleRecruiterDashboard = () => {
           </div>
         )}
 
-        <div className="mt-5 grid gap-3 md:grid-cols-4">
+        <div className="mt-5 grid gap-3 md:grid-cols-5">
+          <StatCard label="Workspace" value={activeCompanyLabel} icon={Briefcase} />
           <StatCard label="Total Jobs" value={totalJobs} icon={Briefcase} />
           <StatCard label="Open Jobs" value={openJobs} icon={CheckCircle2} />
           <StatCard label="Top Match" value={`${topScore}%`} icon={Users} />
@@ -483,12 +519,69 @@ const SimpleRecruiterDashboard = () => {
         </div>
       </section>
 
+      <section className="mt-5 rounded-2xl border border-border bg-surface/40 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-text">Company Workspace</h2>
+            <p className="text-sm text-text-muted">Choose the company you are hiring for. The dashboard will show only that company’s jobs.</p>
+          </div>
+          <div className="text-xs text-text-muted">{workspaceCompanies.length} companies available</div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveCompany("");
+              setSelectedJobId("");
+              setPage(1);
+            }}
+            className={`rounded-xl border px-3 py-3 text-left transition-colors ${
+              !activeCompany ? "border-primary bg-primary/10" : "border-border bg-surface/30 hover:bg-surface/50"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-variant text-sm font-bold text-text">
+                ∞
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-text">All Companies</p>
+                <p className="text-xs text-text-muted">View every job in the workspace</p>
+              </div>
+            </div>
+          </button>
+          {workspaceCompanies.map((company) => (
+            <CompanyBadge
+              key={company.name}
+              company={company}
+              active={companyKey(activeCompany) === companyKey(company.name)}
+              onClick={() => {
+                setActiveCompany(company.name);
+                setSelectedJobId("");
+                setPage(1);
+              }}
+            />
+          ))}
+        </div>
+      </section>
+
       {showJobForm && (
         <section className="mt-5 rounded-2xl border border-border bg-surface/40 p-5">
-          <h2 className="text-lg font-semibold text-text">Create Job</h2>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-text">Create Job</h2>
+              <p className="text-sm text-text-muted">Posting as: {activeCompanyLabel}</p>
+            </div>
+            <div className="text-xs text-text-muted">Jobs posted here will belong to the active company workspace.</div>
+          </div>
           <form onSubmit={handleCreateJob} className="mt-4 grid gap-3 md:grid-cols-2">
             <input className="input-modern" placeholder="Job title" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
-            <input className="input-modern" placeholder="Company" value={form.company} onChange={(e) => setForm((p) => ({ ...p, company: e.target.value }))} />
+            <input
+              className="input-modern"
+              placeholder="Company"
+              value={activeCompany || form.company}
+              readOnly={Boolean(activeCompany)}
+              onChange={(e) => setForm((p) => ({ ...p, company: e.target.value }))}
+            />
             <input className="input-modern" placeholder="Location" value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
             <select className="input-modern" value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}>
               <option value="full-time">full-time</option>
@@ -509,14 +602,14 @@ const SimpleRecruiterDashboard = () => {
 
       <section className="mt-5 grid gap-5 lg:grid-cols-[320px_1fr]">
         <aside className="rounded-2xl border border-border bg-surface/40 p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Jobs</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">Jobs in {activeCompanyLabel}</h2>
           <div className="mt-3 space-y-2 max-h-[560px] overflow-auto pr-1">
             {loading ? (
               <p className="text-sm text-text-muted">Loading jobs...</p>
-            ) : jobs.length === 0 ? (
-              <p className="text-sm text-text-muted">No jobs found.</p>
+            ) : workspaceJobs.length === 0 ? (
+              <p className="text-sm text-text-muted">No jobs found for this company.</p>
             ) : (
-                jobs.map((job) => (
+              workspaceJobs.map((job) => (
                 <button
                   key={job._id}
                   type="button"
@@ -573,6 +666,10 @@ const SimpleRecruiterDashboard = () => {
             </div>
           </div>
 
+          <div className="mt-3 rounded-lg border border-border bg-surface/20 px-3 py-2 text-xs text-text-muted">
+            Workspace: {activeCompanyLabel} • Showing {selectedJob?.title || "selected role"}
+          </div>
+
           <div className="mt-4 space-y-3">
             {!selectedJobId ? (
               <p className="text-sm text-text-muted">Select a job to view candidates.</p>
@@ -588,22 +685,10 @@ const SimpleRecruiterDashboard = () => {
                     <div className="text-xs text-text-muted">Page {page} of {totalPages}</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      className="btn-secondary text-sm"
-                      onClick={() => {
-                          if (page > 1) setPage((p) => p - 1);
-                        }}
-                      disabled={page <= 1}
-                    >
+                    <button className="btn-secondary text-sm" onClick={() => page > 1 && setPage((p) => p - 1)} disabled={page <= 1}>
                       Prev
                     </button>
-                    <button
-                      className="btn-secondary text-sm"
-                      onClick={() => {
-                          if (page < totalPages) setPage((p) => p + 1);
-                        }}
-                      disabled={page >= totalPages}
-                    >
+                    <button className="btn-secondary text-sm" onClick={() => page < totalPages && setPage((p) => p + 1)} disabled={page >= totalPages}>
                       Next
                     </button>
                   </div>
@@ -632,7 +717,7 @@ const SimpleRecruiterDashboard = () => {
               </div>
               <div className="mt-3 flex items-center gap-2 text-xs text-text-muted">
                 <Calendar size={14} />
-                Updated with live backend analytics
+                Scoped to the selected company workspace
               </div>
             </div>
           )}
