@@ -207,17 +207,15 @@ const SimpleRecruiterDashboard = () => {
       setJobs(nextJobs);
       setAnalytics(analyticsRes?.data?.analytics || null);
 
-      if (nextJobs.length > 0 && !selectedJobId) {
-        setSelectedJobId(nextJobs[0]._id);
-      }
+      setSelectedJobId((currentSelectedJobId) => currentSelectedJobId || nextJobs[0]?._id || "");
     } catch (error) {
       setMessage("error", error?.response?.data?.message || "Failed to load recruiter data");
     } finally {
       setLoading(false);
     }
-  }, [selectedJobId, setMessage]);
+  }, [setMessage]);
 
-  const loadCandidates = useCallback(async (jobId) => {
+  const loadCandidates = useCallback(async (jobId, targetPage = 1) => {
     if (!jobId) {
       setCandidates([]);
       return;
@@ -226,15 +224,11 @@ const SimpleRecruiterDashboard = () => {
     setLoadingCandidates(true);
     try {
       const res = await getJobCandidates(jobId, {
-        sortBy,
-        status: statusFilter !== "all" ? statusFilter : undefined,
-        search: query || undefined,
-        page,
+        page: targetPage,
         limit: 12,
       });
       setCandidates(extractCandidates(res));
       const meta = res?.data?.meta || {};
-      setPage(meta.page || 1);
       setTotalPages(meta.totalPages || 1);
     } catch (error) {
       setMessage("error", error?.response?.data?.message || "Failed to load candidates");
@@ -242,7 +236,7 @@ const SimpleRecruiterDashboard = () => {
     } finally {
       setLoadingCandidates(false);
     }
-  }, [query, setMessage, sortBy, statusFilter]);
+  }, [setMessage]);
 
   // Adaptive polling: opt-in, visibility-aware, exponential backoff on errors
   useEffect(() => {
@@ -257,7 +251,7 @@ const SimpleRecruiterDashboard = () => {
       if (typeof document !== "undefined" && document.hidden) return;
       try {
         await loadJobsAndAnalytics();
-        if (selectedJobId) await loadCandidates(selectedJobId);
+        if (selectedJobId) await loadCandidates(selectedJobId, page);
         localErrorCount = 0;
         setErrorCount(0);
       } catch (e) {
@@ -277,7 +271,7 @@ const SimpleRecruiterDashboard = () => {
       mounted = false;
       clearInterval(id);
     };
-  }, [liveUpdatesEnabled, pollIntervalMs, selectedJobId, loadJobsAndAnalytics, loadCandidates, setMessage]);
+  }, [liveUpdatesEnabled, pollIntervalMs, selectedJobId, page, loadJobsAndAnalytics, loadCandidates, setMessage]);
 
   useEffect(() => {
     loadJobsAndAnalytics();
@@ -285,7 +279,7 @@ const SimpleRecruiterDashboard = () => {
 
   useEffect(() => {
     loadCandidates(selectedJobId);
-  }, [selectedJobId, loadCandidates]);
+  }, [selectedJobId, page, loadCandidates]);
 
   const filteredCandidates = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -370,7 +364,7 @@ const SimpleRecruiterDashboard = () => {
     try {
       await updateApplicationStatus(applicationId, status);
       setMessage("success", `Candidate marked as ${status}`);
-      await loadCandidates(selectedJobId);
+      await loadCandidates(selectedJobId, page);
     } catch (error) {
       setMessage("error", error?.response?.data?.message || "Failed to update status");
     }
@@ -390,7 +384,7 @@ const SimpleRecruiterDashboard = () => {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
       });
       setMessage("success", "Interview scheduled");
-      await loadCandidates(selectedJobId);
+      await loadCandidates(selectedJobId, page);
       // noinspection JSUnusedGlobalSymbols
       // after scheduling, offer calendar links via client-side ICS generation
     } catch (error) {
@@ -526,7 +520,10 @@ const SimpleRecruiterDashboard = () => {
                 <button
                   key={job._id}
                   type="button"
-                  onClick={() => setSelectedJobId(job._id)}
+                    onClick={() => {
+                      setSelectedJobId(job._id);
+                      setPage(1);
+                    }}
                   className={`w-full rounded-lg border p-3 text-left transition-colors ${
                     selectedJobId === job._id
                       ? "border-primary bg-primary/10"
@@ -594,8 +591,8 @@ const SimpleRecruiterDashboard = () => {
                     <button
                       className="btn-secondary text-sm"
                       onClick={() => {
-                        if (page > 1) setPage((p) => p - 1);
-                      }}
+                          if (page > 1) setPage((p) => p - 1);
+                        }}
                       disabled={page <= 1}
                     >
                       Prev
@@ -603,8 +600,8 @@ const SimpleRecruiterDashboard = () => {
                     <button
                       className="btn-secondary text-sm"
                       onClick={() => {
-                        if (page < totalPages) setPage((p) => p + 1);
-                      }}
+                          if (page < totalPages) setPage((p) => p + 1);
+                        }}
                       disabled={page >= totalPages}
                     >
                       Next
