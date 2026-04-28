@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2, Heart, Clock, LogOut } from "lucide-react";
+import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2, Heart, Clock, LogOut, Bookmark } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useSavedJobs } from "../context/SavedJobsContext";
 import { logoutUser } from "../services/api";
 import "./Navbar.css";
 
@@ -12,6 +13,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { user, token, role, logout, isAuthenticated } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { getSavedJobsCount } = useSavedJobs();
   const reduceMotion = useReducedMotion();
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -50,15 +52,17 @@ const Navbar = () => {
     if (role === "candidate") {
       return [
         { path: "/apply", label: "Apply Jobs", icon: BriefcaseBusiness },
+        { path: "/saved-jobs", label: "Saved", icon: Bookmark, badge: getSavedJobsCount() },
         { path: "/experience", label: "Experience", icon: LayoutDashboard },
       ];
     }
 
     return [
       { path: "/jobs", label: "Jobs", icon: BriefcaseBusiness },
+      { path: "/saved-jobs", label: "Saved", icon: Bookmark, badge: getSavedJobsCount() },
       { path: "/experience", label: "Experience", icon: LayoutDashboard },
     ];
-  }, [token, role, isAuthenticated]);
+  }, [token, role, isAuthenticated, getSavedJobsCount]);
 
   const closeAll = () => {
     setMobileOpen(false);
@@ -134,7 +138,15 @@ const Navbar = () => {
                       : "text-text-muted hover:bg-surface-soft hover:text-text"
                   }`}
                 >
-                  {link.label}
+                  <span className="inline-flex items-center gap-2">
+                    {link.icon ? <link.icon size={16} /> : null}
+                    {link.label}
+                    {typeof link.badge === "number" && link.badge > 0 ? (
+                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#00D4FF] px-1.5 text-[11px] font-bold text-[#0A0F1E]">
+                        {link.badge}
+                      </span>
+                    ) : null}
+                  </span>
                 </Link>
               </motion.div>
             );
@@ -256,7 +268,14 @@ const Navbar = () => {
                     }`}
                   >
                     {Icon ? <Icon size={16} /> : null}
-                    <span>{link.label}</span>
+                    <span className="inline-flex items-center gap-2">
+                      {link.label}
+                      {typeof link.badge === "number" && link.badge > 0 ? (
+                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#00D4FF] px-1.5 text-[11px] font-bold text-[#0A0F1E]">
+                          {link.badge}
+                        </span>
+                      ) : null}
+                    </span>
                   </Link>
                 );
               })}
