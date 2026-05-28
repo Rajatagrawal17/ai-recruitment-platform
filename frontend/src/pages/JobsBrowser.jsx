@@ -90,6 +90,10 @@ const formatSalary = (salary) => {
   if (typeof salary === "string" && salary.trim()) return salary;
   return "Negotiable";
 };
+const displayCountText = (count) => {
+  if (!count || count < 0) return "0";
+  return String(count);
+};
 
 const JobsBrowser = () => {
   const navigate = useNavigate();
@@ -346,11 +350,23 @@ const JobsBrowser = () => {
     getJobs().then((res) => setAllJobs(res.data.jobs || [])).catch(() => null);
   };
 
-  const roleSubtitle = isCandidate ? `${displayCountText(displayCount)} positions available · AI-matched for you` : `${displayCountText(displayCount)} positions available`;
-  const displayCount = filteredJobs.length;
-  const totalCount = baseJobs.length;
+   const displayCount = filteredJobs?.length ?? 0;
+  const totalCount = baseJobs?.length ?? 0;
+  
+  // Safe roleSubtitle generation with defensive checks
+  let roleSubtitle = "";
+  try {
+    const countText = displayCountText(displayCount);
+    roleSubtitle = isCandidate 
+      ? `${countText} positions available · AI-matched for you` 
+      : `${countText} positions available`;
+  } catch (e) {
+    console.warn("Error generating roleSubtitle:", e);
+    roleSubtitle = `${displayCount} positions available`;
+  }
 
-  return (
+  // Safe render with error boundary
+  try {
     <main className="min-h-screen overflow-x-hidden bg-[#0A0F1E] text-white">
       <style>{`
         .jobs-shimmer { background: linear-gradient(90deg, #0D1321 25%, #1a2035 50%, #0D1321 75%); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
@@ -706,6 +722,23 @@ const JobsBrowser = () => {
       </div>
     </main>
   );
+  } catch (renderError) {
+    console.error("JobsBrowser render error:", renderError);
+    return (
+      <main className="min-h-screen bg-[#0A0F1E] text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
+          <p className="text-[#94A3B8] mb-6">We're working on fixing this. Please try refreshing the page.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-6 py-2 bg-[#00D4FF] text-[#0A0F1E] rounded-full font-semibold hover:opacity-80 transition"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </main>
+    );
+  }
 };
 
 const FiltersPanel = ({
@@ -868,7 +901,5 @@ const EmptyFolderIllustration = () => (
     <path d="M113 103h14M120 96v14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );
-
-const displayCountText = (count) => count;
 
 export default JobsBrowser;
