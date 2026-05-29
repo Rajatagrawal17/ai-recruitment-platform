@@ -64,7 +64,7 @@ services:
         scope: run
         sync: false
     
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     healthCheckDomain: localhost
     preDeployCommand: cd backend && npm install
 
@@ -79,7 +79,7 @@ services:
     envVars:
       # ✅ Backend API URL (CRITICAL)
       - key: REACT_APP_API_URL
-        value: https://cognifit-backend.onrender.com
+        value: https://ai-recruitment-backend.onrender.com
         scope: build
         sync: false
       
