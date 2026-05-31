@@ -1,4 +1,10 @@
-const backendUrl = process.env.REACT_APP_API_URL || "https://cognifit-backend.onrender.com";
+const backendUrl = 
+  import.meta.env.VITE_API_URL ||
+  process.env.REACT_APP_API_URL || 
+  'https://cognifit-backend.onrender.com'
+
+console.log('Backend Base URL:', backendUrl)
+export default backendUrl
 
 export const getBackendUrl = () => {
   // If we're running on localhost, use localhost backend by default
@@ -8,15 +14,8 @@ export const getBackendUrl = () => {
       return "http://localhost:5000";
     }
   }
-  // Clean path suffix
-  const envUrl = backendUrl.trim().replace(/\/api\/?$/, "");
-  if (envUrl.includes("onrender.com") && !envUrl.includes("backend")) {
-    return "https://cognifit-backend.onrender.com";
-  }
-  return envUrl;
+  return backendUrl.trim().replace(/\/api\/?$/, "");
 };
 
 export const DEFAULT_BACKEND_URL = "https://cognifit-backend.onrender.com";
 export const getApiBaseUrl = () => `${getBackendUrl()}/api`;
-
-export default backendUrl;

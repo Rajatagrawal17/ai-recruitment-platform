@@ -31,6 +31,7 @@ import JobCard from "../components/JobCard";
 import ApplyDrawer from "../components/ApplyDrawer";
 import SkeletonJobCard from "../components/SkeletonJobCard";
 import { toast } from "react-hot-toast";
+import { normalize, getUserId, getExperienceBucket, formatSalary, displayCountText } from "../utils/jobHelpers";
 
 const JOB_TYPES = ["full-time", "part-time", "remote", "contract"];
 const EXPERIENCE_LEVELS = [
@@ -75,31 +76,6 @@ const selectStyles = {
   singleValue: (base) => ({ ...base, color: "white" }),
 };
 
-function normalize(value = "") {
-  return String(value).toLowerCase().trim();
-}
-function getUserId(user) {
-  return user?._id || user?.id || "";
-}
-function getExperienceBucket(job) {
-  const years = Number(job?.yearsOfExperience || job?.experience || 0);
-  if (years <= 2) return "junior";
-  if (years <= 5) return "mid";
-  return "senior";
-}
-function formatSalary(salary) {
-  if (typeof salary === "number" && salary > 0) {
-    const lpa = Math.max(1, Math.round(salary / 100000));
-    return `₹${Math.max(1, Math.round(lpa * 0.85))} - ₹${Math.max(1, Math.round(lpa * 1.15))} LPA`;
-  }
-  if (Array.isArray(salary)) return `₹${salary[0]} - ₹${salary[1]}`;
-  if (typeof salary === "string" && salary.trim()) return salary;
-  return "Negotiable";
-}
-function displayCountText(count) {
-  if (!count || count < 0) return "0";
-  return String(count);
-}
 
 function FilterSection({ label, children }) {
   return (
@@ -308,7 +284,7 @@ export default function JobsBrowser() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const loadJobs = async () => {
+  async function loadJobs() {
     setLoading(true);
     setLoadingMode("all");
     try {
@@ -326,7 +302,7 @@ export default function JobsBrowser() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   useEffect(() => {
     loadJobs();

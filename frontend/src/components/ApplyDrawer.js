@@ -8,6 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "react-hot-toast";
 import { applyToJob } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { formatSalary, formatDisplaySalary } from "../utils/jobHelpers";
 import {
   Check,
   ChevronLeft,
@@ -18,32 +19,174 @@ import {
   X,
 } from "lucide-react";
 
-const getScoreMeta = (score = 0) => {
+function getScoreMeta(score = 0) {
   if (score >= 80) return { color: "#22C55E", label: "Strong" };
   if (score >= 60) return { color: "#EAB308", label: "Good" };
   if (score >= 40) return { color: "#FB923C", label: "Moderate" };
   return { color: "#EF4444", label: "Low" };
-};
+}
 
-const ringValues = (score, size, stroke) => {
+function ringValues(score, size, stroke) {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;
   return { radius, circumference, offset };
-};
-
-function formatSalary(salary) {
-  if (!salary) return 'Salary not specified';
-  if (typeof salary === 'string') return salary;
-  if (salary.min && salary.max) {
-    return `₹${Number(salary.min).toLocaleString()} - ₹${Number(salary.max).toLocaleString()}`;
-  }
-  if (salary.min) return `From ₹${Number(salary.min).toLocaleString()}`;
-  if (salary.max) return `Up to ₹${Number(salary.max).toLocaleString()}`;
-  return 'Competitive salary';
 }
 
-const ApplyDrawer = ({ open, onOpenChange, job, onSuccess }) => {
+function ScoreRing({ score, meta, ring, compact = false }) {
+  return (
+    <div className={`relative ${compact ? "h-[60px] w-[60px]" : "h-[120px] w-[120px]"}`}>
+      <svg className="h-full w-full -rotate-90" viewBox={`0 0 ${compact ? 60 : 120} ${compact ? 60 : 120}`}>
+        <circle cx={compact ? 30 : 60} cy={compact ? 30 : 60} r={compact ? 24 : 52} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={compact ? 6 : 10} />
+        <motion.circle
+          cx={compact ? 30 : 60}
+          cy={compact ? 30 : 60}
+          r={compact ? 24 : 52}
+          fill="none"
+          stroke={meta.color}
+          strokeWidth={compact ? 6 : 10}
+          strokeLinecap="round"
+          strokeDasharray={ring.circumference}
+          strokeDashoffset={ring.offset}
+          initial={{ strokeDashoffset: ring.circumference }}
+          animate={{ strokeDashoffset: ring.offset }}
+          transition={{ duration: 1, ease: "easeOut" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className="text-xs font-semibold text-white">{score}%</span>
+      </div>
+    </div>
+  );
+}
+
+function MatchRing({ score, meta, ring }) {
+  return (
+    <div className="relative mx-auto flex h-[140px] w-[140px] items-center justify-center rounded-full border border-white/8 bg-black/20">
+      <ScoreRing score={score} meta={meta} ring={ring} />
+      <div className="absolute -bottom-4 text-center text-sm font-semibold" style={{ color: meta.color }}>
+        {meta.label}
+      </div>
+    </div>
+  );
+}
+
+function MatchBar({ label, value, index }) {
+  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.35 });
+  return (
+    <div ref={ref} className="mb-3">
+      <div className="mb-1 flex items-center justify-between text-sm text-[#E2E8F0]">
+        <span>{label}</span>
+        <span>{value}%</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-white/10">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: inView ? `${value}%` : 0 }}
+          transition={{ duration: 1, delay: index * 0.2 }}
+          className="h-full rounded-full bg-gradient-to-r from-[#00D4FF] to-[#2D6BFF]"
+        />
+      </div>
+    </div>
+  );
+}
+
+function InfoCard({ label, value, scrollable = false }) {
+  return (
+    <div className={`rounded-2xl border border-white/8 bg-white/4 p-4 ${scrollable ? "max-h-44 overflow-y-auto" : ""}`}>
+      <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#94A3B8]">{label}</div>
+      <div className="whitespace-pre-line text-sm leading-6 text-[#E2E8F0]">{value}</div>
+    </div>
+  );
+}
+
+function StepCard({ title, subtitle, children }) {
+  return (
+    <div className="rounded-3xl border border-white/8 bg-white/4 p-4">
+      <div className="mb-4">
+        <h4 className="text-lg font-semibold text-white">{title}</h4>
+        <p className="mt-1 text-sm text-[#94A3B8]">{subtitle}</p>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, type = "text" }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-[#94A3B8]">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white outline-none transition focus:border-[#00D4FF]"
+      />
+    </label>
+  );
+}
+
+function ProgressDots({ step }) {
+  return (
+    <div className="flex items-center gap-2">
+      {[1, 2, 3].map((index) => (
+        <motion.span key={index} animate={{ scale: step >= index ? 1 : 0.9, opacity: 1 }} className={`h-2.5 w-2.5 rounded-full ${step >= index ? "bg-[#00D4FF]" : "bg-white/20"}`} />
+      ))}
+    </div>
+  );
+}
+
+function StepIndicator({ step }) {
+  return (
+    <div className="flex items-center gap-3 text-xs text-[#94A3B8]">
+      <ProgressDots step={step} />
+      <span>Step {step} of 3</span>
+    </div>
+  );
+}
+
+function ConfettiBurst() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {Array.from({ length: 20 }).map((_, index) => (
+        <span
+          key={index}
+          className="absolute h-2 w-2 rounded-full confetti-dot"
+          style={{
+            left: `${(index * 17) % 100}%`,
+            top: `${(index * 11) % 100}%`,
+            background: ["#00D4FF", "#22C55E", "#F59E0B", "#FB7185", "#A855F7"][index % 5],
+            animationDelay: `${index * 0.08}s`,
+          }}
+        />
+      ))}
+      <style>{`
+        .confetti-dot { animation: confetti 1.8s ease-in-out infinite; }
+        @keyframes confetti { 0% { transform: translateY(0) scale(0.8); opacity: 0; } 40% { opacity: 1; } 100% { transform: translateY(-120px) scale(1); opacity: 0; } }
+      `}</style>
+    </div>
+  );
+}
+
+function SuccessState({ matchScore }) {
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-6 text-center">
+      <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-emerald-400/40 text-emerald-300">
+        <Check size={38} />
+      </div>
+      <h3 className="text-2xl font-bold text-white">Application Submitted! 🎉</h3>
+      <p className="mt-2 text-sm text-[#E2E8F0]">We&apos;ve sent a confirmation to your email.</p>
+      <div className="mt-6 rounded-2xl border border-white/8 bg-white/4 p-4">
+        <p className="text-sm text-[#94A3B8]">Your match score</p>
+        <p className="text-3xl font-bold text-[#00D4FF]">{matchScore}%</p>
+      </div>
+      <button className="mt-5 w-full rounded-full bg-[#00D4FF] px-5 py-3 font-semibold text-[#0A0F1E]">View My Applications</button>
+      <ConfettiBurst />
+    </div>
+  );
+}
+
+function ApplyDrawer({ open, onOpenChange, job, onSuccess }) {
   const { user } = useAuth();
   const score = Number(job?.matchScore || 0);
   const scoreMeta = getScoreMeta(score);
@@ -92,7 +235,7 @@ const ApplyDrawer = ({ open, onOpenChange, job, onSuccess }) => {
   const matchedSkills = allSkills.slice(0, Math.max(1, Math.ceil(allSkills.length * 0.75)));
   const missingSkills = allSkills.slice(matchedSkills.length, matchedSkills.length + 2);
 
-  const onDrop = (files) => {
+  function onDrop(files) {
     const file = files?.[0];
     if (!file) return;
     setResumeFile(file);
@@ -107,7 +250,7 @@ const ApplyDrawer = ({ open, onOpenChange, job, onSuccess }) => {
         return Math.min(100, value + 15);
       });
     }, 180);
-  };
+  }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -120,7 +263,7 @@ const ApplyDrawer = ({ open, onOpenChange, job, onSuccess }) => {
     maxFiles: 1,
   });
 
-  const generateSuggestion = () => {
+  function generateSuggestion() {
     const text = `I am excited to apply for the ${job?.title || "role"} at ${job?.company || "your company"}. My background in ${matchedSkills.slice(0, 3).join(", ") || "similar skills"} makes me a strong fit for this opportunity.`;
     const words = text.split(" ");
     setIsGenerating(true);
@@ -135,9 +278,9 @@ const ApplyDrawer = ({ open, onOpenChange, job, onSuccess }) => {
         setFormData((prev) => ({ ...prev, coverLetter: text }));
       }
     }, 60);
-  };
+  }
 
-  const submitApplication = async () => {
+  async function submitApplication() {
     if (!job?._id) return;
     if (!formData.fullName || !formData.email) {
       toast.error("Please complete your contact details.");
@@ -166,7 +309,7 @@ const ApplyDrawer = ({ open, onOpenChange, job, onSuccess }) => {
     } finally {
       setSubmitting(false);
     }
-  };
+  }
 
   if (!job) return null;
 
@@ -372,143 +515,6 @@ const ApplyDrawer = ({ open, onOpenChange, job, onSuccess }) => {
       </Dialog.Portal>
     </Dialog.Root>
   );
-};
-
-const ScoreRing = ({ score, meta, ring, compact = false }) => (
-  <div className={`relative ${compact ? "h-[60px] w-[60px]" : "h-[120px] w-[120px]"}`}>
-    <svg className="h-full w-full -rotate-90" viewBox={`0 0 ${compact ? 60 : 120} ${compact ? 60 : 120}`}>
-      <circle cx={compact ? 30 : 60} cy={compact ? 30 : 60} r={compact ? 24 : 52} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={compact ? 6 : 10} />
-      <motion.circle
-        cx={compact ? 30 : 60}
-        cy={compact ? 30 : 60}
-        r={compact ? 24 : 52}
-        fill="none"
-        stroke={meta.color}
-        strokeWidth={compact ? 6 : 10}
-        strokeLinecap="round"
-        strokeDasharray={ring.circumference}
-        strokeDashoffset={ring.offset}
-        initial={{ strokeDashoffset: ring.circumference }}
-        animate={{ strokeDashoffset: ring.offset }}
-        transition={{ duration: 1, ease: "easeOut" }}
-      />
-    </svg>
-    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-      <span className="text-xs font-semibold text-white">{score}%</span>
-    </div>
-  </div>
-);
-
-const MatchRing = ({ score, meta, ring }) => (
-  <div className="relative mx-auto flex h-[140px] w-[140px] items-center justify-center rounded-full border border-white/8 bg-black/20">
-    <ScoreRing score={score} meta={meta} ring={ring} />
-    <div className="absolute -bottom-4 text-center text-sm font-semibold" style={{ color: meta.color }}>
-      {meta.label}
-    </div>
-  </div>
-);
-
-const MatchBar = ({ label, value, index }) => {
-  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.35 });
-  return (
-    <div ref={ref} className="mb-3">
-      <div className="mb-1 flex items-center justify-between text-sm text-[#E2E8F0]">
-        <span>{label}</span>
-        <span>{value}%</span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-white/10">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: inView ? `${value}%` : 0 }}
-          transition={{ duration: 1, delay: index * 0.2 }}
-          className="h-full rounded-full bg-gradient-to-r from-[#00D4FF] to-[#2D6BFF]"
-        />
-      </div>
-    </div>
-  );
-};
-
-const InfoCard = ({ label, value, scrollable = false }) => (
-  <div className={`rounded-2xl border border-white/8 bg-white/4 p-4 ${scrollable ? "max-h-44 overflow-y-auto" : ""}`}>
-    <div className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#94A3B8]">{label}</div>
-    <div className="whitespace-pre-line text-sm leading-6 text-[#E2E8F0]">{value}</div>
-  </div>
-);
-
-const StepCard = ({ title, subtitle, children }) => (
-  <div className="rounded-3xl border border-white/8 bg-white/4 p-4">
-    <div className="mb-4">
-      <h4 className="text-lg font-semibold text-white">{title}</h4>
-      <p className="mt-1 text-sm text-[#94A3B8]">{subtitle}</p>
-    </div>
-    <div className="space-y-4">{children}</div>
-  </div>
-);
-
-const Field = ({ label, value, onChange, type = "text" }) => (
-  <label className="block">
-    <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.2em] text-[#94A3B8]">{label}</span>
-    <input
-      type={type}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className="w-full rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white outline-none transition focus:border-[#00D4FF]"
-    />
-  </label>
-);
-
-const ProgressDots = ({ step }) => (
-  <div className="flex items-center gap-2">
-    {[1, 2, 3].map((index) => (
-      <motion.span key={index} animate={{ scale: step >= index ? 1 : 0.9, opacity: 1 }} className={`h-2.5 w-2.5 rounded-full ${step >= index ? "bg-[#00D4FF]" : "bg-white/20"}`} />
-    ))}
-  </div>
-);
-
-const StepIndicator = ({ step }) => (
-  <div className="flex items-center gap-3 text-xs text-[#94A3B8]">
-    <ProgressDots step={step} />
-    <span>Step {step} of 3</span>
-  </div>
-);
-
-const SuccessState = ({ matchScore }) => (
-  <div className="relative overflow-hidden rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-6 text-center">
-    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border border-emerald-400/40 text-emerald-300">
-      <Check size={38} />
-    </div>
-    <h3 className="text-2xl font-bold text-white">Application Submitted! 🎉</h3>
-    <p className="mt-2 text-sm text-[#E2E8F0]">We&apos;ve sent a confirmation to your email.</p>
-    <div className="mt-6 rounded-2xl border border-white/8 bg-white/4 p-4">
-      <p className="text-sm text-[#94A3B8]">Your match score</p>
-      <p className="text-3xl font-bold text-[#00D4FF]">{matchScore}%</p>
-    </div>
-    <button className="mt-5 w-full rounded-full bg-[#00D4FF] px-5 py-3 font-semibold text-[#0A0F1E]">View My Applications</button>
-    <ConfettiBurst />
-  </div>
-);
-
-const ConfettiBurst = () => (
-  <div className="pointer-events-none absolute inset-0 overflow-hidden">
-    {Array.from({ length: 20 }).map((_, index) => (
-      <span
-        key={index}
-        className="absolute h-2 w-2 rounded-full confetti-dot"
-        style={{
-          left: `${(index * 17) % 100}%`,
-          top: `${(index * 11) % 100}%`,
-          background: ["#00D4FF", "#22C55E", "#F59E0B", "#FB7185", "#A855F7"][index % 5],
-          animationDelay: `${index * 0.08}s`,
-        }}
-      />
-    ))}
-    <style>{`
-      .confetti-dot { animation: confetti 1.8s ease-in-out infinite; }
-      @keyframes confetti { 0% { transform: translateY(0) scale(0.8); opacity: 0; } 40% { opacity: 1; } 100% { transform: translateY(-120px) scale(1); opacity: 0; } }
-    `}</style>
-  </div>
-);
-
-const formatDisplaySalary = (salary) => formatSalary(salary);
+}
 
 export default ApplyDrawer;
