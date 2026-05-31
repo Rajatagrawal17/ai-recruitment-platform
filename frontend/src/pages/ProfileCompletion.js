@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Save, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -27,12 +27,7 @@ const ProfileCompletion = () => {
     resumeUrl: '',
   });
 
-  // Fetch current profile data
-  useEffect(() => {
-    fetchProfile();
-  }, [user]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -68,7 +63,14 @@ const ProfileCompletion = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch current profile data
+  useEffect(() => {
+    if (user?.email) {
+      fetchProfile();
+    }
+  }, [user?.email, fetchProfile]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

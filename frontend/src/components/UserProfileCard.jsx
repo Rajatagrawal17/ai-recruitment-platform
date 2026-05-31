@@ -35,17 +35,10 @@ const UserProfileCard = () => {
       }
     };
 
-    if (user) {
+    if (user?.email) {
       fetchProfileCompleteness();
     }
-
-    // Refresh every 3 seconds to catch updates
-    const interval = setInterval(() => {
-      if (user) fetchProfileCompleteness();
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [user]);
+  }, [user?.email]);
 
   // Generate initials from user name
   const initials = useMemo(() => {
