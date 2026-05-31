@@ -67,7 +67,10 @@ const AnimatedBackground3D = () => {
     return () => {
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
-      containerRef.current?.removeChild(renderer.domElement);
+      const container = containerRef.current;
+      if (container && container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
     };
   }, []);
 

@@ -52,7 +52,9 @@ const Verification = () => {
         });
       }
     };
-    document.head.appendChild(script);
+    if (document.head) {
+      document.head.appendChild(script);
+    }
   }, []);
 
   // Re-render reCAPTCHA when step changes

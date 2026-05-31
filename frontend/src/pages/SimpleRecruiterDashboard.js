@@ -339,9 +339,11 @@ const SimpleRecruiterDashboard = () => {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = `${(selectedJob?.title || "candidates").replace(/[^a-z0-9_-]/gi, "_")}_candidates.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
+    if (document.body) {
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
     URL.revokeObjectURL(url);
   }, [filteredCandidates, selectedJob]);
 
@@ -420,9 +422,11 @@ const SimpleRecruiterDashboard = () => {
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = `${title.replace(/[^a-z0-9]/gi, "_") || "event"}.ics`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
+    if (document.body) {
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
     URL.revokeObjectURL(url);
   };
 

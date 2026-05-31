@@ -6,13 +6,16 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { SavedJobsProvider } from './context/SavedJobsContext';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-	<ThemeProvider>
-		<AuthProvider>
-			<SavedJobsProvider>
-				<App />
-			</SavedJobsProvider>
-		</AuthProvider>
-	</ThemeProvider>
-);
+const container = document.getElementById('root');
+if (container) {
+  const root = ReactDOM.createRoot(container);
+  root.render(
+    <ThemeProvider>
+      <AuthProvider>
+        <SavedJobsProvider>
+          <App />
+        </SavedJobsProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
