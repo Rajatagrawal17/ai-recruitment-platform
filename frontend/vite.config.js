@@ -51,12 +51,15 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'build',
+      chunkSizeWarningLimit: 600,
       rollupOptions: {
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom'],
             charts: ['recharts'],
             dnd: ['@dnd-kit/core'],
+            gsap: ['gsap'],
+            motion: ['framer-motion'],
           },
         },
       },
