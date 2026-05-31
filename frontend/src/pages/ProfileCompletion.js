@@ -418,7 +418,18 @@ const ProfileCompletion = () => {
               id="resumeFile"
               type="file"
               accept=".pdf,.doc,.docx"
-              onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
+              onChange={async (e) => {
+                const file = e.target.files?.[0] || null;
+                setResumeFile(file);
+                if (file && file.name.toLowerCase().endsWith('.pdf')) {
+                  try {
+                    const { parsePDF } = await import('../utils/pdfParser');
+                    await parsePDF(file);
+                  } catch (err) {
+                    console.warn("Failed to dynamically load PDF parser:", err);
+                  }
+                }
+              }}
               className="file-input"
             />
             <label htmlFor="resumeFile" className="file-label">

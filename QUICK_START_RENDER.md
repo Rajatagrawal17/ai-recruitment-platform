@@ -73,7 +73,7 @@ Replace `YOUR_USERNAME` with your actual GitHub username.
 - Test registration and login
 - Test job browsing and application features
 
-## 📝 Important Notes
+## 📝 Important Notes 
 
 - **Free Tier**: Services sleep after 15 minutes of inactivity (upgrade to paid to keep always-on)
 - **Build Time**: First deployment takes 5-10 minutes

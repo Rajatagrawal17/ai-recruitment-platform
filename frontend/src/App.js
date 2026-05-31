@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 
@@ -10,26 +10,28 @@ import HelpChatbot from "./components/HelpChatbot";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { getBackendUrl, getApiEndpoint } from "./utils/apiConfig";
 import API from "./services/api"; // ✅ Import API for health check
+import SkeletonLoading from "./components/SkeletonLoading";
 
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import ForgotPassword from "./pages/ForgotPassword";
-import LandingPage from "./pages/LandingPage";
-import ModernLandingPage from "./pages/ModernLandingPage";
-import ExperienceHubPage from "./pages/ExperienceHubPage";
-import JobsPage from "./pages/JobsPage";
-import EnhancedJobsPage from "./pages/EnhancedJobsPage";
-import JobDetailPage from "./pages/JobDetailPage";
-import ApplicationForm from "./pages/ApplicationForm";
-import SimpleRecruiterDashboard from "./pages/SimpleRecruiterDashboard";
-import CandidateDashboard from "./pages/CandidateDashboard";
-import PersonalizedDashboard from "./pages/PersonalizedDashboard";
-import SavedJobs from "./pages/SavedJobs";
-import NotificationSettings from "./pages/NotificationSettings";
-import FilteredJobs from "./pages/FilteredJobs";
-import SearchHistoryManager from "./pages/SearchHistoryManager";
-import AIToolsPage from "./pages/AIToolsPage";
-import ProfileCompletion from "./pages/ProfileCompletion";
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const ModernLandingPage = lazy(() => import("./pages/ModernLandingPage"));
+const ExperienceHubPage = lazy(() => import("./pages/ExperienceHubPage"));
+const JobsPage = lazy(() => import("./pages/JobsPage"));
+const EnhancedJobsPage = lazy(() => import("./pages/EnhancedJobsPage"));
+const JobDetailPage = lazy(() => import("./pages/JobDetailPage"));
+const ApplicationForm = lazy(() => import("./pages/ApplicationForm"));
+const SimpleRecruiterDashboard = lazy(() => import("./pages/SimpleRecruiterDashboard"));
+const CandidateDashboard = lazy(() => import("./pages/CandidateDashboard"));
+const PersonalizedDashboard = lazy(() => import("./pages/PersonalizedDashboard"));
+const SavedJobs = lazy(() => import("./pages/SavedJobs"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const FilteredJobs = lazy(() => import("./pages/FilteredJobs"));
+const SearchHistoryManager = lazy(() => import("./pages/SearchHistoryManager"));
+const AIToolsPage = lazy(() => import("./pages/AIToolsPage"));
+const ProfileCompletion = lazy(() => import("./pages/ProfileCompletion"));
+const OrbitalNetworkPage = lazy(() => import("./pages/OrbitalNetworkPage"));
 import { useAuth } from "./context/AuthContext";
 
 // Log API configuration on app start
@@ -220,6 +222,11 @@ const AppRoutes = () => {
         />
 
         <Route
+          path="/orbital-network"
+          element={<AnimatedPage><OrbitalNetworkPage /></AnimatedPage>}
+        />
+
+        <Route
           path="/recruiter/dashboard"
           element={<Navigate to="/dashboard" replace />}
         />
@@ -273,7 +280,9 @@ function App() {
         <Router>
           <ScrollProgress />
           <NavbarFixed />
-          <AppRoutes />
+          <Suspense fallback={<SkeletonLoading />}>
+            <AppRoutes />
+          </Suspense>
           <ThemeToggle />
           <HelpChatbot />
         </Router>

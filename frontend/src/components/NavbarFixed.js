@@ -101,6 +101,7 @@ const NavbarFixed = () => {
           {!isLoggedIn && (
             <Link
               to="/jobs"
+              onMouseEnter={() => import("../pages/EnhancedJobsPage").catch(() => {})}
               className="rounded-full px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-soft hover:text-text"
             >
               Jobs
@@ -110,6 +111,7 @@ const NavbarFixed = () => {
           {isLoggedIn && role === "candidate" && (
             <Link
               to="/apply"
+              onMouseEnter={() => import("../pages/JobsPage").catch(() => {})}
               className="rounded-full px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-soft hover:text-text"
             >
               Apply Jobs
@@ -168,6 +170,13 @@ const NavbarFixed = () => {
                           navigate(role === "candidate" ? "/candidate/dashboard" : "/dashboard");
                           setDropdownOpen(false);
                         }}
+                        onMouseEnter={() => {
+                          if (role === "candidate") {
+                            import("../pages/CandidateDashboard").catch(() => {});
+                          } else {
+                            import("../pages/SimpleRecruiterDashboard").catch(() => {});
+                          }
+                        }}
                         className="dropdown-menu-item"
                       >
                         <LayoutDashboard size={16} />
@@ -180,6 +189,7 @@ const NavbarFixed = () => {
                             navigate("/ai-tools");
                             setDropdownOpen(false);
                           }}
+                          onMouseEnter={() => import("../pages/AIToolsPage").catch(() => {})}
                           className="dropdown-menu-item"
                         >
                           <Zap size={16} />

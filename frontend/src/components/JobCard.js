@@ -109,6 +109,8 @@ const JobCard = ({
 
   const handleMouseEnter = () => {
     setHovering(true);
+    // Prefetch JobDetailPage chunk on hover
+    import("../pages/JobDetailPage").catch(() => {});
     clearTimeout(hoverTimerRef.current);
     hoverTimerRef.current = setTimeout(() => {
       onHoverStart?.(job, cardRef.current?.getBoundingClientRect());

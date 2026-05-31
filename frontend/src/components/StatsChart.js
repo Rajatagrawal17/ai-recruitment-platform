@@ -1,21 +1,15 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from "recharts";
 
 const StatsChart = ({ type = "line", data, title, delay = 0 }) => {
+  const [rechartsLib, setRechartsLib] = useState(null);
+
+  useEffect(() => {
+    import("recharts")
+      .then((mod) => setRechartsLib(mod))
+      .catch((err) => console.error("Error loading Recharts:", err));
+  }, []);
+
   const chartVariants = {
     hidden: { opacity: 0, scale: 0.8 },
     visible: {
@@ -54,9 +48,44 @@ const StatsChart = ({ type = "line", data, title, delay = 0 }) => {
           ))}
         </motion.div>
       );
-    }
     return null;
   };
+
+  if (!rechartsLib) {
+    return (
+      <div
+        style={{
+          background: "linear-gradient(135deg, rgba(79, 70, 229, 0.05), rgba(118, 75, 162, 0.05))",
+          border: "1px solid rgba(79, 70, 229, 0.2)",
+          borderRadius: "12px",
+          padding: "1.5rem",
+          height: "350px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "rgba(255, 255, 255, 0.5)",
+          backdropFilter: "blur(10px)"
+        }}
+      >
+        Loading Chart Analytics...
+      </div>
+    );
+  }
+
+  const {
+    LineChart,
+    Line,
+    AreaChart,
+    Area,
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer
+  } = rechartsLib;
 
   return (
     <motion.div

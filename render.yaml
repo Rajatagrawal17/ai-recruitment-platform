@@ -70,23 +70,18 @@ services:
 
   # Frontend Service
   - type: web
-    name: ai-recruitment-frontend
-    env: node
+    name: cognifit-frontend
+    env: static
     plan: free
     buildCommand: cd frontend && npm install && npm run build
-    startCommand: cd frontend && npx serve -s build -l 0.0.0.0:$PORT
+    staticPublishPath: ./frontend/build
     autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
-      # ✅ Backend API URL (CRITICAL)
       - key: REACT_APP_API_URL
-        value: https://ai-recruitment-backend.onrender.com
-        scope: build
-        sync: false
-      
-      # Environment & Server
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 3000
-    
-    preDeployCommand: cd frontend && npm install
+        value: https://cognifit-backend.onrender.com
+      - key: REACT_APP_RECAPTCHA_SITE_KEY
+        value: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI
