@@ -311,10 +311,15 @@ export default function JobsBrowser() {
       setLoading(true);
       setLoadingMode("all");
       try {
-        const res = await getJobs();
-        setAllJobs(res.data.jobs || []);
+        console.log('API URL:', process.env.REACT_APP_API_URL);
+        const response = await getJobs();
+        console.log('Fetch response status:', response.status);
+        const data = response.data;
+        console.log('Jobs data:', data);
+        setAllJobs(data.jobs || []);
         setError("");
       } catch (err) {
+        console.error('Jobs fetch error:', err);
         setError(err.response?.data?.message || err.message || "Unable to load jobs right now.");
         setAllJobs([]);
       } finally {
@@ -444,7 +449,13 @@ export default function JobsBrowser() {
     if (maxSalary !== null) jobs = jobs.filter((job) => Number(job.salary || 0) <= maxSalary);
 
     if (isCandidate && minMatch > 0) {
-      jobs = jobs.filter((job) => Number(candidateMatchMap[job._id]?.matchScore || job.matchScore || 0) >= minMatch);
+      jobs = jobs.filter((job) => {
+        const score = Number(candidateMatchMap[job._id]?.matchScore || job.matchScore || 0);
+        if (viewMode === "matched") {
+          return score >= minMatch;
+        }
+        return !candidateMatchMap[job._id] || score >= minMatch;
+      });
     }
 
     if (sortBy === "newest") {
@@ -739,6 +750,13 @@ export default function JobsBrowser() {
                   <div className="jobs-shimmer mt-6 h-10 rounded-2xl" />
                 </div>
               ))}
+            </div>
+          ) : error ? (
+            <div className="flex min-h-[60vh] flex-col items-center justify-center rounded-[28px] border border-red-500/20 bg-red-500/5 px-6 py-16 text-center animate-fade-in">
+              <EmptyFolderIllustration />
+              <h2 className="mt-6 text-2xl font-bold text-red-400">Could not connect to server. Please try again.</h2>
+              <p className="mt-2 max-w-lg text-sm text-[#94A3B8]">Server is waking up... please wait 30 seconds and refresh</p>
+              <button onClick={() => window.location.reload()} className="mt-6 rounded-full bg-red-500 px-6 py-3 font-semibold text-white hover:opacity-90 transition">Refresh Page</button>
             </div>
           ) : filteredJobs.length === 0 ? (
             <div className="flex min-h-[60vh] flex-col items-center justify-center rounded-[28px] border border-white/8 bg-white/[0.04] px-6 py-16 text-center">
