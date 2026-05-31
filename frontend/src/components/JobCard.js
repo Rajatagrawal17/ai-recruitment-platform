@@ -120,10 +120,12 @@ const JobCard = ({
         </div>
 
         {/* Bookmark Button */}
-        <button
+        <motion.button
           onClick={handleSave}
           className={`bookmark-btn ${isSaved ? "saved" : ""} ${animateBookmark ? "animate-pop" : ""} p-2 rounded-full hover:bg-white/5`}
           title="Save Job"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
         >
           {isSaved ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
           {animateBookmark && (
@@ -134,7 +136,7 @@ const JobCard = ({
               <div className="burst-particle"></div>
             </div>
           )}
-        </button>
+        </motion.button>
       </div>
 
       {/* Card Body */}
@@ -195,20 +197,24 @@ const JobCard = ({
         </span>
         
         <div className="flex items-center gap-3">
-          <button
+          <motion.button
             onClick={handleView}
             className="text-xs font-semibold text-[#06b6d4] hover:underline"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
           >
             View details
-          </button>
+          </motion.button>
           {isCandidate && (
-            <button
+            <motion.button
               disabled={isApplied}
               onClick={handleApply}
               className={`btn-primary text-xs !py-1.5 !px-4 ${isApplied ? "!bg-emerald-500/10 !text-emerald-400 border border-emerald-500/20 cursor-not-allowed shadow-none" : ""}`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
             >
               {isApplied ? "Applied" : "Apply Now"}
-            </button>
+            </motion.button>
           )}
         </div>
       </div>

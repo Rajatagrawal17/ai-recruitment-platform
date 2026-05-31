@@ -34,6 +34,30 @@
   --border: rgba(148, 163, 184, 0.16);
 }
 
+[data-theme="light"] {
+  --bg-primary: #f8f9ff;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --text-primary: #0f0f1a;
+  --text-secondary: #6b7280;
+  --border: rgba(0,0,0,0.08);
+}
+[data-theme="dark"] {
+  --bg-primary: #0f0f1a;
+  --bg-secondary: #1a1a2e;
+  --bg-card: #16213e;
+  --text-primary: #f0f0ff;
+  --text-secondary: #9ca3af;
+  --border: rgba(255,255,255,0.08);
+}
+
+*, *::before, *::after {
+  transition: background-color 0.3s ease,
+              color 0.3s ease,
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -122,5 +146,26 @@
 
   .skeleton::after {
     animation: none !important;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #1a1a2e 25%, #2a2a4e 50%, #1a1a2e 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+@media (max-width: 768px) {
+  body, #root, main, .main-content {
+    padding-bottom: 80px !important;
   }
 }

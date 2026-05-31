@@ -6,21 +6,16 @@ const SkeletonJobCard = () => {
       <style>{`
         @keyframes shimmer {
           0% {
-            background-position: -1000px 0;
+            background-position: 200% 0;
           }
           100% {
-            background-position: 1000px 0;
+            background-position: -200% 0;
           }
         }
         .skeleton-shimmer {
-          background: linear-gradient(
-            90deg,
-            #2a2a3e 0%,
-            #3a3a50 50%,
-            #2a2a3e 100%
-          );
-          background-size: 1000px 100%;
-          animation: shimmer 1.5s ease-in-out infinite;
+          background: linear-gradient(90deg, #1a1a2e 25%, #2a2a4e 50%, #1a1a2e 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
         }
       `}</style>
 

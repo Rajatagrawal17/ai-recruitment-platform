@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, useSpring, useMotionValue, animate } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import API from "../services/api";
@@ -8,6 +8,24 @@ const UserProfileCard = () => {
   const { user } = useAuth();
   const [profileCompleteness, setProfileCompleteness] = useState(75); // Default fallback
   const [loading, setLoading] = useState(true);
+
+  const completenessMotion = useMotionValue(0);
+  const springValue = useSpring(completenessMotion, { stiffness: 100, damping: 15 });
+  const [displayPercent, setDisplayPercent] = useState(0);
+
+  useEffect(() => {
+    if (!loading) {
+      const controls = animate(completenessMotion, profileCompleteness);
+      return () => controls.stop();
+    }
+  }, [loading, profileCompleteness, completenessMotion]);
+
+  useEffect(() => {
+    const unsubscribe = springValue.on("change", (latest) => {
+      setDisplayPercent(Math.round(latest));
+    });
+    return () => unsubscribe();
+  }, [springValue]);
 
   // Fetch profile completeness from backend
   useEffect(() => {
@@ -155,20 +173,18 @@ const UserProfileCard = () => {
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs sm:text-sm font-medium text-text">Profile Completeness</span>
-            <span className="text-xs font-semibold text-primary">{loading ? "..." : `${profileCompleteness}%`}</span>
+            <span className="text-xs font-semibold text-primary">{loading ? "..." : `${displayPercent}%`}</span>
           </div>
           <div className="w-full h-2 bg-surface-soft rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${profileCompleteness}%` }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
+              style={{ width: `${displayPercent}%` }}
             />
           </div>
           <p className="text-xs text-text-muted mt-2">
             {profileCompleteness === 100 
               ? "✅ Profile complete! You're ready for AI recommendations"
-              : `${100 - profileCompleteness}% to go. Complete your profile to unlock AI-powered recommendations`}
+              : `${100 - displayPercent}% to go. Complete your profile to unlock AI-powered recommendations`}
           </p>
           {profileCompleteness < 100 && (
             <Link 

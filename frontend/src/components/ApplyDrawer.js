@@ -206,7 +206,6 @@ function ApplyDrawer({ open, onOpenChange, job, onSuccess }) {
     yearsExperience: user?.yearsExperience || "",
     coverLetter: "",
   });
-  const drawerControls = useAnimation();
   const matchRing = ringValues(score, 120, 10);
   const compactRing = ringValues(score, 60, 6);
 
@@ -227,9 +226,8 @@ function ApplyDrawer({ open, onOpenChange, job, onSuccess }) {
         yearsExperience: user?.yearsExperience || "",
         coverLetter: "",
       });
-      drawerControls.start({ x: 0 });
     }
-  }, [open, user, drawerControls]);
+  }, [open, user]);
 
   const allSkills = useMemo(() => job?.skills || [], [job]);
   const matchedSkills = allSkills.slice(0, Math.max(1, Math.ceil(allSkills.length * 0.75)));
@@ -315,15 +313,26 @@ function ApplyDrawer({ open, onOpenChange, job, onSuccess }) {
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-        <Dialog.Content asChild>
-          <motion.aside
-            initial={{ x: 520 }}
-            animate={drawerControls}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed right-0 top-0 z-[60] flex h-full w-full flex-col border-l border-[#00D4FF]/20 bg-[#0D1321] text-white shadow-2xl outline-none md:w-[520px]"
-          >
+      <AnimatePresence>
+        {open && (
+          <Dialog.Portal forceMount>
+            <Dialog.Overlay asChild>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.6 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 z-50 bg-black backdrop-blur-sm"
+              />
+            </Dialog.Overlay>
+            <Dialog.Content asChild>
+              <motion.aside
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="fixed right-0 top-0 z-[60] flex h-full w-full flex-col border-l border-[#00D4FF]/20 bg-[#0D1321] text-white shadow-2xl outline-none md:w-[520px]"
+              >
             <VisuallyHidden>
               <Dialog.Title>Apply for {job.title}</Dialog.Title>
               <Dialog.Description>Submit your application details for the job role.</Dialog.Description>
@@ -513,6 +522,8 @@ function ApplyDrawer({ open, onOpenChange, job, onSuccess }) {
           </motion.aside>
         </Dialog.Content>
       </Dialog.Portal>
+        )}
+      </AnimatePresence>
     </Dialog.Root>
   );
 }

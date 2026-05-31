@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useSpring, useMotionValue, animate } from 'framer-motion';
 import { Save, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +14,24 @@ const ProfileCompletion = () => {
   const [resumeUploading, setResumeUploading] = useState(false);
   const [profileCompleteness, setProfileCompleteness] = useState(0);
   const [error, setError] = useState(null);
+
+  const completenessMotion = useMotionValue(0);
+  const springValue = useSpring(completenessMotion, { stiffness: 100, damping: 15 });
+  const [displayPercent, setDisplayPercent] = useState(0);
+
+  useEffect(() => {
+    if (!loading) {
+      const controls = animate(completenessMotion, profileCompleteness);
+      return () => controls.stop();
+    }
+  }, [loading, profileCompleteness, completenessMotion]);
+
+  useEffect(() => {
+    const unsubscribe = springValue.on("change", (latest) => {
+      setDisplayPercent(Math.round(latest));
+    });
+    return () => unsubscribe();
+  }, [springValue]);
   const [success, setSuccess] = useState(false);
   const [resumeFile, setResumeFile] = useState(null);
   
@@ -292,15 +310,13 @@ const ProfileCompletion = () => {
       >
         <div className="progress-header">
           <h2>Profile Completeness</h2>
-          <span className="completion-percentage">{profileCompleteness}%</span>
+          <span className="completion-percentage">{displayPercent}%</span>
         </div>
         <div className="progress-bar-container">
           <div className="progress-bar-background">
             <motion.div
               className="progress-bar-fill"
-              initial={{ width: 0 }}
-              animate={{ width: `${profileCompleteness}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
+              style={{ width: `${displayPercent}%` }}
             />
           </div>
         </div>
@@ -313,7 +329,7 @@ const ProfileCompletion = () => {
         {profileCompleteness < 100 && (
           <div className="completion-message">
             <AlertCircle size={20} />
-            <span>{100 - profileCompleteness}% to complete your profile</span>
+            <span>{100 - displayPercent}% to complete your profile</span>
           </div>
         )}
       </motion.div>

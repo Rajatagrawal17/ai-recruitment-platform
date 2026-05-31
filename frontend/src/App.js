@@ -4,9 +4,10 @@ import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-
 
 import Navbar from "./components/Navbar";
 import NavbarFixed from "./components/NavbarFixed";
+import BottomNavBar from "./components/BottomNavBar";
 import ScrollProgress from "./components/ScrollProgress";
 import ThemeToggle from "./components/ThemeToggle";
-import HelpChatbot from "./components/HelpChatbot";
+import AIHelpWidget from "./components/AIHelpWidget";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { getBackendUrl, getApiEndpoint } from "./utils/apiConfig";
 import API from "./services/api"; // ✅ Import API for health check
@@ -47,14 +48,17 @@ if (typeof window !== "undefined") {
   console.log("════════════════════════════════════════════════════════════\n");
 }
 
-const pageTransition = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -12 },
+const pageVariants = {
+  initial: { opacity: 0, y: 16, scale: 0.99 },
+  animate: { opacity: 1, y: 0, scale: 1,
+    transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] }},
+  exit: { opacity: 0, y: -8, scale: 0.99,
+    transition: { duration: 0.15 }}
 };
 
 const AnimatedPage = ({ children }) => {
   const reduceMotion = useReducedMotion();
+  const location = useLocation();
 
   if (reduceMotion) {
     return <>{children}</>;
@@ -62,11 +66,11 @@ const AnimatedPage = ({ children }) => {
 
   return (
     <motion.div
+      key={location.pathname}
       initial="initial"
       animate="animate"
       exit="exit"
-      variants={pageTransition}
-      transition={{ duration: 0.22, ease: "easeOut" }}
+      variants={pageVariants}
     >
       {children}
     </motion.div>
@@ -243,6 +247,8 @@ const AppRoutes = () => {
         <Route path="/candidate" element={<Navigate to="/candidate/dashboard" replace />} />
         <Route path="/recruiter" element={<Navigate to="/dashboard" replace />} />
         <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/applications" element={<Navigate to="/candidate/dashboard" replace />} />
+        <Route path="/profile" element={<Navigate to="/complete-profile" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
@@ -284,7 +290,8 @@ function App() {
             <AppRoutes />
           </Suspense>
           <ThemeToggle />
-          <HelpChatbot />
+          <AIHelpWidget />
+          <BottomNavBar />
         </Router>
       </MotionConfig>
     </ColdStartHandler>
