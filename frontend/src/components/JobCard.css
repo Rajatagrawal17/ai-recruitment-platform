@@ -13,7 +13,6 @@
   flex-direction: column;
   gap: 16px;
   min-height: 420px;
-  backdrop-filter: blur(10px);
 }
 
 .job-card::before {
@@ -423,11 +422,11 @@
   }
 
   .job-title {
-    font-size: 15px;
+    font-size: 16px;
   }
 
   .company-name {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .pills-row {

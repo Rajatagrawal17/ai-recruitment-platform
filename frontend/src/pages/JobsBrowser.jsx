@@ -71,7 +71,7 @@ const selectStyles = {
   multiValueLabel: (base) => ({ ...base, color: "#00D4FF" }),
   multiValueRemove: (base) => ({ ...base, color: "#00D4FF", "&:hover": { backgroundColor: "rgba(0,212,255,0.18)", color: "white" } }),
   input: (base) => ({ ...base, color: "white" }),
-  placeholder: (base) => ({ ...base, color: "#64748B" }),
+  placeholder: (base) => ({ ...base, color: "#94A3B8" }),
   singleValue: (base) => ({ ...base, color: "white" }),
 };
 
@@ -653,20 +653,15 @@ export default function JobsBrowser() {
           />
         </aside>
 
-        <section className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <section className="flex-1 px-4 pt-6 pb-[100px] sm:px-6 lg:px-8 lg:pt-8 lg:pb-[100px]">
           <header className="mb-6 rounded-3xl border border-white/8 bg-gradient-to-br from-white/[0.06] to-transparent p-5 backdrop-blur-sm sm:p-6">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#00D4FF]/20 bg-[#00D4FF]/8 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#00D4FF]">
                   {displayCount} open positions
                 </div>
-                <h1 className="text-3xl font-bold text-white sm:text-4xl">Discover Jobs</h1>
-                <p className="mt-2 text-sm text-[#94A3B8] sm:text-base">
-                  <span className="font-semibold text-white">
-                    <CountUp end={displayCount} duration={0.8} preserveValue />
-                  </span>{" "}
-                  open positions available · AI-matched for you
-                </p>
+                <h1 className="text-3xl font-bold text-white sm:text-4xl">Find Your Next Role</h1>
+                <p className="mt-2 text-sm text-[#94A3B8] sm:text-base">AI-matched opportunities for you</p>
               </div>
 
               <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 p-1.5 text-sm font-medium">
@@ -700,7 +695,7 @@ export default function JobsBrowser() {
                   }}
                   onKeyDown={handleSearchKeyDown}
                   placeholder="Search jobs by title, company or skill..."
-                  className="w-full rounded-2xl border border-white/10 bg-white/6 py-3 pl-11 pr-12 text-white placeholder:text-[#64748B] outline-none transition focus:border-[#00D4FF] focus:bg-white/8"
+                  className="w-full rounded-2xl border border-white/10 bg-white/6 py-3 pl-11 pr-12 text-white placeholder:text-[#94A3B8] outline-none transition focus:border-[#00D4FF] focus:bg-white/8"
                 />
                 {searchInput && (
                   <button onClick={() => { setSearchInput(""); setDebouncedSearch(""); setSuggestionIndex(-1); }} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-[#94A3B8] hover:bg-white/5 hover:text-white">

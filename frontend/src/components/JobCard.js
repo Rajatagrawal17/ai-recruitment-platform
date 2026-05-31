@@ -43,7 +43,7 @@ const getMatchMeta = (score = 0) => {
   if (score >= 80) return { label: "Strong Match", color: "#22C55E" };
   if (score >= 60) return { label: "Good Match", color: "#EAB308" };
   if (score >= 40) return { label: "Moderate", color: "#FB923C" };
-  return { label: "Low Match", color: "#EF4444" };
+  return { label: "Low Match", color: "#F87171" };
 };
 
 const JobCard = ({
@@ -138,7 +138,7 @@ const JobCard = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       whileHover={{ y: -4, borderColor: "rgba(0,212,255,0.4)", boxShadow: "0 8px 32px rgba(0,212,255,0.12)" }}
-      className="relative rounded-2xl border border-white/8 bg-white/4 p-6 text-white backdrop-blur-sm"
+      className="relative rounded-2xl border border-white/8 bg-white/4 p-6 text-white"
     >
       <div className="mb-5 flex items-start gap-4">
         <div

@@ -32,6 +32,17 @@ const ringValues = (score, size, stroke) => {
   return { radius, circumference, offset };
 };
 
+function formatSalary(salary) {
+  if (!salary) return 'Salary not specified';
+  if (typeof salary === 'string') return salary;
+  if (salary.min && salary.max) {
+    return `₹${Number(salary.min).toLocaleString()} - ₹${Number(salary.max).toLocaleString()}`;
+  }
+  if (salary.min) return `From ₹${Number(salary.min).toLocaleString()}`;
+  if (salary.max) return `Up to ₹${Number(salary.max).toLocaleString()}`;
+  return 'Competitive salary';
+}
+
 const ApplyDrawer = ({ open, onOpenChange, job, onSuccess }) => {
   const { user } = useAuth();
   const score = Number(job?.matchScore || 0);
