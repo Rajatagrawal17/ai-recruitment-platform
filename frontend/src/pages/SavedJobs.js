@@ -18,7 +18,7 @@ const SavedJobs = () => {
               <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#00D4FF]/20 bg-[#00D4FF]/8 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[#00D4FF]">
                 Saved Jobs
               </div>
-              <h1 className="text-3xl font-bold text-white sm:text-4xl">Your bookmarked jobs</h1>
+              <h1 className="text-3xl font-bold sm:text-4xl gradient-text">Your bookmarked jobs</h1>
               <p className="mt-2 text-sm text-[#94A3B8]">
                 {savedJobs.length} job{savedJobs.length === 1 ? "" : "s"} saved in your collection.
               </p>
@@ -37,7 +37,7 @@ const SavedJobs = () => {
             <BookmarkX size={72} className="mb-5 text-[#94A3B8]" />
             <h2 className="text-2xl font-bold text-white">No saved jobs yet</h2>
             <p className="mt-2 max-w-lg text-sm text-[#94A3B8]">Browse jobs and save your favorites so you can return to them later.</p>
-            <button onClick={() => navigate("/jobs")} className="mt-6 rounded-full bg-[#00D4FF] px-6 py-3 font-semibold text-[#0A0F1E]">
+            <button onClick={() => navigate("/jobs")} className="btn-primary mt-6 text-white">
               Browse Jobs
             </button>
           </motion.div>

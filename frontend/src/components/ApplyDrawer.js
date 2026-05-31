@@ -180,7 +180,7 @@ function SuccessState({ matchScore }) {
         <p className="text-sm text-[#94A3B8]">Your match score</p>
         <p className="text-3xl font-bold text-[#00D4FF]">{matchScore}%</p>
       </div>
-      <button className="mt-5 w-full rounded-full bg-[#00D4FF] px-5 py-3 font-semibold text-[#0A0F1E]">View My Applications</button>
+      <button className="btn-primary mt-5 w-full text-white">View My Applications</button>
       <ConfettiBurst />
     </div>
   );
@@ -434,7 +434,7 @@ function ApplyDrawer({ open, onOpenChange, job, onSuccess }) {
                             <Field label="Phone" value={formData.phone} onChange={(value) => setFormData((prev) => ({ ...prev, phone: value }))} />
                             <Field label="Years of Experience" type="number" value={formData.yearsExperience} onChange={(value) => setFormData((prev) => ({ ...prev, yearsExperience: value }))} />
                             <div className="flex justify-end">
-                              <button onClick={() => setStep(2)} className="inline-flex items-center gap-2 rounded-full bg-[#00D4FF] px-5 py-3 font-semibold text-[#0A0F1E]">
+                              <button onClick={() => setStep(2)} className="btn-primary inline-flex items-center gap-2 text-white">
                                 Next <ChevronRight size={16} />
                               </button>
                             </div>
@@ -466,7 +466,7 @@ function ApplyDrawer({ open, onOpenChange, job, onSuccess }) {
                               <button onClick={() => setStep(1)} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white">
                                 <ChevronLeft size={16} /> Back
                               </button>
-                              <button onClick={() => setStep(3)} className="inline-flex items-center gap-2 rounded-full bg-[#00D4FF] px-5 py-3 font-semibold text-[#0A0F1E]">
+                              <button onClick={() => setStep(3)} className="btn-primary inline-flex items-center gap-2 text-white">
                                 Next <ChevronRight size={16} />
                               </button>
                             </div>
@@ -497,7 +497,7 @@ function ApplyDrawer({ open, onOpenChange, job, onSuccess }) {
                               <button onClick={() => setStep(2)} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white">
                                 <ChevronLeft size={16} /> Back
                               </button>
-                              <button onClick={submitApplication} disabled={submitting} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#00D4FF] px-5 py-3 font-semibold text-[#0A0F1E] disabled:cursor-not-allowed disabled:opacity-70">
+                              <button onClick={submitApplication} disabled={submitting} className="btn-primary inline-flex w-full items-center justify-center gap-2 text-white disabled:cursor-not-allowed disabled:opacity-70">
                                 {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
                                 Submit Application
                               </button>

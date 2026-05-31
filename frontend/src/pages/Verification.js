@@ -248,7 +248,7 @@ const Verification = () => {
         <div className="verification-sidebar">
           <div className="sidebar-content">
             <div className="user-welcome">
-              <h3>Welcome Back!</h3>
+              <h3 className="gradient-text">Welcome Back!</h3>
               <p className="user-name">👤 {userData?.name}</p>
               <p className="user-email">📧 {userData?.email}</p>
             </div>
@@ -306,7 +306,7 @@ const Verification = () => {
           {step === 1 && (
             <div className="verification-step">
               <div className="step-header">
-                <h2>📱 Mobile Verification</h2>
+                <h2 className="gradient-text">📱 Mobile Verification</h2>
                 <p>Enter your mobile number and verify with an OTP</p>
               </div>
 
@@ -409,7 +409,7 @@ const Verification = () => {
           {step === 2 && (
             <div className="verification-step">
               <div className="step-header">
-                <h2>📧 Email Verification</h2>
+                <h2 className="gradient-text">📧 Email Verification</h2>
                 <p>Verify your email address with an OTP</p>
               </div>
 
@@ -488,7 +488,7 @@ const Verification = () => {
           {step === 3 && (
             <div className="verification-step">
               <div className="step-header">
-                <h2>🤖 Verify You're Human</h2>
+                <h2 className="gradient-text">🤖 Verify You're Human</h2>
                 <p>Complete the CAPTCHA to secure your account</p>
               </div>
 

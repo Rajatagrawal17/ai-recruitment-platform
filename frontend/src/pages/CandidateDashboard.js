@@ -122,7 +122,7 @@ const CandidateDashboard = () => {
             <p className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
               <Sparkles size={14} /> Candidate Workspace
             </p>
-            <h1 className="mt-3 text-3xl font-bold">Candidate Dashboard</h1>
+            <h1 className="mt-3 text-3xl font-bold gradient-text">Candidate Dashboard</h1>
             <p className="mt-2 max-w-2xl text-sm text-text-muted">
               Track your applications, review AI feedback, and discover high-match opportunities tailored to your profile.
             </p>

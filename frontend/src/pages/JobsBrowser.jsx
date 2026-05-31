@@ -636,7 +636,7 @@ export default function JobsBrowser() {
                 <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#00D4FF]/20 bg-[#00D4FF]/8 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#00D4FF]">
                   {displayCount} open positions
                 </div>
-                <h1 className="text-3xl font-bold text-white sm:text-4xl">Find Your Next Role</h1>
+                <h1 className="text-3xl font-bold sm:text-4xl gradient-text">Find Your Next Role</h1>
                 <p className="mt-2 text-sm text-[#94A3B8] sm:text-base">AI-matched opportunities for you</p>
               </div>
 

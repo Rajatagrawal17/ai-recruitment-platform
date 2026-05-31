@@ -11,7 +11,7 @@ const ExperienceHubPage = () => {
           <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-200">
             <Sparkles size={12} /> Interactive preview
           </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-white md:text-5xl">Recruiter and candidate journey hub</h1>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl gradient-text">Recruiter and candidate journey hub</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">
             Explore how the platform feels from both sides before you sign in. Switch the view, inspect the actions, and jump straight into the right flow.
           </p>

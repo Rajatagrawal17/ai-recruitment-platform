@@ -84,7 +84,7 @@ const AIToolsPage = () => {
             <p className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
               AI Career Studio
             </p>
-            <h1 className="mt-4 text-3xl font-bold tracking-tight text-text sm:text-4xl lg:text-5xl">
+            <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl gradient-text">
               Professional AI tools for career decisions.
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-text-muted sm:text-base">

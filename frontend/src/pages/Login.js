@@ -105,7 +105,7 @@ const Login = () => {
         <div className="login-card">
           {/* Header */}
           <div className="login-header">
-            <h1 className="login-title">Welcome Back</h1>
+            <h1 className="login-title gradient-text">Welcome Back</h1>
             <p className="login-subtitle">Sign in to your AI recruitment dashboard</p>
           </div>
 
@@ -188,7 +188,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading || success}
-              className={`submit-btn ${loading ? "loading" : ""} ${success ? "success" : ""}`}
+              className={`submit-btn btn-primary ${loading ? "loading" : ""} ${success ? "success" : ""}`}
             >
               {success ? (
                 <>

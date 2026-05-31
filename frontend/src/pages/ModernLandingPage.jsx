@@ -1,8 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
-import CountUp from "react-countup";
 import {
   Upload,
   Brain,
@@ -14,163 +13,278 @@ import {
   Lock,
   BarChart3,
   Trophy,
+  Search,
+  MapPin,
+  Sparkles,
 } from "lucide-react";
-import { Particles } from "@tsparticles/react";
-import { loadSlim } from "@tsparticles/slim";
+import "./ModernLandingPage.css";
 
 // ============================================================================
-// HERO SECTION WITH PARTICLE NETWORK
+// ANIMATED COUNTER COMPONENT (requestAnimationFrame)
 // ============================================================================
 
-const ParticleBackground = () => {
-  const particlesInit = async (main) => {
-    await loadSlim(main);
-  };
+const AnimatedCounter = ({ targetValue, label, suffix = "" }) => {
+  const [count, setCount] = useState(0);
+  const { ref, inView } = useInView({
+    threshold: 0.3,
+    triggerOnce: true,
+  });
 
-  const particlesOptions = {
-    background: {
-      color: { value: "#0A0F1E" },
-    },
-    fpsLimit: 120,
-    interactivity: {
-      events: {
-        onClick: { enable: true, mode: "push" },
-        onHover: { enable: true, mode: "repulse" },
-        resize: true,
-      },
-      modes: {
-        push: { quantity: 4 },
-        repulse: { distance: 200, duration: 0.4 },
-      },
-    },
-    particles: {
-      color: { value: "#00D4FF" },
-      links: {
-        color: "#00D4FF",
-        distance: 150,
-        enable: true,
-        opacity: 0.3,
-        width: 1,
-      },
-      move: {
-        direction: "none",
-        enable: true,
-        outModes: { default: "bounce" },
-        random: false,
-        speed: 2,
-        straight: false,
-      },
-      number: { density: { enable: true, area: 800 }, value: 80 },
-      opacity: { value: 0.5 },
-      shape: { type: "circle" },
-      size: { value: { min: 1, max: 3 } },
-    },
-    detectRetina: true,
-  };
+  useEffect(() => {
+    if (!inView) return;
+
+    let animationFrameId;
+    const startTime = performance.now();
+    const duration = 2000; // 2 seconds
+
+    const updateCount = (timestamp) => {
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out quad
+      const easeProgress = progress * (2 - progress);
+      setCount(Math.floor(easeProgress * targetValue));
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(updateCount);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(updateCount);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [targetValue, inView]);
 
   return (
-    <Particles
-      id="tsparticles"
-      init={particlesInit}
-      options={particlesOptions}
-      className="absolute inset-0"
-    />
+    <div ref={ref} className="flex flex-col items-center p-4">
+      <span className="text-4xl sm:text-5xl font-extrabold text-[#00D4FF] tracking-tight">
+        {count.toLocaleString()}{suffix}
+      </span>
+      <p className="text-xs sm:text-sm text-[#94A3B8] font-semibold uppercase tracking-wider mt-2">
+        {label}
+      </p>
+    </div>
   );
 };
 
-const HeroSection = () => {
-  return (
-    <section className="relative min-h-screen bg-[#0A0F1E] flex items-center justify-center overflow-hidden">
-      <ParticleBackground />
+// ============================================================================
+// STAGGERED LOGO ITEM COMPONENT
+// ============================================================================
 
-      <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-5xl">
+const socialLogos = [
+  { initials: "GG", name: "Google" },
+  { initials: "MS", name: "Microsoft" },
+  { initials: "AM", name: "Amazon" },
+  { initials: "NF", name: "Netflix" },
+  { initials: "SF", name: "Salesforce" },
+];
+
+const parentLogoVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const logoVariants = {
+  hidden: { opacity: 0, scale: 0.8, y: 10 },
+  visible: { 
+    opacity: 1, 
+    scale: 1, 
+    y: 0, 
+    transition: { 
+      type: "spring", 
+      stiffness: 100,
+      damping: 12 
+    } 
+  },
+};
+
+// ============================================================================
+// MAIN HERO SECTION
+// ============================================================================
+
+const HeroSection = () => {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [locationQuery, setLocationQuery] = useState("Remote");
+
+  const popularCategories = [
+    "React Developer",
+    "Product Manager",
+    "Data Scientist",
+    "UX Designer",
+    "DevOps",
+  ];
+
+  const handleChipClick = (category) => {
+    setSearchQuery(category);
+  };
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    navigate(`/jobs?search=${encodeURIComponent(searchQuery)}&location=${encodeURIComponent(locationQuery)}`);
+  };
+
+  const headlineFirstLine = "Find Your Perfect Role".split(" ");
+  const headlineSecondLine = "Powered by AI".split(" ");
+
+  return (
+    <section className="hero-section py-20 lg:py-32">
+      {/* Background Mesh Overlay */}
+      <div className="hero-mesh-overlay" />
+
+      {/* Floating Blurred Orbs */}
+      <div className="background-orbs-container">
+        <div className="hero-orb orb-1" />
+        <div className="hero-orb orb-2" />
+        <div className="hero-orb orb-3" />
+      </div>
+
+      <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto flex flex-col items-center">
         {/* Label Pill */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border border-[#00D4FF] bg-gradient-to-r from-[#00D4FF]/10 to-transparent"
+          transition={{ duration: 0.6 }}
+          className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 backdrop-blur-md"
         >
-          <span className="text-[#00D4FF]">✦</span>
-          <span className="text-sm font-medium text-[#00D4FF]">
-            AI-POWERED RECRUITMENT
+          <span className="text-[#6366f1] animate-pulse">✦</span>
+          <span className="text-xs font-semibold uppercase tracking-widest text-slate-300">
+            AI-POWERED RECRUITMENT STUDIO
           </span>
         </motion.div>
 
-        {/* Main Headline with Stagger */}
-        <div className="mb-6">
-          {["Hire Smarter.", "Match Better.", "With AI."].map(
-            (line, index) => (
-              <motion.h1
-                key={index}
-                initial={{ opacity: 0, y: 40 }}
+        {/* Staggered Headline */}
+        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white mb-6 leading-tight select-none">
+          {headlineFirstLine.map((word, i) => (
+            <motion.span
+              key={`line1-${i}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.5,
+                delay: i * 0.06,
+                ease: "easeOut",
+              }}
+              className="inline-block mr-2 md:mr-4"
+            >
+              {word}
+            </motion.span>
+          ))}
+          <br />
+          <span className="gradient-text">
+            {headlineSecondLine.map((word, i) => (
+              <motion.span
+                key={`line2-${i}`}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
-                  duration: 0.8,
-                  delay: 0.15 * index + 0.2,
+                  duration: 0.5,
+                  delay: (headlineFirstLine.length + i) * 0.06 + 0.1,
                   ease: "easeOut",
                 }}
-                className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-2 leading-tight"
+                className="inline-block mr-2 md:mr-4"
               >
-                {line}
-              </motion.h1>
-            )
-          )}
-        </div>
+                {word}
+              </motion.span>
+            ))}
+          </span>
+        </h1>
 
         {/* Subheadline */}
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.65 }}
-          className="text-lg sm:text-xl text-[#94A3B8] mb-12 max-w-3xl mx-auto leading-relaxed"
+          transition={{ duration: 0.8, delay: 0.7 }}
+          className="text-base sm:text-lg text-slate-400 mb-10 max-w-2xl leading-relaxed"
         >
-          CogniFit uses AI to extract skills from resumes, calculate match
-          scores, and rank the best candidates — automatically.
+          HireAI automatically matches your skills against top vacancies. Calculate real-time compatibility scores and skip the recruitment noise.
         </motion.p>
 
-        {/* CTA Buttons */}
-        <motion.div
+        {/* Interactive Search Bar */}
+        <motion.form
+          onSubmit={handleSearchSubmit}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="flex flex-col sm:flex-row gap-6 justify-center mb-8"
+          transition={{ duration: 0.6, delay: 0.85 }}
+          className="search-bar-container mb-6"
         >
-          <Link
-            to="/login"
-            className="group relative inline-block"
+          <Search size={20} className="text-[#6366f1] mr-3" />
+          <input
+            type="text"
+            placeholder="Job title, skill, or company..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input-field"
+          />
+          <select
+            value={locationQuery}
+            onChange={(e) => setLocationQuery(e.target.value)}
+            className="location-dropdown-select"
           >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.97 }}
-              className="px-8 sm:px-10 py-4 bg-[#00D4FF] text-[#0A0F1E] rounded-full font-semibold text-base sm:text-lg transition-all duration-300 group-hover:shadow-lg group-hover:shadow-[#00D4FF]/50"
-            >
-              Post a Job
-            </motion.button>
-          </Link>
+            <option value="Remote">📍 Remote</option>
+            <option value="Bangalore">📍 Bangalore</option>
+            <option value="Mumbai">📍 Mumbai</option>
+            <option value="Delhi NCR">📍 Delhi NCR</option>
+            <option value="Hyderabad">📍 Hyderabad</option>
+            <option value="San Francisco">📍 San Francisco</option>
+          </select>
+          <button type="submit" className="search-action-btn ml-3">
+            <span>Find Jobs</span>
+            <ArrowRight size={16} />
+          </button>
+        </motion.form>
 
-          <Link
-            to="/jobs"
-            className="group relative inline-block"
-          >
-            <motion.button
-              whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.08)" }}
-              whileTap={{ scale: 0.97 }}
-              className="px-8 sm:px-10 py-4 border-2 border-white text-white rounded-full font-semibold text-base sm:text-lg transition-all duration-300"
-            >
-              Find Jobs
-            </motion.button>
-          </Link>
-        </motion.div>
-
-        {/* Social Proof */}
+        {/* Floating Job Category Chips */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.95 }}
-          className="text-center text-sm sm:text-base text-[#94A3B8]"
+          transition={{ duration: 0.8, delay: 1.0 }}
+          className="flex flex-wrap items-center justify-center gap-3 mb-16"
         >
-          <p>✓ Free to use &nbsp; ✓ No credit card &nbsp; ✓ AI matching included</p>
+          <span className="text-xs text-slate-400 font-semibold tracking-wider uppercase mr-2">
+            Popular:
+          </span>
+          {popularCategories.map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => handleChipClick(category)}
+              className="category-chip"
+            >
+              {category}
+            </button>
+          ))}
+        </motion.div>
+
+        {/* Social Proof Row */}
+        <motion.div
+          variants={parentLogoVariants}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col items-center gap-4 mt-8"
+        >
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.1 }}
+            className="text-xs font-semibold tracking-widest text-slate-500 uppercase"
+          >
+            Trusted by teams at
+          </motion.p>
+          <div className="flex items-center justify-center gap-4 sm:gap-6 flex-wrap">
+            {socialLogos.map((logo) => (
+              <motion.div
+                key={logo.initials}
+                variants={logoVariants}
+                className="social-logo-circle"
+                title={logo.name}
+              >
+                {logo.initials}
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>
@@ -178,65 +292,19 @@ const HeroSection = () => {
 };
 
 // ============================================================================
-// ANIMATED STATS BAR SECTION
+// STATS BAR SECTION
 // ============================================================================
 
-const StatCounter = ({ target, label, suffix = "" }) => {
-  const { ref, inView } = useInView({
-    threshold: 0.5,
-    triggerOnce: true,
-  });
-
-  return (
-    <div ref={ref} className="flex flex-col items-center gap-2">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={inView ? { opacity: 1, scale: 1 } : {}}
-        transition={{ duration: 0.6 }}
-        className="text-4xl sm:text-5xl font-bold text-[#00D4FF]"
-      >
-        {inView && (
-          <CountUp
-            start={0}
-            end={
-              typeof target === "number"
-                ? target
-                : parseInt(target.replace(/\D/g, ""))
-            }
-            duration={2.5}
-            suffix={suffix}
-          />
-        )}
-        {typeof target === "string" && !target.match(/^\d+$/) && !inView && target}
-      </motion.div>
-      <p className="text-sm sm:text-base text-[#94A3B8]">{label}</p>
-    </div>
-  );
-};
-
 const StatsSection = () => {
-  const { ref, inView } = useInView({
-    threshold: 0.3,
-    triggerOnce: true,
-  });
-
   return (
-    <section ref={ref} className="py-20 sm:py-32 bg-[#0A0F1E] px-4 sm:px-6 lg:px-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6 }}
-        className="max-w-6xl mx-auto"
-      >
-        <div className="p-8 sm:p-12 rounded-2xl bg-gradient-to-br from-white/5 via-white/2 to-transparent border border-white/10 backdrop-blur-md">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12">
-            <StatCounter target={95} label="Match Accuracy" suffix="%" />
-            <StatCounter target="10x" label="Faster Hiring" suffix="" />
-            <StatCounter target="500+" label="Jobs Posted" suffix="" />
-            <StatCounter target="50+" label="Skills Detected by AI" suffix="" />
-          </div>
+    <section className="py-12 sm:py-16 bg-[#070b16] px-4 sm:px-6 lg:px-8 border-y border-white/5">
+      <div className="max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 justify-center">
+          <AnimatedCounter targetValue={10000} suffix="+" label="Verified Jobs" />
+          <AnimatedCounter targetValue={500} suffix="+" label="Top Companies" />
+          <AnimatedCounter targetValue={95} suffix="%" label="AI Match Accuracy" />
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 };
@@ -279,7 +347,7 @@ const HowItWorksSection = () => {
           className="text-center mb-16 sm:mb-20"
         >
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            How CogniFit Works
+            How HireAI Works
           </h2>
           <p className="text-lg text-[#94A3B8]">Three simple steps to smarter hiring</p>
         </motion.div>
@@ -482,7 +550,7 @@ const BentoGridSection = () => {
     {
       icon: Brain,
       title: "AI Resume Analysis",
-      desc: "Paste or upload a resume — CogniFit's AI instantly extracts technical skills, soft skills, experience years, and education level with zero manual work.",
+      desc: "Paste or upload a resume — HireAI's AI instantly extracts technical skills, soft skills, experience years, and education level with zero manual work.",
       isLarge: true,
       skills: ["Python", "React", "Node.js", "AWS", "Docker"],
     },
@@ -642,7 +710,7 @@ const FinalCTASection = () => {
         </h2>
 
         <p className="text-lg sm:text-xl text-[#94A3B8] mb-12">
-          Join recruiters and candidates already using CogniFit's AI to make
+          Join recruiters and candidates already using HireAI to make
           better hiring decisions.
         </p>
 
@@ -657,7 +725,7 @@ const FinalCTASection = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.97 }}
-              className="px-8 sm:px-10 py-4 bg-[#00D4FF] text-[#0A0F1E] rounded-full font-bold text-base sm:text-lg hover:shadow-lg hover:shadow-[#00D4FF]/50 transition-all duration-300"
+              className="px-8 sm:px-10 py-4 bg-[#00D4FF] text-[#0A0F1E] rounded-full font-bold text-base sm:text-lg hover:shadow-lg hover:shadow-[#00D4FF]/50 transition-all duration-300 btn-primary text-white"
             >
               Get Started Free
             </motion.button>

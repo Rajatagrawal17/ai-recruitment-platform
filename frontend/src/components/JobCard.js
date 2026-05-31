@@ -1,49 +1,29 @@
-import React, { useMemo, useRef, useState } from "react";
-import { motion, useAnimation } from "framer-motion";
-import { useInView } from "react-intersection-observer";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import {
-  ArrowRight,
-  Bookmark,
-  BookmarkCheck,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  MapPin,
-  CalendarClock,
-  BriefcaseBusiness,
-  Layers3,
-} from "lucide-react";
+import { Bookmark, BookmarkCheck, MapPin, Calendar, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSavedJobs } from "../context/SavedJobsContext";
+import "./JobCard.css";
 
-const hashToGradient = (input = "") => {
-  const hash = Array.from(String(input)).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const palettes = [
-    ["#00D4FF", "#2D6BFF"],
-    ["#7C3AED", "#00D4FF"],
-    ["#0EA5E9", "#22C55E"],
-    ["#F59E0B", "#EC4899"],
-    ["#06B6D4", "#8B5CF6"],
-  ];
-  return palettes[hash % palettes.length];
-};
+function getAvatarColor(name) {
+  const colors = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
+  const index = name.charCodeAt(0) % colors.length;
+  return colors[index];
+}
 
 const formatSalary = (salary) => {
+  if (!salary) return 'Salary not specified';
+  if (typeof salary === 'string') return salary;
+  if (salary.min && salary.max) {
+    return `₹${Number(salary.min).toLocaleString()} - ₹${Number(salary.max).toLocaleString()}`;
+  }
+  if (salary.min) return `From ₹${Number(salary.min).toLocaleString()}`;
   if (typeof salary === "number" && salary > 0) {
     const lpa = Math.max(1, Math.round(salary / 100000));
     return `₹${Math.max(1, Math.round(lpa * 0.85))} - ₹${Math.max(1, Math.round(lpa * 1.15))} LPA`;
   }
-  if (Array.isArray(salary)) return `₹${salary[0]} - ₹${salary[1]}`;
-  if (typeof salary === "string" && salary.trim()) return salary;
   return "Negotiable";
-};
-
-const getMatchMeta = (score = 0) => {
-  if (score >= 80) return { label: "Strong Match", color: "#22C55E" };
-  if (score >= 60) return { label: "Good Match", color: "#EAB308" };
-  if (score >= 40) return { label: "Moderate", color: "#FB923C" };
-  return { label: "Low Match", color: "#F87171" };
 };
 
 const JobCard = ({
@@ -53,44 +33,17 @@ const JobCard = ({
   isCandidate = false,
   onViewDetails,
   onApply,
-  onCompareToggle,
-  isCompared = false,
   onSaveToggle,
   isSaved = false,
-  onHoverStart,
-  onHoverEnd,
 }) => {
   const navigate = useNavigate();
   const { toggleSaveJob } = useSavedJobs();
-  const [showAllSkills, setShowAllSkills] = useState(false);
-  const [hovering, setHovering] = useState(false);
-  const [scoreVisible, setScoreVisible] = useState(false);
-  const hoverTimerRef = useRef(null);
-  const cardRef = useRef(null);
-  const controls = useAnimation();
-  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.35 });
-
-  const skills = useMemo(() => job.skills || [], [job.skills]);
-  const visibleSkills = showAllSkills ? skills : skills.slice(0, 4);
-  const extraSkillCount = Math.max(0, skills.length - visibleSkills.length);
-  const postedLabel = job.createdAt
-    ? formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })
-    : "Recently";
-  const score = Number(matchScore || job.matchScore || 0);
-  const matchMeta = getMatchMeta(score);
-  const [fromColor, toColor] = hashToGradient(job.company || job.title || "job");
-
-  React.useEffect(() => {
-    if (inView) {
-      controls.start({ opacity: 1, y: 0 });
-      const timer = setTimeout(() => setScoreVisible(true), 150);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [inView, controls]);
+  const [animateBookmark, setAnimateBookmark] = useState(false);
 
   const handleSave = (event) => {
     event.stopPropagation();
+    setAnimateBookmark(true);
+    setTimeout(() => setAnimateBookmark(false), 400);
     if (onSaveToggle) onSaveToggle(job);
     else toggleSaveJob(job);
   };
@@ -98,7 +51,8 @@ const JobCard = ({
   const handleApply = (event) => {
     event.stopPropagation();
     if (isApplied) return;
-    onApply?.(job);
+    if (onApply) onApply(job);
+    else navigate(`/jobs/${job._id}/apply`);
   };
 
   const handleView = (event) => {
@@ -107,177 +61,159 @@ const JobCard = ({
     else navigate(`/jobs/${job._id}`);
   };
 
-  const handleMouseEnter = () => {
-    setHovering(true);
-    // Prefetch JobDetailPage chunk on hover
-    import("../pages/JobDetailPage").catch(() => {});
-    clearTimeout(hoverTimerRef.current);
-    hoverTimerRef.current = setTimeout(() => {
-      onHoverStart?.(job, cardRef.current?.getBoundingClientRect());
-    }, 1000);
-  };
+  const isNew = job.createdAt 
+    ? (Date.now() - new Date(job.createdAt).getTime()) < 24 * 60 * 60 * 1000 
+    : false;
 
-  const handleMouseLeave = () => {
-    setHovering(false);
-    clearTimeout(hoverTimerRef.current);
-    onHoverEnd?.();
-  };
+  const postedLabel = job.createdAt
+    ? formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })
+    : "Recently";
 
-  const applyLabel = isApplied ? "Applied ✓" : "Apply Now";
+  const companyInitials = (job.company || "J").charAt(0).toUpperCase();
+  const avatarBgColor = getAvatarColor(job.company || "Company");
+  
+  const score = Number(matchScore || job.matchScore || 0);
+
+  const skills = job.skills || [];
+  const visibleSkills = skills.slice(0, 3);
+  const extraSkillsCount = skills.length - visibleSkills.length;
 
   return (
-    <motion.article
-      ref={(node) => {
-        ref(node);
-        cardRef.current = node;
-      }}
-      initial={{ opacity: 0, y: 16 }}
-      animate={controls}
-      transition={{ duration: 0.45, ease: "easeOut" }}
-      layout
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      whileHover={{ y: -4, borderColor: "rgba(0,212,255,0.4)", boxShadow: "0 8px 32px rgba(0,212,255,0.12)" }}
-      className="relative rounded-2xl border border-white/8 bg-white/4 p-6 text-white"
+    <motion.div
+      onClick={handleView}
+      className="job-card glass-card"
+      whileHover={{ y: -4, borderColor: "rgba(99, 102, 241, 0.4)", boxShadow: "var(--shadow-lg)" }}
+      whileTap={{ y: -2 }}
+      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
     >
-      <div className="mb-5 flex items-start gap-4">
-        <div
-          className="flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-bold text-[#0A0F1E]"
-          style={{ background: `linear-gradient(135deg, ${fromColor}, ${toColor})` }}
-        >
-          {(job.company || job.title || "J").charAt(0).toUpperCase()}
+      {/* Card Header */}
+      <div className="card-header flex items-start justify-between gap-3 w-full">
+        <div className="flex items-center gap-3">
+          {/* Company Logo / Initials Avatar */}
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-sm"
+            style={{ background: `linear-gradient(135deg, ${avatarBgColor} 0%, ${avatarBgColor}88 100%)` }}
+          >
+            {companyInitials}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm text-slate-200">{job.company}</span>
+              <span className="inline-flex items-center gap-1 rounded bg-white/5 px-2 py-0.5 text-xs text-slate-300">
+                <MapPin size={10} className="text-[#6366f1]" />
+                {job.location || "Remote"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-slate-400 flex items-center gap-1">
+                <Calendar size={10} />
+                {postedLabel}
+              </span>
+              {isNew && (
+                <span className="new-badge">
+                  <span className="pulse-dot" />
+                  NEW
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-[1.1rem] font-bold leading-6 text-white">{job.title}</h3>
-          <p className="mt-1 text-sm text-[#94A3B8]">{job.company}</p>
-        </div>
-
+        {/* Bookmark Button */}
         <button
           onClick={handleSave}
-          className="rounded-full border border-white/10 bg-white/5 p-2 text-[#94A3B8] transition hover:border-[#00D4FF]/30 hover:text-[#00D4FF]"
+          className={`bookmark-btn ${isSaved ? "saved" : ""} ${animateBookmark ? "animate-pop" : ""} p-2 rounded-full hover:bg-white/5`}
           title="Save Job"
         >
-          {isSaved ? <BookmarkCheck size={18} className="text-[#00D4FF]" /> : <Bookmark size={18} />}
+          {isSaved ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
+          {animateBookmark && (
+            <div className="particle-container">
+              <div className="burst-particle"></div>
+              <div className="burst-particle"></div>
+              <div className="burst-particle"></div>
+              <div className="burst-particle"></div>
+            </div>
+          )}
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <MetaPill icon={MapPin}>{job.location || "Remote"}</MetaPill>
-        <MetaPill icon={BriefcaseBusiness}>{job.type || "full-time"}</MetaPill>
-        <MetaPill icon={CalendarClock}>{postedLabel}</MetaPill>
-      </div>
+      {/* Card Body */}
+      <div className="card-body mt-4 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <h3 className="text-lg font-bold text-white line-clamp-1">{job.title}</h3>
+          {isCandidate && matchScore !== null && (
+            <div className="shrink-0">
+              {score >= 80 ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/30">
+                  {score}% match ✓
+                </span>
+              ) : score >= 50 ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-400 border border-amber-500/30">
+                  {score}% match
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/15 px-3 py-1 text-xs font-medium text-slate-400 border border-slate-500/20">
+                  View job
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
-      {isCandidate && matchScore !== null && (
-        <MatchBlock score={score} meta={matchMeta} visible={scoreVisible} />
-      )}
+        <p className="mt-2 text-sm font-semibold text-[#8b5cf6] flex items-center gap-1">
+          <span className="text-[#6366f1] font-bold">₹</span> {formatSalary(job.salary)}
+        </p>
 
-      <div className="mt-5 flex flex-wrap gap-2">
-        {visibleSkills.map((skill) => (
-          <span key={skill} className="rounded-full border border-[#00D4FF]/20 bg-[#00D4FF]/10 px-3 py-1 text-[0.75rem] font-medium text-[#7DDFFF]">
-            {skill}
+        {/* Tags Row */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {/* Base type tags */}
+          <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-[11px] font-medium text-slate-300">
+            {job.location === "Remote" || job.type === "remote" ? "Remote" : "On-site"}
           </span>
-        ))}
-        {extraSkillCount > 0 && (
-          <button
-            onClick={() => setShowAllSkills((prev) => !prev)}
-            className="inline-flex items-center gap-1 rounded-full border border-white/8 bg-white/5 px-3 py-1 text-[0.75rem] text-[#94A3B8] transition hover:border-[#00D4FF]/25 hover:text-white"
-          >
-            {showAllSkills ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            {showAllSkills ? "Show less" : `+${extraSkillCount} more`}
-          </button>
-        )}
-      </div>
-
-      <div className="mt-5 flex items-center justify-between gap-4 border-t border-white/8 pt-4 text-sm text-[#94A3B8]">
-        <div className="flex flex-wrap items-center gap-4">
-          <span>{formatSalary(job.salary)}</span>
-          <span className="h-4 w-px bg-white/10" />
-          <span>{Number(job.yearsOfExperience || job.experience || 0)} years experience</span>
+          <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-[11px] font-medium text-slate-300 capitalize">
+            {job.type || "Full Time"}
+          </span>
+          {/* Skills tags */}
+          {visibleSkills.map((skill) => (
+            <span key={skill} className="skill-tag">
+              {skill}
+            </span>
+          ))}
+          {extraSkillsCount > 0 && (
+            <span className="skill-overflow">
+              +{extraSkillsCount} more
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-3">
-        <motion.button
-          whileHover={{ y: -1 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleView}
-          className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-white transition hover:border-white/25"
-        >
-          View Details <ArrowRight size={16} className="ml-1 inline-block" />
-        </motion.button>
-
-        {isCandidate ? (
-          <motion.button
-            whileHover={{ scale: 1.02, boxShadow: "0 8px 24px rgba(0,212,255,0.35)" }}
-            whileTap={{ scale: 0.97 }}
-            disabled={isApplied}
-            onClick={handleApply}
-            className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${isApplied ? "cursor-not-allowed bg-emerald-500/15 text-emerald-300" : "bg-[#00D4FF] text-[#0A0F1E]"}`}
+      {/* Card Footer */}
+      <div className="card-footer mt-4 pt-4 flex items-center justify-between border-t border-white/10">
+        <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
+          <Users size={12} className="text-[#06b6d4]" />
+          {job.applicantsCount || 0} applied
+        </span>
+        
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleView}
+            className="text-xs font-semibold text-[#06b6d4] hover:underline"
           >
-            <span className="inline-flex items-center justify-center gap-2">
-              {isApplied ? <CheckCircle2 size={16} /> : <ArrowRight size={16} />}
-              {applyLabel}
-            </span>
-          </motion.button>
-        ) : (
-          <div className="flex items-center justify-center rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-center text-sm text-[#94A3B8]">
-            AI matched jobs shown
-          </div>
-        )}
+            View details
+          </button>
+          {isCandidate && (
+            <button
+              disabled={isApplied}
+              onClick={handleApply}
+              className={`btn-primary text-xs !py-1.5 !px-4 ${isApplied ? "!bg-emerald-500/10 !text-emerald-400 border border-emerald-500/20 cursor-not-allowed shadow-none" : ""}`}
+            >
+              {isApplied ? "Applied" : "Apply Now"}
+            </button>
+          )}
+        </div>
       </div>
-
-      <div className="mt-4 flex items-center gap-3 text-xs text-[#94A3B8]">
-        <label className="inline-flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={isCompared}
-            onChange={(event) => onCompareToggle?.(event.target.checked)}
-            className="h-4 w-4 rounded border-white/15 bg-transparent accent-[#00D4FF]"
-            onClick={(event) => event.stopPropagation()}
-          />
-          Compare
-        </label>
-        <span className="h-3 w-px bg-white/10" />
-        <span>{job.applicantsCount || 0} applicants</span>
-      </div>
-
-      {hovering && <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-[#00D4FF]/20" />}
-    </motion.article>
+    </motion.div>
   );
 };
-
-const MatchBlock = ({ score, meta, visible }) => {
-  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.35 });
-  const progress = visible && inView ? `${score}%` : "0%";
-
-  return (
-    <div ref={ref} className="mt-5 rounded-2xl border border-white/8 bg-white/4 p-4">
-      <div className="mb-3 flex items-center justify-between text-sm">
-        <span className="font-medium text-[#E2E8F0]">Your AI Match</span>
-        <span style={{ color: meta.color }}>{score}%</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: progress }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          className="h-full rounded-full bg-gradient-to-r from-[#00D4FF] to-[#2D6BFF]"
-        />
-      </div>
-      <div className="mt-3 text-xs" style={{ color: meta.color }}>
-        {meta.label}
-      </div>
-      <p className="mt-2 text-xs text-[#94A3B8]">{score >= 80 ? "🟢 Strong Match" : score >= 60 ? "🟡 Good Match" : score >= 40 ? "🟠 Moderate" : "🔴 Low Match"}</p>
-    </div>
-  );
-};
-
-const MetaPill = ({ children, icon: Icon }) => (
-  <span className="inline-flex items-center gap-1 rounded-full bg-white/6 px-3 py-1 text-xs text-[#E2E8F0]">
-    <Icon size={12} className="text-[#00D4FF]" />
-    {children}
-  </span>
-);
 
 export default JobCard;

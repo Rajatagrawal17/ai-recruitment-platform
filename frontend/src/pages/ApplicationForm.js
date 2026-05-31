@@ -113,7 +113,7 @@ const ApplicationForm = () => {
         <NotificationContainer notifications={notifications} onRemove={removeNotification} />
         <MobileOptimizedContainer>
           <motion.section
-            className="recruit-shell recruit-card"
+            className="recruit-shell recruit-card glass-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -143,7 +143,7 @@ const ApplicationForm = () => {
             </motion.div>
             <div className="recruit-actions flex gap-4 justify-center">
               <MobileOptimizedButton
-                className="recruit-btn primary"
+                className="recruit-btn primary btn-primary"
                 onClick={() => navigate("/candidate/dashboard")}
               >
                 Go to Dashboard
@@ -166,7 +166,7 @@ const ApplicationForm = () => {
       <NotificationContainer notifications={notifications} onRemove={removeNotification} />
       <MobileOptimizedContainer>
         <motion.section
-          className="recruit-shell recruit-card"
+          className="recruit-shell recruit-card glass-card"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -174,6 +174,7 @@ const ApplicationForm = () => {
           <motion.h1
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
+            className="gradient-text"
             style={{ marginTop: 0 }}
           >
             Apply to Job
@@ -354,7 +355,7 @@ const ApplicationForm = () => {
             )}
             {step < 3 && (
               <MobileOptimizedButton
-                className="recruit-btn primary flex-1"
+                className="recruit-btn primary btn-primary flex-1"
                 type="button"
                 onClick={() => {
                   if (!validateStep()) {
@@ -371,7 +372,7 @@ const ApplicationForm = () => {
             )}
             {step === 3 && (
               <MobileOptimizedButton
-                className={`recruit-btn primary flex-1 ${loading ? "opacity-50" : ""}`}
+                className={`recruit-btn primary btn-primary flex-1 ${loading ? "opacity-50" : ""}`}
                 type="button"
                 onClick={submitApplication}
                 disabled={loading}

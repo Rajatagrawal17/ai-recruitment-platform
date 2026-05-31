@@ -34,8 +34,8 @@ const JobDetailPage = () => {
 
   return (
     <main className="recruit-page">
-      <section className="recruit-shell recruit-card">
-        <h1 className="recruit-title" style={{ marginTop: 0 }}>{job.title}</h1>
+      <section className="recruit-shell recruit-card glass-card">
+        <h1 className="recruit-title gradient-text" style={{ marginTop: 0 }}>{job.title}</h1>
         <p className="recruit-muted" style={{ marginBottom: 12 }}>{job.company} - {job.location}</p>
         <p className="recruit-muted" style={{ marginBottom: 8 }}>Type: {job.type || "full-time"}</p>
         <p className="recruit-muted" style={{ marginBottom: 16 }}>Salary: {job.salary || "Negotiable"}</p>
@@ -47,7 +47,7 @@ const JobDetailPage = () => {
           </div>
         )}
         <div className="recruit-actions" style={{ marginTop: 20 }}>
-          <Link to={`/jobs/${job._id}/apply`} className="recruit-btn primary">Apply Now</Link>
+          <Link to={`/jobs/${job._id}/apply`} className="recruit-btn primary btn-primary">Apply Now</Link>
           <Link to="/jobs" className="recruit-btn secondary">Back to Jobs</Link>
         </div>
       </section>

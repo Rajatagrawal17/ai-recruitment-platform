@@ -199,18 +199,18 @@ body {
 .btn-primary {
   width: 100%;
   padding: 14px 20px;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: var(--gradient-brand);
   color: white;
   border: none;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 0.15s, box-shadow 0.15s;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-top: 10px;
-  box-shadow: 0 10px 30px rgba(79, 70, 229, 0.3);
+  box-shadow: var(--shadow-brand);
   animation: slideInUp 0.5s ease 0.55s forwards;
   opacity: 0;
   transform: translateY(10px);
@@ -218,12 +218,11 @@ body {
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-3px);
-  box-shadow: 0 15px 40px rgba(79, 70, 229, 0.5),
-              0 0 20px rgba(79, 70, 229, 0.3);
+  box-shadow: var(--shadow-glow);
 }
 
 .btn-primary:active:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(0);
 }
 
 .btn-primary:disabled {

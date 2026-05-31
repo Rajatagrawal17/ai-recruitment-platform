@@ -71,10 +71,10 @@ const EnhancedJobCard = ({ job, onApply, isFavorite, onFavoriteToggle }) => {
         onClick={handleCardClick}
         whileHover={{ scale: 1.02, y: -4 }}
         whileTap={{ scale: 0.98 }}
-        className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+        className={`job-card glass-card p-4 rounded-xl cursor-pointer transition-all ${
           isExpanded
             ? "border-primary bg-primary/5 shadow-lg"
-            : "border-gray-200 bg-white hover:border-primary hover:shadow-md"
+            : ""
         }`}
       >
         <div className="flex items-center justify-between gap-4">
@@ -140,7 +140,7 @@ const EnhancedJobCard = ({ job, onApply, isFavorite, onFavoriteToggle }) => {
             animate={{ opacity: 1, height: "auto", marginTop: 12 }}
             exit={{ opacity: 0, height: 0, marginTop: 0 }}
             transition={{ duration: 0.3 }}
-            className="border-2 border-primary bg-gradient-to-br from-primary/5 to-blue-50/50 rounded-xl p-6 space-y-4"
+            className="border border-[#6366f1]/30 bg-white/5 backdrop-blur-md rounded-xl p-6 space-y-4"
           >
             {/* Close Button */}
             <div className="flex justify-end">
@@ -148,7 +148,7 @@ const EnhancedJobCard = ({ job, onApply, isFavorite, onFavoriteToggle }) => {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsExpanded(false)}
-                className="p-1 hover:bg-gray-200 rounded-lg transition-colors"
+                className="p-1 hover:bg-white/10 rounded-lg transition-colors text-white"
               >
                 <X size={18} />
               </motion.button>
@@ -157,8 +157,8 @@ const EnhancedJobCard = ({ job, onApply, isFavorite, onFavoriteToggle }) => {
             {/* Description */}
             {job.description && (
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <h4 className="font-semibold text-slate-200 mb-2">Description</h4>
+                <p className="text-sm text-slate-300 leading-relaxed">
                   {job.description}
                 </p>
               </div>
@@ -167,7 +167,7 @@ const EnhancedJobCard = ({ job, onApply, isFavorite, onFavoriteToggle }) => {
             {/* Skills */}
             {job.skills && job.skills.length > 0 && (
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Required Skills</h4>
+                <h4 className="font-semibold text-slate-200 mb-2">Required Skills</h4>
                 <div className="flex flex-wrap gap-2">
                   {job.skills.map((skill, idx) => (
                     <motion.span
@@ -175,7 +175,7 @@ const EnhancedJobCard = ({ job, onApply, isFavorite, onFavoriteToggle }) => {
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: idx * 0.05 }}
-                      className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
+                      className="px-3 py-1 bg-white/5 border border-white/10 text-slate-200 rounded-full text-xs font-medium"
                     >
                       {skill}
                     </motion.span>
@@ -188,13 +188,13 @@ const EnhancedJobCard = ({ job, onApply, isFavorite, onFavoriteToggle }) => {
             {job.experienceLevel && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-semibold text-gray-900 text-sm mb-1">Experience</h4>
-                  <p className="text-sm text-gray-600">{job.experienceLevel}</p>
+                  <h4 className="font-semibold text-slate-200 text-sm mb-1">Experience</h4>
+                  <p className="text-sm text-slate-300">{job.experienceLevel}</p>
                 </div>
                 {job.deadline && (
                   <div>
-                    <h4 className="font-semibold text-gray-900 text-sm mb-1">Application Deadline</h4>
-                    <p className="text-sm text-gray-600">
+                    <h4 className="font-semibold text-slate-200 text-sm mb-1">Application Deadline</h4>
+                    <p className="text-sm text-slate-300">
                       {new Date(job.deadline).toLocaleDateString()}
                     </p>
                   </div>
@@ -203,12 +203,12 @@ const EnhancedJobCard = ({ job, onApply, isFavorite, onFavoriteToggle }) => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <div className="flex gap-3 pt-4 border-t border-white/10">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleApply}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:shadow-lg transition-shadow"
+                className="btn-primary flex-1 px-4 py-2 text-white rounded-lg font-semibold"
               >
                 Apply Now
               </motion.button>
@@ -216,7 +216,7 @@ const EnhancedJobCard = ({ job, onApply, isFavorite, onFavoriteToggle }) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsExpanded(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 bg-white/5 text-slate-200 rounded-lg font-semibold hover:bg-white/10 transition-colors border border-white/10"
               >
                 Close
               </motion.button>

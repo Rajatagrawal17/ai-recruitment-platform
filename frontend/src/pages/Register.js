@@ -231,7 +231,7 @@ const Register = () => {
       {!showVerification ? (
         <div className="register-card">
           <div className="card-header">
-            <h2>🚀 Create Your Account</h2>
+            <h2 className="gradient-text">🚀 Create Your Account</h2>
             <p>Join the AI Recruitment Platform</p>
           </div>
 
@@ -324,7 +324,7 @@ const Register = () => {
             {/* Step 1: Mobile OTP */}
             {verificationStep === 1 && (
               <div className="verification-step">
-                <h3>📱 Verify Your Phone</h3>
+                <h3 className="gradient-text">📱 Verify Your Phone</h3>
                 <p className="step-description">We've sent a verification code to <strong>{normalizeIndianPhone(formData.phoneNumber) || formData.phoneNumber}</strong></p>
 
                 {error && <div className="alert alert-error">{error}</div>}
@@ -384,7 +384,7 @@ const Register = () => {
                 </div>
 
                 <button
-                  className="btn-verify"
+                  className="btn-verify btn-primary"
                   onClick={handleVerifyMobileOTP}
                   disabled={otpValue.length < 5 || verifying}
                 >
@@ -399,7 +399,7 @@ const Register = () => {
             {/* Step 2: CAPTCHA */}
             {verificationStep === 2 && (
               <div className="verification-step">
-                <h3>🤖 Complete Verification</h3>
+                <h3 className="gradient-text">🤖 Complete Verification</h3>
                 <p className="step-description">Confirm you're human to complete registration</p>
 
                 {error && <div className="alert alert-error">{error}</div>}
@@ -413,7 +413,7 @@ const Register = () => {
                 </div>
 
                 <button
-                  className="btn-complete"
+                  className="btn-complete btn-primary"
                   onClick={completeRegistration}
                   disabled={!captchaToken || verifying}
                 >

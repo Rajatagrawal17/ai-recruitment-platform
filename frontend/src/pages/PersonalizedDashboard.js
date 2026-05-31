@@ -122,7 +122,7 @@ const PersonalizedDashboard = () => {
           transition={{ delay: 0.2 }}
         >
           <div className="header-content">
-            <h1>
+            <h1 className="gradient-text flex items-center gap-2">
               <Target className="header-icon" />
               Personalized Job Recommendations
             </h1>

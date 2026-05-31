@@ -464,7 +464,7 @@ const SimpleRecruiterDashboard = () => {
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-300">
               <Sparkles size={12} /> Company Workspace
             </div>
-            <h1 className="mt-4 text-4xl font-bold tracking-tight text-text md:text-5xl">Recruiter Dashboard</h1>
+            <h1 className="mt-4 text-4xl font-bold tracking-tight md:text-5xl gradient-text">Recruiter Dashboard</h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-text-muted md:text-base">
               A sheet-based hiring workspace built for one company at a time. Move between overview, company, jobs, candidates, and analytics without crowding everything into one screen.
             </p>

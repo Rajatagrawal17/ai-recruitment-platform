@@ -2,7 +2,7 @@ import React from "react";
 
 const SkeletonJobCard = () => {
   return (
-    <article className="relative rounded-2xl border border-white/8 bg-white/4 p-6 backdrop-blur-sm">
+    <article className="glass-card relative rounded-2xl border border-white/8 bg-white/4 p-6">
       <style>{`
         @keyframes shimmer {
           0% {
