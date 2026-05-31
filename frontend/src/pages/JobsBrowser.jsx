@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -287,6 +288,22 @@ export default function JobsBrowser() {
 
   const searchInputRef = useRef(null);
   const previewTimerRef = useRef(null);
+  const listParentRef = useRef(null);
+  const columnsRef = useRef(1);
+
+  // Track column count from a resize observer on the grid container
+  const gridRef = useCallback((node) => {
+    if (!node) return;
+    const update = () => {
+      const w = node.offsetWidth;
+      columnsRef.current = w >= 1280 ? 3 : w >= 1024 ? 2 : 1;
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(node);
+    // store cleanup on the ref so we can call it later if needed
+    node._roCleanup = () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
@@ -554,8 +571,31 @@ export default function JobsBrowser() {
     getJobs().then((res) => setAllJobs(res.data.jobs || [])).catch(() => null);
   }
 
-   const displayCount = filteredJobs?.length ?? 0;
+  const displayCount = filteredJobs?.length ?? 0;
   const totalCount = baseJobs?.length ?? 0;
+
+  // ── Virtual grid rows ────────────────────────────────────────────────────
+  // Group flat job list into rows matching the CSS grid column count.
+  const jobRows = useMemo(() => {
+    const cols = columnsRef.current || 1;
+    const rows = [];
+    for (let i = 0; i < filteredJobs.length; i += cols) {
+      rows.push(filteredJobs.slice(i, i + cols));
+    }
+    return rows;
+  }, [filteredJobs]);
+
+  const rowVirtualizer = useVirtualizer({
+    count: jobRows.length,
+    getScrollElement: () => listParentRef.current,
+    estimateSize: () => 240,   // estimated row height in px
+    overscan: 3,               // render 3 rows above/below viewport
+    measureElement:
+      typeof window !== "undefined" &&
+      navigator.userAgent.indexOf("Firefox") === -1
+        ? (el) => el?.getBoundingClientRect().height
+        : undefined,
+  });
   
   // Safe roleSubtitle generation with defensive checks
   let roleSubtitle = "";
@@ -881,54 +921,145 @@ export default function JobsBrowser() {
               </div>
             )
           ) : (
-            <motion.div
-              className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3"
-              variants={containerVariants}
-              initial="hidden"
-              animate="show"
+            <div
+              ref={(node) => {
+                listParentRef.current = node;
+                gridRef(node);
+              }}
+              style={{
+                height: jobRows.length > 5 ? "calc(100vh - 280px)" : "auto",
+                overflowY: jobRows.length > 5 ? "auto" : "visible",
+                position: "relative",
+                scrollbarWidth: "thin",
+                scrollbarColor: "rgba(0,212,255,0.25) transparent",
+              }}
             >
-              <AnimatePresence mode="popLayout">
-                {filteredJobs.map((job) => {
-                  const matchData = candidateMatchMap[job._id];
-                  const isApplied = appliedJobIds.has(String(job._id));
-                  return (
-                    <motion.div
-                      key={job._id}
-                      layout
-                      variants={itemVariants}
-                      exit={{ opacity: 0, y: 20 }}
-                    >
-                      <JobCard
-                        job={job}
-                        matchScore={matchData?.matchScore || job.matchScore || null}
-                        matchExplanation={matchData?.explanation}
-                        isApplied={isApplied}
-                        isCandidate={isCandidate}
-                        onViewDetails={() => navigate(`/jobs/${job._id}`)}
-                        onApply={() => setApplyJob(job)}
-                        onCompareToggle={(checked) => {
-                          setCompareIds((prev) => {
-                            if (checked) {
-                              if (prev.length >= 3) {
-                                toast.error("You can compare up to 3 jobs.");
-                                return prev;
-                              }
-                              return [...prev, job._id];
-                            }
-                            return prev.filter((id) => id !== job._id);
-                          });
-                        }}
-                        isCompared={compareIds.includes(job._id)}
-                        onSaveToggle={() => toggleSaveJob(job)}
-                        isSaved={isJobSaved(job._id)}
-                        onHoverStart={() => openPreview(job)}
-                        onHoverEnd={closePreview}
-                      />
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </motion.div>
+              {/* Spacer div that gives the virtualizer its total scroll height */}
+              <div
+                style={{
+                  height: jobRows.length > 5
+                    ? rowVirtualizer.getTotalSize()
+                    : "auto",
+                  position: jobRows.length > 5 ? "relative" : "static",
+                }}
+              >
+                {jobRows.length > 5
+                  ? rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const rowJobs = jobRows[virtualRow.index];
+                      return (
+                        <div
+                          key={virtualRow.key}
+                          data-index={virtualRow.index}
+                          ref={rowVirtualizer.measureElement}
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            transform: `translateY(${virtualRow.start}px)`,
+                          }}
+                        >
+                          <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3 pb-5">
+                            <AnimatePresence mode="popLayout">
+                              {rowJobs.map((job) => {
+                                const matchData = candidateMatchMap[job._id];
+                                const isApplied = appliedJobIds.has(String(job._id));
+                                return (
+                                  <motion.div
+                                    key={job._id}
+                                    layout
+                                    variants={itemVariants}
+                                    initial="hidden"
+                                    animate="show"
+                                    exit={{ opacity: 0, y: 20 }}
+                                  >
+                                    <JobCard
+                                      job={job}
+                                      matchScore={matchData?.matchScore || job.matchScore || null}
+                                      matchExplanation={matchData?.explanation}
+                                      isApplied={isApplied}
+                                      isCandidate={isCandidate}
+                                      onViewDetails={() => navigate(`/jobs/${job._id}`)}
+                                      onApply={() => setApplyJob(job)}
+                                      onCompareToggle={(checked) => {
+                                        setCompareIds((prev) => {
+                                          if (checked) {
+                                            if (prev.length >= 3) {
+                                              toast.error("You can compare up to 3 jobs.");
+                                              return prev;
+                                            }
+                                            return [...prev, job._id];
+                                          }
+                                          return prev.filter((id) => id !== job._id);
+                                        });
+                                      }}
+                                      isCompared={compareIds.includes(job._id)}
+                                      onSaveToggle={() => toggleSaveJob(job)}
+                                      isSaved={isJobSaved(job._id)}
+                                      onHoverStart={() => openPreview(job)}
+                                      onHoverEnd={closePreview}
+                                    />
+                                  </motion.div>
+                                );
+                              })}
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      );
+                    })
+                  : (
+                      <motion.div
+                        className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3"
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="show"
+                      >
+                        <AnimatePresence mode="popLayout">
+                          {filteredJobs.map((job) => {
+                            const matchData = candidateMatchMap[job._id];
+                            const isApplied = appliedJobIds.has(String(job._id));
+                            return (
+                              <motion.div
+                                key={job._id}
+                                layout
+                                variants={itemVariants}
+                                exit={{ opacity: 0, y: 20 }}
+                              >
+                                <JobCard
+                                  job={job}
+                                  matchScore={matchData?.matchScore || job.matchScore || null}
+                                  matchExplanation={matchData?.explanation}
+                                  isApplied={isApplied}
+                                  isCandidate={isCandidate}
+                                  onViewDetails={() => navigate(`/jobs/${job._id}`)}
+                                  onApply={() => setApplyJob(job)}
+                                  onCompareToggle={(checked) => {
+                                    setCompareIds((prev) => {
+                                      if (checked) {
+                                        if (prev.length >= 3) {
+                                          toast.error("You can compare up to 3 jobs.");
+                                          return prev;
+                                        }
+                                        return [...prev, job._id];
+                                      }
+                                      return prev.filter((id) => id !== job._id);
+                                    });
+                                  }}
+                                  isCompared={compareIds.includes(job._id)}
+                                  onSaveToggle={() => toggleSaveJob(job)}
+                                  isSaved={isJobSaved(job._id)}
+                                  onHoverStart={() => openPreview(job)}
+                                  onHoverEnd={closePreview}
+                                />
+                              </motion.div>
+                            );
+                          })}
+                        </AnimatePresence>
+                      </motion.div>
+                  )
+                }
+              </div>
+            </div>
           )}
 
           <AnimatePresence>
