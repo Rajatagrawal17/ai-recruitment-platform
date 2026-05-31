@@ -73,7 +73,7 @@ services:
     name: cognifit-frontend
     env: static
     plan: free
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: cd frontend && npm install --include=dev && npm run build
     staticPublishPath: ./frontend/build
     autoDeploy: true
     routes:
