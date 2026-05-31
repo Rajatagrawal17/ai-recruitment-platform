@@ -28,6 +28,7 @@ import { useSavedJobs } from "../context/SavedJobsContext";
 import { applyToJob, getCandidateApplications, getCandidateJobMatches, getJobs } from "../services/api";
 import JobCard from "../components/JobCard";
 import ApplyDrawer from "../components/ApplyDrawer";
+import SkeletonJobCard from "../components/SkeletonJobCard";
 import { toast } from "react-hot-toast";
 
 const JOB_TYPES = ["full-time", "part-time", "remote", "contract"];
@@ -163,7 +164,7 @@ function FiltersPanel({
                 setSuggestionIndex(-1);
               }}
               onKeyDown={handleSearchKeyDown}
-              placeholder="Search jobs"
+              placeholder="Search jobs by title, company or skill..."
               className="w-full rounded-2xl border border-white/10 bg-white/6 py-3 pl-10 pr-10 text-sm text-white outline-none transition focus:border-[#00D4FF]"
             />
             {searchInput && (
@@ -306,27 +307,27 @@ export default function JobsBrowser() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  useEffect(() => {
-    async function loadJobs() {
-      setLoading(true);
-      setLoadingMode("all");
-      try {
-        console.log('API URL:', process.env.REACT_APP_API_URL);
-        const response = await getJobs();
-        console.log('Fetch response status:', response.status);
-        const data = response.data;
-        console.log('Jobs data:', data);
-        setAllJobs(data.jobs || []);
-        setError("");
-      } catch (err) {
-        console.error('Jobs fetch error:', err);
-        setError(err.response?.data?.message || err.message || "Unable to load jobs right now.");
-        setAllJobs([]);
-      } finally {
-        setLoading(false);
-      }
+  const loadJobs = async () => {
+    setLoading(true);
+    setLoadingMode("all");
+    try {
+      console.log('API URL:', process.env.REACT_APP_API_URL);
+      const response = await getJobs();
+      console.log('Fetch response status:', response.status);
+      const data = response.data;
+      console.log('Jobs data:', data);
+      setAllJobs(data.jobs || []);
+      setError("");
+    } catch (err) {
+      console.error('Jobs fetch error:', err);
+      setError(err.response?.data?.message || err.message || "Unable to load jobs right now.");
+      setAllJobs([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     loadJobs();
   }, []);
 
@@ -468,6 +469,17 @@ export default function JobsBrowser() {
 
     return jobs;
   }, [baseJobs, debouncedSearch, selectedTypes, selectedExperience, selectedSkills, salaryMin, salaryMax, minMatch, sortBy, isCandidate, candidateMatchMap]);
+
+  const hasActiveFilters = useMemo(() => {
+    return Boolean(
+      debouncedSearch.trim() ||
+      selectedTypes.length > 0 ||
+      selectedExperience.length > 0 ||
+      selectedSkills.length > 0 ||
+      salaryMin ||
+      salaryMax
+    );
+  }, [debouncedSearch, selectedTypes, selectedExperience, selectedSkills, salaryMin, salaryMax]);
 
   function clearAllFilters() {
     setSearchInput("");
@@ -641,15 +653,15 @@ export default function JobsBrowser() {
           <header className="mb-6 rounded-3xl border border-white/8 bg-gradient-to-br from-white/[0.06] to-transparent p-5 backdrop-blur-sm sm:p-6">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
               <div>
-                <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#00D4FF]/20 bg-[#00D4FF]/8 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-[#00D4FF]">
-                  Discover Jobs
+                <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#00D4FF]/20 bg-[#00D4FF]/8 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[#00D4FF]">
+                  {displayCount} open positions
                 </div>
                 <h1 className="text-3xl font-bold text-white sm:text-4xl">Discover Jobs</h1>
                 <p className="mt-2 text-sm text-[#94A3B8] sm:text-base">
                   <span className="font-semibold text-white">
                     <CountUp end={displayCount} duration={0.8} preserveValue />
                   </span>{" "}
-                  positions available · AI-matched for you
+                  open positions available · AI-matched for you
                 </p>
               </div>
 
@@ -683,7 +695,7 @@ export default function JobsBrowser() {
                     setSuggestionIndex(-1);
                   }}
                   onKeyDown={handleSearchKeyDown}
-                  placeholder="Search jobs, companies, or skills..."
+                  placeholder="Search jobs by title, company or skill..."
                   className="w-full rounded-2xl border border-white/10 bg-white/6 py-3 pl-11 pr-12 text-white placeholder:text-[#64748B] outline-none transition focus:border-[#00D4FF] focus:bg-white/8"
                 />
                 {searchInput && (
@@ -726,45 +738,99 @@ export default function JobsBrowser() {
           </header>
 
           <div className="mb-6 flex items-center justify-between text-sm text-[#94A3B8]">
-            <span>Showing {displayCount} jobs</span>
+            <span>
+              {debouncedSearch || selectedTypes.length || selectedExperience.length || selectedSkills.length || salaryMin || salaryMax ? (
+                `${displayCount} ${displayCount === 1 ? 'job matches' : 'jobs match'} your search`
+              ) : (
+                `Showing ${displayCount} ${displayCount === 1 ? 'job' : 'jobs'}`
+              )}
+            </span>
             <div className="hidden items-center gap-2 lg:flex">
               <span className="text-[#00D4FF]">●</span>
               <span>{getSavedJobsCount()} saved jobs</span>
             </div>
           </div>
 
-          {error && (
-            <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-200">
-              {error}
-            </div>
-          )}
+          {/* Quick Filter Chips */}
+          <div className="mb-6 flex flex-wrap gap-2">
+            {[
+              { label: "Full Time", type: "type", value: "full-time" },
+              { label: "Remote", type: "type", value: "remote" },
+              { label: "Part Time", type: "type", value: "part-time" },
+              { label: "Entry Level", type: "experience", value: "junior" },
+              { label: "Senior", type: "experience", value: "senior" },
+              { label: "Contract", type: "type", value: "contract" },
+            ].map((chip) => {
+              const isActive = chip.type === "type" 
+                ? selectedTypes.includes(chip.value)
+                : selectedExperience.includes(chip.value);
+              
+              const handleToggle = () => {
+                if (chip.type === "type") {
+                  toggleType(chip.value);
+                } else {
+                  toggleExperience(chip.value);
+                }
+              };
+
+              return (
+                <button
+                  key={chip.label}
+                  onClick={handleToggle}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold tracking-wide transition-all duration-200 border ${
+                    isActive
+                      ? "bg-[#00D4FF] border-[#00D4FF] text-[#0A0F1E] shadow-[0_0_12px_rgba(0,212,255,0.25)]"
+                      : "bg-white/4 border-white/10 text-[#94A3B8] hover:border-white/20 hover:text-white"
+                  }`}
+                >
+                  {isActive && <Check size={12} />}
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
 
           {loading ? (
-            <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="rounded-2xl border border-white/8 bg-white/4 p-6">
-                  <div className="jobs-shimmer h-4 w-40 rounded-full" />
-                  <div className="jobs-shimmer mt-4 h-24 rounded-2xl" />
-                  <div className="jobs-shimmer mt-4 h-4 w-2/3 rounded-full" />
-                  <div className="jobs-shimmer mt-2 h-4 w-1/2 rounded-full" />
-                  <div className="jobs-shimmer mt-6 h-10 rounded-2xl" />
-                </div>
-              ))}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm text-[#94A3B8] animate-pulse">
+                <Loader2 className="animate-spin text-[#00D4FF]" size={16} />
+                <span>Loading opportunities...</span>
+              </div>
+              <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3 animate-fade-in">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <SkeletonJobCard key={index} />
+                ))}
+              </div>
             </div>
           ) : error ? (
             <div className="flex min-h-[60vh] flex-col items-center justify-center rounded-[28px] border border-red-500/20 bg-red-500/5 px-6 py-16 text-center animate-fade-in">
               <EmptyFolderIllustration />
-              <h2 className="mt-6 text-2xl font-bold text-red-400">Could not connect to server. Please try again.</h2>
-              <p className="mt-2 max-w-lg text-sm text-[#94A3B8]">Server is waking up... please wait 30 seconds and refresh</p>
-              <button onClick={() => window.location.reload()} className="mt-6 rounded-full bg-red-500 px-6 py-3 font-semibold text-white hover:opacity-90 transition">Refresh Page</button>
+              <h2 className="mt-6 text-2xl font-bold text-red-400">Taking longer than usual...</h2>
+              <p className="mt-2 max-w-lg text-sm text-[#94A3B8]">The server may be starting up. Refresh in 30 seconds.</p>
+              <div className="mt-6 flex justify-center gap-4">
+                <button onClick={loadJobs} className="inline-flex items-center gap-2 rounded-full bg-red-500 px-6 py-3 font-semibold text-white hover:opacity-90 transition shadow-lg shadow-red-500/20">
+                  Try again
+                </button>
+                <button onClick={() => window.location.reload()} className="rounded-full border border-white/10 bg-white/5 px-6 py-3 font-semibold text-white hover:bg-white/10 transition">
+                  Refresh
+                </button>
+              </div>
             </div>
           ) : filteredJobs.length === 0 ? (
-            <div className="flex min-h-[60vh] flex-col items-center justify-center rounded-[28px] border border-white/8 bg-white/[0.04] px-6 py-16 text-center">
-              <EmptyFolderIllustration />
-              <h2 className="mt-6 text-2xl font-bold text-white">No jobs match your filters</h2>
-              <p className="mt-2 max-w-lg text-sm text-[#94A3B8]">Try adjusting your search or clearing filters to reveal more opportunities.</p>
-              <button onClick={clearAllFilters} className="mt-6 rounded-full bg-[#00D4FF] px-6 py-3 font-semibold text-[#0A0F1E]">Clear Filters</button>
-            </div>
+            hasActiveFilters ? (
+              <div className="flex min-h-[60vh] flex-col items-center justify-center rounded-[28px] border border-white/8 bg-white/[0.04] px-6 py-16 text-center animate-fade-in">
+                <EmptyFolderIllustration />
+                <h2 className="mt-6 text-2xl font-bold text-white">No matches found</h2>
+                <p className="mt-2 max-w-lg text-sm text-[#94A3B8]">Try adjusting your search or clearing filters to reveal more opportunities.</p>
+                <button onClick={clearAllFilters} className="mt-6 rounded-full bg-[#00D4FF] px-6 py-3 font-semibold text-[#0A0F1E]">Clear Filters</button>
+              </div>
+            ) : (
+              <div className="flex min-h-[60vh] flex-col items-center justify-center rounded-[28px] border border-white/8 bg-white/[0.04] px-6 py-16 text-center animate-fade-in">
+                <Loader2 className="h-12 w-12 animate-spin text-[#00D4FF] mb-4" />
+                <h2 className="mt-2 text-2xl font-bold text-white">Jobs are loading...</h2>
+                <p className="mt-2 max-w-lg text-sm text-[#94A3B8]">Please wait while we fetch the latest opportunities.</p>
+              </div>
+            )
           ) : (
             <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
               <AnimatePresence mode="popLayout">
