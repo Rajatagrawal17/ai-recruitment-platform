@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import * as Dialog from "@radix-ui/react-dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import * as Slider from "@radix-ui/react-slider";
 import Select from "react-select";
 import CountUp from "react-countup";
@@ -582,7 +583,10 @@ export default function JobsBrowser() {
             >
               <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-white/15" />
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Smart Filters</h3>
+                <Dialog.Title className="text-lg font-semibold">Smart Filters</Dialog.Title>
+                <VisuallyHidden>
+                  <Dialog.Description>Filter jobs dynamically by categories, locations, skills, and match scores.</Dialog.Description>
+                </VisuallyHidden>
                 <Dialog.Close asChild>
                   <button className="rounded-full p-2 text-[#94A3B8] hover:bg-white/5 hover:text-white">
                     <X size={18} />
@@ -910,8 +914,8 @@ export default function JobsBrowser() {
                 <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="fixed left-1/2 top-1/2 z-[60] max-h-[88vh] w-[min(1100px,95vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-white/10 bg-[#0D1321] p-6 shadow-2xl outline-none">
                   <div className="mb-5 flex items-center justify-between">
                     <div>
-                      <h3 className="text-xl font-bold text-white">Compare Jobs</h3>
-                      <p className="text-sm text-[#94A3B8]">Side by side comparison of your shortlisted jobs.</p>
+                      <Dialog.Title className="text-xl font-bold text-white">Compare Jobs</Dialog.Title>
+                      <Dialog.Description className="text-sm text-[#94A3B8]">Side by side comparison of your shortlisted jobs.</Dialog.Description>
                     </div>
                     <Dialog.Close asChild>
                       <button className="rounded-full p-2 text-[#94A3B8] hover:bg-white/5 hover:text-white"><X size={18} /></button>

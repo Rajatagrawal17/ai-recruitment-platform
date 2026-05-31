@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { useDropzone } from "react-dropzone";
 import { useInView } from "react-intersection-observer";
@@ -169,6 +170,10 @@ const ApplyDrawer = ({ open, onOpenChange, job, onSuccess }) => {
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed right-0 top-0 z-[60] flex h-full w-full flex-col border-l border-[#00D4FF]/20 bg-[#0D1321] text-white shadow-2xl outline-none md:w-[520px]"
           >
+            <VisuallyHidden>
+              <Dialog.Title>Apply for {job.title}</Dialog.Title>
+              <Dialog.Description>Submit your application details for the job role.</Dialog.Description>
+            </VisuallyHidden>
             <div className="flex items-start justify-between border-b border-white/8 px-5 py-4">
               <div className="min-w-0 pr-4">
                 <p className="truncate text-[1.3rem] font-bold text-white">{job.title}</p>
