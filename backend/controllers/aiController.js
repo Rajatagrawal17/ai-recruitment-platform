@@ -1028,17 +1028,14 @@ exports.generateResumeImprovements = async (req, res) => {
   }
 };
 
-const getMockScoreResult = (jd = "", cv = "") => {
-  const score = Math.floor(55 + Math.random() * 35); // 55 to 90
+const getMockScoreResult = (jd = "", cv = "", keywordScore = 70, formatScore = 80) => {
+  const experienceScore = Math.floor(60 + Math.random() * 30);
+  const educationScore = Math.floor(70 + Math.random() * 25);
+  const achievementScore = Math.floor(65 + Math.random() * 30);
   return {
-    overallScore: score,
-    atsFriendly: score >= 70,
-    sections: [
-      { name: "Professional Experience", score: Math.round(score * 0.95), feedback: "Great detail on achievements and metrics. Highlight key leadership duties more clearly." },
-      { name: "Skills Alignment", score: Math.round(score * 0.88), feedback: "Found match for Python, React, and SQL. Consider adding Docker or Kubernetes." },
-      { name: "Education & Certifications", score: Math.round(score * 1.02) > 100 ? 100 : Math.round(score * 1.02), feedback: "Degree and certifications are clearly laid out in chronological order." },
-      { name: "ATS Formatting", score: score >= 75 ? 90 : 65, feedback: score >= 75 ? "Excellent format. Standard headings used." : "Tables or complex columns detected. Consider using a single-column layout." }
-    ],
+    experienceScore,
+    educationScore,
+    achievementScore,
     topStrengths: [
       "Quantifiable metrics in work experience (e.g. revenue, speedups)",
       "Strong alignment in frontend technology stacks",
@@ -1055,8 +1052,7 @@ const getMockScoreResult = (jd = "", cv = "") => {
       "Explicitly list certification names instead of abbreviations"
     ],
     verdict: "Strong matching candidate with minor structural adjustments needed for ATS screens.",
-    keywordsFound: ["React", "JavaScript", "Python", "SQL", "Git", "REST APIs"],
-    keywordsMissed: ["Docker", "Kubernetes", "AWS", "CI/CD", "Agile", "Scrum"]
+    rewriteSuggestion: "Add AWS Cloud optimization and CI/CD pipelines to your professional experience section."
   };
 };
 
@@ -1071,7 +1067,7 @@ const getMockSectionImprovement = (sectionName, text, jd) => {
 
 exports.scoreResumeWithAI = async (req, res) => {
   try {
-    const { jobDescription, cvText } = req.body;
+    const { jobDescription, cvText, keywordResult = { score: 70, found: [], missing: [] }, formatResult = { formatScore: 80, issues: [], warnings: [] } } = req.body;
 
     if (!jobDescription || !cvText) {
       return res.status(400).json({
@@ -1081,7 +1077,7 @@ exports.scoreResumeWithAI = async (req, res) => {
     }
 
     if (IS_DEMO_MODE || !helpAnthropic) {
-      const mockResult = getMockScoreResult(jobDescription, cvText);
+      const mockResult = getMockScoreResult(jobDescription, cvText, keywordResult.score, formatResult.formatScore);
       return res.status(200).json({
         success: true,
         data: mockResult,
@@ -1089,30 +1085,46 @@ exports.scoreResumeWithAI = async (req, res) => {
       });
     }
 
-    const systemPrompt = `You are an expert ATS system and senior recruiter with 15 years experience. Analyse the CV against the job description thoroughly.`;
-    const userPrompt = `Job Description: ${jobDescription}
-      
-      CV: ${cvText}
-      
-      Return ONLY valid JSON with this exact structure:
-      {
-        "overallScore": number 0-100,
-        "atsFriendly": boolean,
-        "sections": [
-          { "name": string, "score": number, "feedback": string }
-        ],
-        "topStrengths": [string, string, string],
-        "criticalGaps": [string, string, string],
-        "quickWins": [string, string, string],
-        "verdict": string under 20 words,
-        "keywordsFound": [string array],
-        "keywordsMissed": [string array]
-      }`;
+    const systemPrompt = `You are an expert ATS system and recruiter.
+      Score CVs against job descriptions using a precise rubric.
+      Be strict and consistent. Always return valid JSON only.`;
+
+    const userPrompt = `Score this CV against the job description.
+        
+        KEYWORDS ALREADY FOUND: ${keywordResult.found.join(', ')}
+        KEYWORDS MISSING: ${keywordResult.missing.join(', ')}
+        KEYWORD SCORE (pre-calculated): ${keywordResult.score}/100
+        FORMAT SCORE (pre-calculated): ${formatResult.formatScore}/100
+        
+        Job Description: ${jobDescription.slice(0, 1000)}
+        
+        CV: ${cvText.slice(0, 2000)}
+        
+        Using this FIXED RUBRIC (do not change weights):
+        - Keywords match: 40% weight 
+          (already scored: ${keywordResult.score})
+        - Work experience relevance: 25% weight
+        - Education match: 15% weight  
+        - CV format/structure: 10% weight 
+          (already scored: ${formatResult.formatScore})
+        - Achievements and impact: 10% weight
+        
+        Return ONLY valid JSON:
+        {
+          "experienceScore": number 0-100,
+          "educationScore": number 0-100,
+          "achievementScore": number 0-100,
+          "topStrengths": ["string","string","string"],
+          "criticalGaps": ["string","string","string"],
+          "quickWins": ["string","string","string"],
+          "verdict": "string under 20 words",
+          "rewriteSuggestion": "string - one specific improvement using missing keywords"
+        }`;
 
     const response = await helpAnthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 1500,
-      temperature: 0.3,
+      temperature: 0.0,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
@@ -1132,7 +1144,8 @@ exports.scoreResumeWithAI = async (req, res) => {
 
   } catch (error) {
     console.error("AI scoring error:", error);
-    const mockResult = getMockScoreResult(req.body.jobDescription, req.body.cvText);
+    const { keywordResult = { score: 70 }, formatResult = { formatScore: 80 } } = req.body;
+    const mockResult = getMockScoreResult(req.body.jobDescription, req.body.cvText, keywordResult.score, formatResult.formatScore);
     return res.status(200).json({
       success: true,
       data: mockResult,

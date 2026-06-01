@@ -2,6 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSavedJobs } from "../context/SavedJobsContext";
 import { scoreResume, improveResumeSection } from "../services/api";
+import { 
+  extractJDKeywords, 
+  checkCVKeywords,
+  checkATSFormat 
+} from '../utils/atsParser';
 import {
   FileText,
   Upload,
@@ -24,17 +29,14 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-const getMockScoreResult = (jd = "", cv = "") => {
-  const score = Math.floor(55 + Math.random() * 35); // 55 to 90
+const getMockScoreResult = (jd = "", cv = "", keywordScore = 70, formatScore = 80) => {
+  const experienceScore = Math.floor(60 + Math.random() * 30);
+  const educationScore = Math.floor(70 + Math.random() * 25);
+  const achievementScore = Math.floor(65 + Math.random() * 30);
   return {
-    overallScore: score,
-    atsFriendly: score >= 70,
-    sections: [
-      { name: "Professional Experience", score: Math.round(score * 0.95), feedback: "Great detail on achievements and metrics. Highlight key leadership duties more clearly." },
-      { name: "Skills Alignment", score: Math.round(score * 0.88), feedback: "Found match for Python, React, and SQL. Consider adding Docker or Kubernetes." },
-      { name: "Education & Certifications", score: Math.min(100, Math.round(score * 1.02)), feedback: "Degree and certifications are clearly laid out in chronological order." },
-      { name: "ATS Formatting", score: score >= 75 ? 90 : 65, feedback: score >= 75 ? "Excellent format. Standard headings used." : "Tables or complex columns detected. Consider using a single-column layout." }
-    ],
+    experienceScore,
+    educationScore,
+    achievementScore,
     topStrengths: [
       "Quantifiable metrics in work experience (e.g. revenue, speedups)",
       "Strong alignment in frontend technology stacks",
@@ -51,8 +53,7 @@ const getMockScoreResult = (jd = "", cv = "") => {
       "Explicitly list certification names instead of abbreviations"
     ],
     verdict: "Strong matching candidate with minor structural adjustments needed for ATS screens.",
-    keywordsFound: ["React", "JavaScript", "Python", "SQL", "Git", "REST APIs"],
-    keywordsMissed: ["Docker", "Kubernetes", "AWS", "CI/CD", "Agile", "Scrum"]
+    rewriteSuggestion: "Add AWS Cloud optimization and CI/CD pipelines to your professional experience section."
   };
 };
 
@@ -151,7 +152,6 @@ export default function ResumeScorePage() {
     setLowestSection(null);
 
     // Simulate animated loading steps
-    // Step 1: 0.5s, Step 2: 1s, Step 3: 1.5s, Step 4: 2s
     const stepsConfig = [500, 1000, 1500, 2000];
     let stepCount = 0;
     
@@ -162,14 +162,46 @@ export default function ResumeScorePage() {
     });
 
     try {
+      // Step 1: Pre-extract keywords locally (no API)
+      const jdKeywords = extractJDKeywords(jobDescription);
+      const keywordResult = checkCVKeywords(cvText, jdKeywords.allKeywords);
+      const formatResult = checkATSFormat(cvText);
+
       // Call Backend API
-      const res = await scoreResume({ jobDescription, cvText });
-      const apiData = res.data.data;
+      const res = await scoreResume({ jobDescription, cvText, keywordResult, formatResult });
+      const aiResult = res.data.data;
       
+      // Step 3: Calculate final score using fixed rubric
+      const finalScore = Math.round(
+        (keywordResult.score * 0.40) +
+        (aiResult.experienceScore * 0.25) +
+        (aiResult.educationScore * 0.15) +
+        (formatResult.formatScore * 0.10) +
+        (aiResult.achievementScore * 0.10)
+      );
+
       // Wait for animations to finish before showing results
       const totalTime = stepsConfig.reduce((a, b) => a + b, 0);
       setTimeout(() => {
-        setResults(apiData);
+        setResults({
+          overallScore: finalScore,
+          keywordScore: keywordResult.score,
+          experienceScore: aiResult.experienceScore,
+          educationScore: aiResult.educationScore,
+          formatScore: formatResult.formatScore,
+          achievementScore: aiResult.achievementScore,
+          keywordsFound: keywordResult.found,
+          keywordsMissing: keywordResult.missing,
+          formatIssues: formatResult.issues,
+          formatWarnings: formatResult.warnings,
+          topStrengths: aiResult.topStrengths,
+          criticalGaps: aiResult.criticalGaps,
+          quickWins: aiResult.quickWins,
+          verdict: aiResult.verdict,
+          rewriteSuggestion: aiResult.rewriteSuggestion,
+          atsFriendly: formatResult.issues.length === 0,
+          provider: res.data.provider || "Claude AI"
+        });
         setLoading(false);
       }, Math.max(0, totalTime - 500));
 
@@ -177,8 +209,36 @@ export default function ResumeScorePage() {
       console.warn("Backend API error, falling back to local simulation", err);
       // Fallback
       setTimeout(() => {
-        const mockRes = getMockScoreResult(jobDescription, cvText);
-        setResults(mockRes);
+        const jdKeywords = extractJDKeywords(jobDescription);
+        const keywordResult = checkCVKeywords(cvText, jdKeywords.allKeywords);
+        const formatResult = checkATSFormat(cvText);
+        const mockResult = getMockScoreResult(jobDescription, cvText, keywordResult.score, formatResult.formatScore);
+        const finalScore = Math.round(
+          (keywordResult.score * 0.40) +
+          (mockResult.experienceScore * 0.25) +
+          (mockResult.educationScore * 0.15) +
+          (formatResult.formatScore * 0.10) +
+          (mockResult.achievementScore * 0.10)
+        );
+        setResults({
+          overallScore: finalScore,
+          keywordScore: keywordResult.score,
+          experienceScore: mockResult.experienceScore,
+          educationScore: mockResult.educationScore,
+          formatScore: formatResult.formatScore,
+          achievementScore: mockResult.achievementScore,
+          keywordsFound: keywordResult.found,
+          keywordsMissing: keywordResult.missing,
+          formatIssues: formatResult.issues,
+          formatWarnings: formatResult.warnings,
+          topStrengths: mockResult.topStrengths,
+          criticalGaps: mockResult.criticalGaps,
+          quickWins: mockResult.quickWins,
+          verdict: mockResult.verdict,
+          rewriteSuggestion: mockResult.rewriteSuggestion,
+          atsFriendly: formatResult.issues.length === 0,
+          provider: "Mock AI (Fallback)"
+        });
         setLoading(false);
       }, stepsConfig.reduce((a, b) => a + b, 0));
     }
@@ -208,12 +268,17 @@ export default function ResumeScorePage() {
 
   // Section Improvement API Handler
   const handleImproveSection = async () => {
-    if (!results || !results.sections) return;
+    if (!results) return;
 
-    // Find the weakest section (minimum score)
-    const weakest = results.sections.reduce(
+    // Find the weakest section (minimum score) of experience, education, achievements
+    const options = [
+      { name: "Professional Experience", score: results.experienceScore },
+      { name: "Education & Certifications", score: results.educationScore },
+      { name: "Achievements & Impact", score: results.achievementScore }
+    ];
+    const weakest = options.reduce(
       (min, sec) => (sec.score < min.score ? sec : min),
-      results.sections[0]
+      options[0]
     );
 
     setLowestSection(weakest);
@@ -227,7 +292,7 @@ export default function ResumeScorePage() {
       const trimmed = line.trim().toLowerCase();
       if (!trimmed) return false;
       return (
-        trimmed.includes(weakest.name.toLowerCase()) ||
+        trimmed.includes(weakest.name.split(" ")[0].toLowerCase()) ||
         weakest.name.toLowerCase().includes(trimmed)
       );
     });
@@ -246,7 +311,8 @@ export default function ResumeScorePage() {
       const res = await improveResumeSection({
         sectionName: weakest.name,
         currentText: originalSecText,
-        jobDescription
+        jobDescription,
+        keywordsMissing: results.keywordsMissing
       });
 
       const improved = res.data.data.improvedText;
@@ -625,7 +691,13 @@ export default function ResumeScorePage() {
                     <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-300">Category breakdown</h4>
                     
                     <div className="space-y-4 pt-1">
-                      {results.sections.map((section, idx) => (
+                      {[
+                        { name: "Keywords match (40%)", score: results.keywordScore },
+                        { name: "Work experience (25%)", score: results.experienceScore },
+                        { name: "Education (15%)", score: results.educationScore },
+                        { name: "Format / structure (10%)", score: results.formatScore },
+                        { name: "Achievements (10%)", score: results.achievementScore },
+                      ].map((section, idx) => (
                         <div key={section.name} className="space-y-2">
                           <div className="flex items-center justify-between text-xs font-medium">
                             <span className="text-slate-200">{section.name}</span>
@@ -642,14 +714,46 @@ export default function ResumeScorePage() {
                               style={{ backgroundColor: getScoreColor(section.score) }}
                             />
                           </div>
-
-                          <p className="text-[11px] text-slate-400 leading-relaxed pl-1">
-                            {section.feedback}
-                          </p>
                         </div>
                       ))}
                     </div>
                   </div>
+
+                  {/* FORMAT ISSUES */}
+                  {results.formatIssues && results.formatIssues.length > 0 && (
+                    <div className="rounded-2xl border border-red-500/10 bg-red-500/5 p-5 space-y-3">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-red-400 flex items-center gap-1.5 border-b border-red-500/10 pb-2">
+                        <AlertCircle size={14} />
+                        Format Issues Detected
+                      </h4>
+                      <div className="grid gap-2">
+                        {results.formatIssues.map((issue, idx) => (
+                          <div key={idx} className="flex items-start gap-2.5 rounded-xl bg-red-500/10 border border-red-500/20 p-3.5 text-xs text-red-300">
+                            <XCircle size={14} className="shrink-0 text-red-400 mt-0.5" />
+                            <span>{issue}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* FORMAT WARNINGS */}
+                  {results.formatWarnings && results.formatWarnings.length > 0 && (
+                    <div className="rounded-2xl border border-amber-500/10 bg-amber-500/5 p-5 space-y-3">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5 border-b border-amber-500/10 pb-2">
+                        <AlertCircle size={14} />
+                        Format Warnings
+                      </h4>
+                      <div className="grid gap-2">
+                        {results.formatWarnings.map((warning, idx) => (
+                          <div key={idx} className="flex items-start gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 p-3.5 text-xs text-amber-300">
+                            <AlertCircle size={14} className="shrink-0 text-amber-400 mt-0.5" />
+                            <span>{warning}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* 3 COLUMNS: STRENGTHS, GAPS, WINS */}
                   <div className="grid gap-5 md:grid-cols-3">
@@ -722,12 +826,15 @@ export default function ResumeScorePage() {
 
                     {/* Missed Keywords */}
                     <div className="space-y-2 pt-2 border-t border-white/5">
-                      <span className="text-[10px] text-red-400 font-medium uppercase tracking-wider block">Keywords Missed ({results.keywordsMissed.length})</span>
+                      <span className="text-[10px] text-red-400 font-medium uppercase tracking-wider block">Keywords Missed ({results.keywordsMissing.length})</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {results.keywordsMissed.map(kw => (
-                          <span key={kw} className="rounded-full bg-red-500/10 border border-red-500/25 px-2.5 py-1 text-[10px] text-red-300">
-                            {kw}
-                          </span>
+                        {results.keywordsMissing.map(kw => (
+                          <div key={kw} className="group relative inline-flex items-center gap-1.5 rounded-full bg-red-500/10 border border-red-500/25 px-2.5 py-1 text-[10px] text-red-300">
+                            <span>{kw}</span>
+                            <span className="text-[8px] bg-red-500/20 text-red-400 px-1 rounded hover:bg-red-500/30 cursor-help" title={`Add this keyword naturally to your CV text.`}>
+                              Add to CV
+                            </span>
+                          </div>
                         ))}
                       </div>
                     </div>
