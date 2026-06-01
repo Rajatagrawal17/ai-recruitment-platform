@@ -186,14 +186,35 @@ const UserProfileCard = () => {
               ? "✅ Profile complete! You're ready for AI recommendations"
               : `${100 - displayPercent}% to go. Complete your profile to unlock AI-powered recommendations`}
           </p>
-          {profileCompleteness < 100 && (
+          <div className="flex flex-wrap gap-3 mt-4">
+            {profileCompleteness < 100 && (
+              <Link 
+                to="/complete-profile" 
+                style={{
+                  display: 'inline-block',
+                  padding: '0.5rem 1rem',
+                  background: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+                  color: 'white',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  fontWeight: '600',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+              >
+                Complete Profile →
+              </Link>
+            )}
             <Link 
-              to="/complete-profile" 
+              to="/cover-letter" 
               style={{
                 display: 'inline-block',
-                marginTop: '1rem',
                 padding: '0.5rem 1rem',
-                background: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'rgba(255, 255, 255, 0.04)',
                 color: 'white',
                 borderRadius: '6px',
                 textDecoration: 'none',
@@ -205,9 +226,9 @@ const UserProfileCard = () => {
               onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
               onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
             >
-              Complete Profile →
+              ✨ AI Cover Letter
             </Link>
-          )}
+          </div>
         </motion.div>
       </div>
     </motion.div>

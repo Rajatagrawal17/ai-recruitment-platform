@@ -1204,3 +1204,169 @@ exports.improveResumeSection = async (req, res) => {
     });
   }
 };
+
+// Helper function to generate mock cover letter
+const getMockCoverLetter = (candidateName, jobTitle, company, highlights, tone, length) => {
+  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const comp = company || "TechCorp";
+  const title = jobTitle || "Software Engineer";
+  
+  let intro = "";
+  let body1 = "";
+  let body2 = "";
+  let closing = "";
+  
+  if (tone === "Friendly") {
+    intro = `I was absolutely thrilled to see the opening for the ${title} position at ${comp}! I’ve been following ${comp}'s journey for a while now, and I’m incredibly excited about the opportunity to contribute to your team.`;
+    body1 = `With my background in software development and my focus on key achievements like ${highlights || "delivering high-quality code and collaborating with cross-functional teams"}, I feel my skills align wonderfully with this role. I love tackling challenging problems and working alongside passionate people to build products that make a difference.`;
+    body2 = `What excites me most about ${comp} is your culture of innovation and collaboration. I would love to bring my positive energy, dedication, and technical skills to your team.`;
+    closing = `Thank you so much for your time and consideration. I would love the chance to chat and share more about how my background can help ${comp} reach its goals.
+
+Warmest regards,
+
+${candidateName}`;
+  } else if (tone === "Bold") {
+    intro = `If you are looking for a driven, results-oriented ${title} who can hit the ground running and make an immediate impact at ${comp}, look no further. I am writing to express my strong interest in joining your team.`;
+    body1 = `My track record of success is built on a foundation of solid execution. Highlights of my experience include: ${highlights || "leading successful project deployments, optimizing application performance, and implementing robust architecture"}. I don't just write code; I deliver business value and build scalable solutions.`;
+    body2 = `I am drawn to ${comp} because you are pushing boundaries in the industry, and that is exactly the kind of environment where I thrive. I am confident that my skill set and proactive approach will help drive your projects forward.`;
+    closing = `Let's connect to discuss how I can help ${comp} achieve its upcoming milestone. Thank you for your time.
+
+Sincerely,
+
+${candidateName}`;
+  } else if (tone === "Concise") {
+    intro = `I am writing to apply for the ${title} position at ${comp}. With a strong background in software engineering, I am confident in my ability to add value to your team.`;
+    body1 = `Key highlights of my experience include: ${highlights || "developing high-performance web applications, managing databases, and working in agile teams"}. I specialize in creating clean, maintainable code and solving complex technical challenges.`;
+    body2 = `I am eager to apply my expertise to support ${comp}'s objectives. I appreciate your time and consideration of my application.`;
+    closing = `Best regards,
+
+${candidateName}`;
+  } else if (tone === "Story-driven") {
+    intro = `My journey into technology started with a simple curiosity: how do we build things that scale? That curiosity has driven me to become a passionate ${title}, and it's what makes me so excited about the opportunity at ${comp}.`;
+    body1 = `Over the years, I've had the privilege of working on some incredible challenges. One of the achievements I am most proud of is ${highlights || "building responsive, user-friendly platforms and optimizing workflows"}. These experiences taught me that great software isn't just about code—it's about empathy for the user and collaboration with the team.`;
+    body2 = `When I look at ${comp}'s mission, I see a perfect alignment with my own values. I want to bring my storytelling approach to problem-solving and technical expertise to your mission.`;
+    closing = `I look forward to the possibility of discussing how my unique story and skills can contribute to the team's success. Thank you for your time.
+
+Best regards,
+
+${candidateName}`;
+  } else {
+    // Professional
+    intro = `I am writing to express my strong interest in the ${title} position at ${comp}. With my background in software engineering and a proven track record of delivering robust solutions, I am confident in my suitability for this role.`;
+    body1 = `Throughout my career, I have focused on developing scalable applications and driving technical excellence. A few key highlights that align with your requirements include: ${highlights || "collaborating with cross-functional teams, implementing best practices in software design, and troubleshooting complex issues"}.`;
+    body2 = `I am impressed by ${comp}'s commitment to quality and innovation. I am eager to contribute my technical skills and professional dedication to your engineering team.`;
+    closing = `Thank you for your time and consideration. I welcome the opportunity to discuss how my qualifications align with your needs in a future interview.
+
+Sincerely,
+
+${candidateName}`;
+  }
+
+  let body = "";
+  if (length === "Short") {
+    body = `${intro}\n\n${body1}\n\n${closing}`;
+  } else if (length === "Long") {
+    body = `${intro}\n\n${body1}\n\n${body2}\n\nI believe my skills in modern web development, combined with my commitment to continuous learning, make me an excellent candidate for the team. I look forward to hearing from you regarding next steps.\n\n${closing}`;
+  } else {
+    // Medium
+    body = `${intro}\n\n${body1}\n\n${body2}\n\n${closing}`;
+  }
+
+  return `${dateStr}\n\nTo,\nThe Hiring Manager\n${comp}\n\n${body}`;
+};
+
+// Cover letter generator API controller
+exports.generateCoverLetter = async (req, res) => {
+  try {
+    const { jobId, jobTitle, jobDescription, company, highlights, tone, length } = req.body;
+    const candidateName = req.user?.name || "Candidate";
+    
+    let resolvedJobTitle = jobTitle;
+    let resolvedJobDescription = jobDescription;
+    let resolvedCompany = company;
+
+    if (jobId) {
+      const job = await Job.findById(jobId);
+      if (job) {
+        resolvedJobTitle = job.title;
+        resolvedJobDescription = job.description;
+        resolvedCompany = job.company;
+      }
+    }
+
+    const cleanedDescription = (resolvedJobDescription || "").trim();
+    const cleanedHighlights = (highlights || "").trim();
+    
+    if (IS_DEMO_MODE || !helpAnthropic) {
+      const mockLetter = getMockCoverLetter(candidateName, resolvedJobTitle, resolvedCompany, cleanedHighlights, tone, length);
+      return res.status(200).json({
+        success: true,
+        data: {
+          coverLetter: mockLetter,
+        },
+        provider: "Mock AI (Demo Mode)"
+      });
+    }
+
+    const prompt = `Write a cover letter for the following job:
+Job Title: ${resolvedJobTitle || "Not specified"}
+Company: ${resolvedCompany || "Not specified"}
+Job Description:
+${cleanedDescription || "Not specified"}
+
+Candidate Name: ${candidateName}
+Key achievements or experiences to highlight:
+${cleanedHighlights || "None specified, focus on matching skills"}
+
+Desired Tone: ${tone || "Professional"}
+Target Length: ${length || "Medium"} (Short is approx 150 words, Medium is approx 250 words, Long is approx 350 words)
+
+Instructions:
+1. Format the cover letter professionally with:
+   - Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+   - Recipient: "Hiring Manager" (or a specific hiring manager name if found in the job description)
+   - Company address (optional/generic if not in JD)
+   - Salutation (e.g. "Dear Hiring Manager," or specific name)
+   - Body paragraphs matching the requested tone (${tone}) and length (${length}).
+   - Sign-off (e.g. "Sincerely," or "Best regards,") followed by the candidate's name: ${candidateName}.
+2. Ensure the tone fits the selected pill:
+   - "Professional": formal, articulate, polite, business-standard.
+   - "Friendly": warm, enthusiastic, approachable, yet respectful.
+   - "Bold": confident, action-oriented, showing high drive, standout opening hook.
+   - "Concise": direct, to-the-point, high impact with fewer sentences, matching the Short length perfectly.
+   - "Story-driven": narrative style, starting with a hook about their passion or experience, engaging journey.
+3. The content must be realistic and tailor the candidate's profile to the job description. Do not invent unrealistic experiences beyond the highlights.
+4. Return ONLY the final formatted cover letter. Do not include any introductory text, notes, markdown formatting like \`\`\` or explanations before or after. Start directly with the date.`;
+
+    const response = await helpAnthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1500,
+      temperature: 0.5,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const coverLetter = response.content?.find((item) => item.type === "text")?.text || "";
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        coverLetter: coverLetter.trim(),
+      },
+      provider: "Claude AI"
+    });
+
+  } catch (error) {
+    console.error("AI cover letter generation error:", error);
+    const { jobTitle, company, highlights, tone, length } = req.body;
+    const candidateName = req.user?.name || "Candidate";
+    const mockLetter = getMockCoverLetter(candidateName, jobTitle, company, highlights, tone, length);
+    return res.status(200).json({
+      success: true,
+      data: {
+        coverLetter: mockLetter,
+      },
+      provider: "Mock AI (Fallback)",
+      error: error.message
+    });
+  }
+};
