@@ -109,13 +109,22 @@ const NavbarFixed = () => {
           )}
 
           {isLoggedIn && role === "candidate" && (
-            <Link
-              to="/apply"
-              onMouseEnter={() => import("../pages/JobsPage").catch(() => {})}
-              className="rounded-full px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-soft hover:text-text"
-            >
-              Apply Jobs
-            </Link>
+            <>
+              <Link
+                to="/apply"
+                onMouseEnter={() => import("../pages/JobsPage").catch(() => {})}
+                className="rounded-full px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-soft hover:text-text"
+              >
+                Apply Jobs
+              </Link>
+              <Link
+                to="/resume-score"
+                onMouseEnter={() => import("../pages/ResumeScorePage").catch(() => {})}
+                className="rounded-full px-4 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-soft hover:text-text"
+              >
+                AI Scorer
+              </Link>
+            </>
           )}
         </nav>
 
@@ -270,13 +279,22 @@ const NavbarFixed = () => {
               {isLoggedIn && (
                 <>
                   {role === "candidate" && (
-                    <Link
-                      to="/apply"
-                      onClick={closeAll}
-                      className="block rounded-lg px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface-soft"
-                    >
-                      Apply Jobs
-                    </Link>
+                    <>
+                      <Link
+                        to="/apply"
+                        onClick={closeAll}
+                        className="block rounded-lg px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface-soft"
+                      >
+                        Apply Jobs
+                      </Link>
+                      <Link
+                        to="/resume-score"
+                        onClick={closeAll}
+                        className="block rounded-lg px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface-soft"
+                      >
+                        AI Scorer
+                      </Link>
+                    </>
                   )}
 
                   <button

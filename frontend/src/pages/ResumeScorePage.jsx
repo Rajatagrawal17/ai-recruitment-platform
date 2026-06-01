@@ -578,7 +578,7 @@ export default function ResumeScorePage() {
                             strokeDasharray="440"
                             initial={{ strokeDashoffset: 440 }}
                             animate={{ strokeDashoffset: 440 - (440 * results.overallScore) / 100 }}
-                            transition={{ duration: 1.5, ease: "easeOut" }}
+                            transition={{ duration: 1.2, ease: "easeOut" }}
                             strokeLinecap="round"
                           />
                         </svg>
