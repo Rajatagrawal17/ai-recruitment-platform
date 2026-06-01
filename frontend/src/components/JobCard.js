@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Bookmark, BookmarkCheck, MapPin, Calendar, Users } from "lucide-react";
+import { Bookmark, BookmarkCheck, MapPin, Calendar, Users, Briefcase } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSavedJobs } from "../context/SavedJobsContext";
 import "./JobCard.css";
@@ -12,18 +12,40 @@ function getAvatarColor(name) {
   return colors[index];
 }
 
-const formatSalary = (salary) => {
-  if (!salary) return 'Salary not specified';
-  if (typeof salary === 'string') return salary;
-  if (salary.min && salary.max) {
-    return `₹${Number(salary.min).toLocaleString()} - ₹${Number(salary.max).toLocaleString()}`;
+const getEstimatedSalary = (title = '', salary) => {
+  if (salary) {
+    if (typeof salary === 'string') return salary;
+    if (salary.min && salary.max) {
+      return `₹${Number(salary.min).toLocaleString()} - ₹${Number(salary.max).toLocaleString()}`;
+    }
+    if (salary.min) return `From ₹${Number(salary.min).toLocaleString()}`;
   }
-  if (salary.min) return `From ₹${Number(salary.min).toLocaleString()}`;
-  if (typeof salary === "number" && salary > 0) {
-    const lpa = Math.max(1, Math.round(salary / 100000));
-    return `₹${Math.max(1, Math.round(lpa * 0.85))} - ₹${Math.max(1, Math.round(lpa * 1.15))} LPA`;
-  }
-  return "Negotiable";
+  const t = title.toLowerCase();
+  if (t.includes('react') || t.includes('frontend') || t.includes('vue')) return '₹8L-18L';
+  if (t.includes('backend') || t.includes('node') || t.includes('java')) return '₹10L-22L';
+  if (t.includes('senior') || t.includes('lead') || t.includes('principal')) return '₹18L-35L';
+  if (t.includes('data') || t.includes('ml') || t.includes('ai') || t.includes('python')) return '₹15L-30L';
+  if (t.includes('designer') || t.includes('ui') || t.includes('ux')) return '₹6L-14L';
+  if (t.includes('devops') || t.includes('cloud') || t.includes('aws')) return '₹12L-25L';
+  return '₹6L-15L';
+};
+
+const highlightText = (text, search) => {
+  if (!search || !text) return text;
+  const parts = text.split(new RegExp(`(${search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi'));
+  return (
+    <span>
+      {parts.map((part, i) => 
+        part.toLowerCase() === search.toLowerCase() ? (
+          <mark key={i} className="bg-yellow-400/30 text-yellow-200 rounded px-0.5">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </span>
+  );
 };
 
 const JobCard = ({
@@ -35,15 +57,25 @@ const JobCard = ({
   onApply,
   onSaveToggle,
   isSaved = false,
+  searchQuery = ""
 }) => {
   const navigate = useNavigate();
   const { toggleSaveJob } = useSavedJobs();
-  const [animateBookmark, setAnimateBookmark] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleSave = (event) => {
     event.stopPropagation();
-    setAnimateBookmark(true);
-    setTimeout(() => setAnimateBookmark(false), 400);
     if (onSaveToggle) onSaveToggle(job);
     else toggleSaveJob(job);
   };
@@ -61,10 +93,6 @@ const JobCard = ({
     else navigate(`/jobs/${job._id}`);
   };
 
-  const isNew = job.createdAt 
-    ? (Date.now() - new Date(job.createdAt).getTime()) < 24 * 60 * 60 * 1000 
-    : false;
-
   const postedLabel = job.createdAt
     ? formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })
     : "Recently";
@@ -72,151 +100,227 @@ const JobCard = ({
   const companyInitials = (job.company || "J").charAt(0).toUpperCase();
   const avatarBgColor = getAvatarColor(job.company || "Company");
   
-  const score = Number(matchScore || job.matchScore || 0);
+  const companyNameShort = job.company && job.company.length > 10
+    ? job.company.slice(0, 9) + '…'
+    : job.company || 'Company';
 
-  const skills = job.skills || [];
-  const visibleSkills = skills.slice(0, 3);
-  const extraSkillsCount = skills.length - visibleSkills.length;
+  const score = Number(matchScore || job.matchScore || 0);
+  const salaryText = getEstimatedSalary(job.title, job.salary);
 
   return (
     <motion.div
       onClick={handleView}
-      className="job-card glass-card"
-      whileHover={{ y: -4, borderColor: "rgba(99, 102, 241, 0.4)", boxShadow: "var(--shadow-lg)" }}
-      whileTap={{ y: -2 }}
-      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: isMobile ? '12px' : '20px',
+        width: '100%',
+        padding: '18px 24px',
+        background: isHovered ? 'rgba(22,33,62,0.95)' : 'rgba(22,33,62,0.8)',
+        backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderLeft: isHovered ? '3px solid #6366f1' : '1px solid rgba(255,255,255,0.06)',
+        borderRadius: '14px',
+        marginBottom: '10px',
+        cursor: 'pointer',
+        transition: 'all 0.18s ease',
+        boxSizing: 'border-box',
+        transform: isHovered ? 'translateX(3px)' : 'none',
+      }}
     >
-      {/* Card Header */}
-      <div className="card-header flex items-start justify-between gap-3 w-full">
-        <div className="flex items-center gap-3">
-          {/* Company Logo / Initials Avatar */}
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-sm"
-            style={{ background: `linear-gradient(135deg, ${avatarBgColor} 0%, ${avatarBgColor}88 100%)` }}
-          >
-            {companyInitials}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm text-slate-200">{job.company}</span>
-              <span className="inline-flex items-center gap-1 rounded bg-white/5 px-2 py-0.5 text-xs text-slate-300">
-                <MapPin size={10} className="text-[#6366f1]" />
-                {job.location || "Remote"}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-slate-400 flex items-center gap-1">
-                <Calendar size={10} />
-                {postedLabel}
-              </span>
-              {isNew && (
-                <span className="new-badge">
-                  <span className="pulse-dot" />
-                  NEW
-                </span>
-              )}
-            </div>
-          </div>
+      {/* SECTION 1 — LEFT */}
+      <div 
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          width: '56px',
+          flexShrink: 0 
+        }}
+      >
+        <div
+          style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            background: `linear-gradient(135deg, ${avatarBgColor} 0%, ${avatarBgColor}88 100%)`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: 'white',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          }}
+        >
+          {companyInitials}
         </div>
+        <span 
+          style={{
+            fontSize: '11px',
+            color: 'rgba(255, 255, 255, 0.45)',
+            textAlign: 'center',
+            marginTop: '6px',
+            width: '100%',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}
+        >
+          {companyNameShort}
+        </span>
+      </div>
+
+      {/* SECTION 2 — CENTER */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {/* Title */}
+        <h3 
+          style={{
+            fontSize: '16px',
+            fontWeight: 500,
+            color: 'white',
+            margin: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}
+        >
+          {highlightText(job.title, searchQuery)}
+        </h3>
+
+        {/* Location + badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#94a3b8' }}>
+            <MapPin size={12} className="text-[#6366f1]" />
+            {job.location || "Remote"}
+          </span>
+          <span 
+            style={{
+              padding: '2px 8px',
+              borderRadius: '12px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              fontSize: '11px',
+              color: '#cbd5e1'
+            }}
+          >
+            {job.location === "Remote" || job.type === "remote" ? "Remote" : "Onsite"}
+          </span>
+          {isCandidate && score > 0 && (
+            <span 
+              style={{
+                padding: '2px 8px',
+                borderRadius: '12px',
+                background: 'rgba(139, 92, 246, 0.15)',
+                border: '1px solid rgba(139, 92, 246, 0.25)',
+                fontSize: '11px',
+                color: '#a5b4fc',
+                fontWeight: 600
+              }}
+            >
+              {score}% match
+            </span>
+          )}
+        </div>
+
+        {/* Posted time + applicants */}
+        <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.35)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span>{postedLabel}</span>
+          {!isMobile && (
+            <>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Users size={11} className="text-[#06b6d4]" />
+                {job.applicantsCount || 0} applied
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* SECTION 3 — RIGHT */}
+      <div 
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: isMobile ? '8px' : '12px', 
+          flexShrink: 0 
+        }}
+      >
+        {/* Employment Type */}
+        <span 
+          style={{
+            background: 'rgba(99,102,241,0.15)',
+            color: '#a5b4fc',
+            padding: '4px 10px',
+            borderRadius: '20px',
+            fontSize: '12px',
+            textTransform: 'capitalize',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {job.type || "Full Time"}
+        </span>
+
+        {/* Salary */}
+        {!isMobile && (
+          <span 
+            style={{ 
+              fontSize: '13px', 
+              color: '#34d399', 
+              fontWeight: 500,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {salaryText}
+          </span>
+        )}
+
+        {/* Apply Button */}
+        <button
+          disabled={isApplied}
+          onClick={handleApply}
+          style={{
+            padding: isMobile ? '6px 14px' : '8px 20px',
+            background: isApplied 
+              ? 'rgba(16, 185, 129, 0.1)' 
+              : 'linear-gradient(135deg, #6366f1, #06b6d4)',
+            border: isApplied ? '1px solid rgba(16, 185, 129, 0.2)' : 'none',
+            borderRadius: '20px',
+            color: isApplied ? '#34d399' : 'white',
+            fontSize: '13px',
+            fontWeight: 500,
+            cursor: isApplied ? 'not-allowed' : 'pointer',
+            whiteSpace: 'nowrap',
+            transition: 'all 0.2s'
+          }}
+        >
+          {isApplied ? "Applied" : "Apply"}
+        </button>
 
         {/* Bookmark Button */}
         <motion.button
           onClick={handleSave}
-          className={`bookmark-btn ${isSaved ? "saved" : ""} ${animateBookmark ? "animate-pop" : ""} p-2 rounded-full hover:bg-white/5`}
-          title="Save Job"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
+          animate={isSaved ? { rotateY: 360 } : { rotateY: 0 }}
+          transition={{ duration: 0.4 }}
+          style={{
+            background: 'transparent',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: '8px',
+            padding: '8px',
+            color: isSaved ? '#8b5cf6' : 'rgba(255,255,255,0.4)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s ease',
+          }}
         >
-          {isSaved ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
-          {animateBookmark && (
-            <div className="particle-container">
-              <div className="burst-particle"></div>
-              <div className="burst-particle"></div>
-              <div className="burst-particle"></div>
-              <div className="burst-particle"></div>
-            </div>
-          )}
+          {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
         </motion.button>
-      </div>
-
-      {/* Card Body */}
-      <div className="card-body mt-4 flex-1">
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-lg font-bold text-white line-clamp-1">{job.title}</h3>
-          {isCandidate && matchScore !== null && (
-            <div className="shrink-0">
-              {score >= 80 ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-400 border border-emerald-500/30">
-                  {score}% match ✓
-                </span>
-              ) : score >= 50 ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-400 border border-amber-500/30">
-                  {score}% match
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/15 px-3 py-1 text-xs font-medium text-slate-400 border border-slate-500/20">
-                  View job
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        <p className="mt-2 text-sm font-semibold text-[#8b5cf6] flex items-center gap-1">
-          <span className="text-[#6366f1] font-bold">₹</span> {formatSalary(job.salary)}
-        </p>
-
-        {/* Tags Row */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          {/* Base type tags */}
-          <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-[11px] font-medium text-slate-300">
-            {job.location === "Remote" || job.type === "remote" ? "Remote" : "On-site"}
-          </span>
-          <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-[11px] font-medium text-slate-300 capitalize">
-            {job.type || "Full Time"}
-          </span>
-          {/* Skills tags */}
-          {visibleSkills.map((skill) => (
-            <span key={skill} className="skill-tag">
-              {skill}
-            </span>
-          ))}
-          {extraSkillsCount > 0 && (
-            <span className="skill-overflow">
-              +{extraSkillsCount} more
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Card Footer */}
-      <div className="card-footer mt-4 pt-4 flex items-center justify-between border-t border-white/10">
-        <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
-          <Users size={12} className="text-[#06b6d4]" />
-          {job.applicantsCount || 0} applied
-        </span>
-        
-        <div className="flex items-center gap-3">
-          <motion.button
-            onClick={handleView}
-            className="text-xs font-semibold text-[#06b6d4] hover:underline"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
-          >
-            View details
-          </motion.button>
-          {isCandidate && (
-            <motion.button
-              disabled={isApplied}
-              onClick={handleApply}
-              className={`btn-primary text-xs !py-1.5 !px-4 ${isApplied ? "!bg-emerald-500/10 !text-emerald-400 border border-emerald-500/20 cursor-not-allowed shadow-none" : ""}`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              {isApplied ? "Applied" : "Apply Now"}
-            </motion.button>
-          )}
-        </div>
       </div>
     </motion.div>
   );
