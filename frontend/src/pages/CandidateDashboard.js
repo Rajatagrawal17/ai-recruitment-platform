@@ -174,20 +174,43 @@ const CandidateDashboard = () => {
         />
       </motion.section>
 
-      <section className="glass-card p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Profile Card */}
+        <section className="glass-card p-5 flex flex-col justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Profile Setup</h2>
-            <p className="text-sm text-text-muted">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <UserRoundPen size={18} className="text-primary" /> Profile Setup
+            </h2>
+            <p className="text-sm text-text-muted mt-2">
               Manage your profile details and upload resume from one place.
             </p>
           </div>
-          <Link to="/complete-profile" className="btn-primary">
-            <UserRoundPen size={16} className="mr-2" />
-            Open Profile Completion
-          </Link>
-        </div>
-      </section>
+          <div className="mt-4">
+            <Link to="/complete-profile" className="btn-primary inline-flex">
+              <UserRoundPen size={16} className="mr-2" />
+              Open Profile Completion
+            </Link>
+          </div>
+        </section>
+
+        {/* AI Interview simulator card */}
+        <section className="glass-card p-5 flex flex-col justify-between">
+          <div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Sparkles size={18} className="text-purple-500" /> AI Interview Simulator
+            </h2>
+            <p className="text-sm text-text-muted mt-2">
+              Practice real-time technical and behavioral interview questions tailored to your target jobs and get instant AI feedback.
+            </p>
+          </div>
+          <div className="mt-4">
+            <Link to="/interview-prep" className="btn-primary inline-flex">
+              <Sparkles size={16} className="mr-2" />
+              Start Mock Interview
+            </Link>
+          </div>
+        </section>
+      </div>
 
       {/* Personalized Jobs Section */}
       <PersonalizedJobs />

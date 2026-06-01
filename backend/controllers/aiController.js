@@ -1204,3 +1204,448 @@ exports.improveResumeSection = async (req, res) => {
     });
   }
 };
+
+// ==================== INTERVIEW SIMULATION MOCK GENERATORS ====================
+const getMockSimQuestions = (jobTitle, type, difficulty) => {
+  const isTech = type.includes("Technical");
+  const isBehavioral = type.includes("Behavioral");
+  const isCulture = type.includes("Culture");
+
+  const techPool = [
+    {
+      id: 1,
+      type: "Technical",
+      difficulty: "Medium",
+      question: `What are the pros and cons of using Microfrontends, and how would you orchestrate routing and shared state between them?`,
+      hint: "Think about single-spa, module federation, custom events, and postMessage communication."
+    },
+    {
+      id: 2,
+      type: "Technical",
+      difficulty: "Hard",
+      question: `Explain how you would diagnose and resolve a memory leak in a production Node.js application. What profiling tools would you use?`,
+      hint: "Discuss heap snapshots, chrome devtools, V8 profile log analysis, and memory tracking graphs."
+    },
+    {
+      id: 3,
+      type: "Technical",
+      difficulty: "Medium",
+      question: `How does database indexing work under the hood? Explain the difference between B-Trees and Hash Indexes.`,
+      hint: "Talk about node branching, range queries, point lookups, and disk page access complexity."
+    },
+    {
+      id: 4,
+      type: "Technical",
+      difficulty: "Easy",
+      question: `What is the difference between client-side rendering (CSR) and server-side rendering (SSR)? When would you use one over the other?`,
+      hint: "Discuss SEO, initial page load speeds, server CPU load, and user interactivity metrics."
+    },
+    {
+      id: 5,
+      type: "Technical",
+      difficulty: "Medium",
+      question: `How would you structure a secure RESTful API? What measures would you take to prevent OWASP Top 10 vulnerabilities?`,
+      hint: "Mention JWT, CORS, rate limiting, SQL injection, helmet middlewares, and input validation schemas."
+    },
+    {
+      id: 6,
+      type: "Technical",
+      difficulty: "Hard",
+      question: `Explain the concept of Event Sourcing and CQRS. In what scenarios would they add value to a system design?`,
+      hint: "Think about audit logs, eventual consistency, read-heavy vs write-heavy microservices, and replayability."
+    },
+    {
+      id: 7,
+      type: "Technical",
+      difficulty: "Medium",
+      question: `What is a CDN (Content Delivery Network) and how does it optimize web application performance? How do you handle cache invalidation?`,
+      hint: "Explain edge locations, TTL, cache busting with hashes, and purge requests."
+    },
+    {
+      id: 8,
+      type: "Technical",
+      difficulty: "Hard",
+      question: `Explain the virtual DOM reconciliation process in React. What are keys, and why are they important?`,
+      hint: "Talk about the diffing algorithm, Fiber architecture, keys stability, and re-rendering optimization."
+    }
+  ];
+
+  const behavioralPool = [
+    {
+      id: 9,
+      type: "Behavioral",
+      difficulty: "Medium",
+      question: "Describe a situation where you had a major disagreement with a teammate or stakeholder. How did you resolve it?",
+      hint: "Focus on active listening, empathy, data-driven decisions, compromise, and long-term relations."
+    },
+    {
+      id: 10,
+      type: "Behavioral",
+      difficulty: "Medium",
+      question: "Tell me about a time you made a mistake at work that affected others. How did you handle it and what did you learn?",
+      hint: "Be honest, take accountability, share how you communicated quickly, fixed the issue, and set up guardrails."
+    },
+    {
+      id: 11,
+      type: "Behavioral",
+      difficulty: "Hard",
+      question: "Describe a project you worked on under extremely tight deadlines. How did you prioritize tasks and manage pressure?",
+      hint: "Mention task pruning, scope negotiation, communication, delegation, and avoiding developer burnout."
+    },
+    {
+      id: 12,
+      type: "Behavioral",
+      difficulty: "Medium",
+      question: "Tell me about a time you went above and beyond for a customer or a team requirement. What was the outcome?",
+      hint: "Quantify the benefit (e.g., retained client, zeroed-down bugs, improved system uptime)."
+    },
+    {
+      id: 13,
+      type: "Behavioral",
+      difficulty: "Easy",
+      question: "Why do you want to join our organization, and what aspects of our platform excite you the most?",
+      hint: "Reference alignment with company goals, products, tech stack, culture, and your personal growth path."
+    },
+    {
+      id: 14,
+      type: "Behavioral",
+      difficulty: "Medium",
+      question: "Describe a complex technical problem you solved recently. How did you explain it to non-technical stakeholders?",
+      hint: "Use analogies, avoid jargon, explain the business impact and the 'why' behind your chosen solution."
+    },
+    {
+      id: 15,
+      type: "Behavioral",
+      difficulty: "Hard",
+      question: "Tell me about a time when you had to make a decision without all the necessary information. What did you do?",
+      hint: "Explain your risk assessment, consultation, starting with iterative steps, and correcting course as data came in."
+    },
+    {
+      id: 16,
+      type: "Behavioral",
+      difficulty: "Medium",
+      question: "How do you handle receiving critical feedback about your work? Can you share a specific example?",
+      hint: "Keep it constructive, show gratitude, detail how you implemented changes, and followed up for reviews."
+    }
+  ];
+
+  const culturePool = [
+    {
+      id: 17,
+      type: "Culture Fit",
+      difficulty: "Medium",
+      question: "How do you balance fast feature delivery with writing high-quality, tested code?",
+      hint: "Discuss iterative delivery, MVP scope, testing strategies (unit vs integration), and managing tech debt."
+    },
+    {
+      id: 18,
+      type: "Culture Fit",
+      difficulty: "Easy",
+      question: "What does ownership mean to you in the context of software engineering?",
+      hint: "Mention taking responsibility for production systems, monitoring, documenting, and proactive bug fixing."
+    },
+    {
+      id: 19,
+      type: "Culture Fit",
+      difficulty: "Medium",
+      question: "In your opinion, what makes a software development team highly effective and collaborative?",
+      hint: "Talk about psychologically safe communication, transparent PR reviews, knowledge sharing, and mentoring."
+    },
+    {
+      id: 20,
+      type: "Culture Fit",
+      difficulty: "Medium",
+      question: "How do you keep your technical skills sharp in a rapidly evolving ecosystem like tech?",
+      hint: "Discuss newsletters, open-source work, building pet projects, reading books, and attending tech meetups."
+    },
+    {
+      id: 21,
+      type: "Culture Fit",
+      difficulty: "Hard",
+      question: "If you could change one thing about the way developers collaborate today, what would it be and why?",
+      hint: "Focus on early architectural alignments, collaborative pairing, or reducing meetings in favor of async design."
+    },
+    {
+      id: 22,
+      type: "Culture Fit",
+      difficulty: "Easy",
+      question: "What are your professional goals for the next 2-3 years, and how do you plan to achieve them?",
+      hint: "Align goals with leadership path, architectural ownership, learning new paradigms, and mentorship."
+    },
+    {
+      id: 23,
+      type: "Culture Fit",
+      difficulty: "Medium",
+      question: "How do you handle context switching when you have multiple tasks or emergencies in production?",
+      hint: "Focus on prioritization matrices, time blocking, clear slack communications, and documented runbooks."
+    },
+    {
+      id: 24,
+      type: "Culture Fit",
+      difficulty: "Hard",
+      question: "Describe your ideal company culture and how you personally contribute to maintaining it.",
+      hint: "Detail collaborative spirit, learning from mistakes without blame, inclusivity, and shared success."
+    }
+  ];
+
+  // Select questions based on interviewFocus
+  let selectedPool = [];
+  if (isTech) {
+    selectedPool = [...techPool];
+  } else if (isBehavioral) {
+    selectedPool = [...behavioralPool];
+  } else if (isCulture) {
+    selectedPool = [...culturePool];
+  } else {
+    // Full Interview: mix tech, behavioral, and culture fit
+    selectedPool = [
+      techPool[0], techPool[1], techPool[2], techPool[3],
+      behavioralPool[0], behavioralPool[1],
+      culturePool[0], culturePool[1]
+    ];
+  }
+
+  // Adjust questions to fit the jobTitle if possible
+  const customized = selectedPool.slice(0, 8).map((q, idx) => {
+    let questionText = q.question;
+    if (q.type === "Technical") {
+      questionText = questionText.replace("web application", `${jobTitle} application`);
+      questionText = questionText.replace("modern software engineering", `${jobTitle} engineering`);
+    }
+    return {
+      id: idx + 1,
+      type: q.type,
+      difficulty: difficulty,
+      question: questionText,
+      hint: q.hint
+    };
+  });
+
+  return customized;
+};
+
+const getMockSimEvaluation = (question, answer, difficulty, confidenceMode) => {
+  const len = (answer || "").trim().length;
+  
+  let score = 7.5;
+  if (len < 40) {
+    score = 3.5 + Math.random() * 2.0; // 3.5 - 5.5
+  } else if (len < 100) {
+    score = 6.0 + Math.random() * 1.5; // 6.0 - 7.5
+  } else {
+    score = 7.8 + Math.random() * 1.8; // 7.8 - 9.6
+  }
+
+  // Round score to 1 decimal place
+  score = Math.round(score * 10) / 10;
+  if (score > 10) score = 10.0;
+
+  // Stricter scoring in confidence mode
+  if (confidenceMode === "ON") {
+    score = Math.round(Math.max(1.0, score - 0.8) * 10) / 10;
+  }
+
+  let grade = "C";
+  if (score >= 8.5) grade = "A";
+  else if (score >= 7.0) grade = "B";
+  else if (score >= 5.0) grade = "C";
+  else grade = "D";
+
+  const feedbackMessages = [
+    "A solid answer, well structured and covering the main aspects of the question.",
+    "Your response highlights good practical experience, though adding more metrics would make it stronger.",
+    "Great technical terminology usage. Consider expanding on testing and deployment details.",
+    "Good attempt, but the response needs to be more structured. Try the STAR method next time.",
+    "Clear, concise, and professional. Covers all core concepts effectively."
+  ];
+  
+  const oneLineFeedback = len < 40 
+    ? "Response is too short to fully demonstrate competency. Please expand with examples."
+    : feedbackMessages[Math.floor(Math.random() * feedbackMessages.length)];
+
+  return {
+    score,
+    grade,
+    strengths: [
+      "Demonstrated basic understanding of the core concept requested.",
+      "Clear professional tone in writing.",
+      "Logical progression of ideas in the explanation."
+    ],
+    improvements: [
+      "Include quantitative results or metrics from your past projects.",
+      "Elaborate on edge cases or potential drawbacks of the approach.",
+      "Mention testing and profiling methodologies used to verify solutions."
+    ],
+    betterAnswer: `A model response for this question should clearly state the core problem/situation, explain the specific actions taken using technical concepts (e.g. database indexing, async states), and conclude with measurable outcomes. For instance: 'In my previous role, I optimized our React render times by 30% by implementing useMemo and useCallback hooks on critical list components after performing flamegraph profiling.'`,
+    keywordsHit: ["solution", "process", "implementation", "development"],
+    keywordsMissed: ["STAR framework", "quantifiable metrics", "CI/CD", "scalability"]
+  };
+};
+
+// ==================== NEW INTERVIEW SIMULATOR ENDPOINTS ====================
+
+exports.generateSimQuestions = async (req, res) => {
+  try {
+    const { jobId, jobTitle, jobDescription, type = "Full Interview", difficulty = "Medium" } = req.body;
+
+    let resolvedJobTitle = jobTitle || "Software Engineer";
+    let resolvedJobDescription = jobDescription || "";
+
+    if (jobId) {
+      const job = await Job.findById(jobId);
+      if (job) {
+        resolvedJobTitle = job.title;
+        resolvedJobDescription = `${job.title} ${job.description} ${job.requirements || ""}`;
+      }
+    }
+
+    if (IS_DEMO_MODE || !helpAnthropic) {
+      const mockQuestions = getMockSimQuestions(resolvedJobTitle, type, difficulty);
+      return res.status(200).json({
+        success: true,
+        data: { questions: mockQuestions },
+        provider: "Mock AI (Demo Mode)"
+      });
+    }
+
+    const systemPrompt = `You are an elite tech interviewer and talent analyst. You generate interview questions based on the candidate's target job role.`;
+    const userPrompt = `Generate a set of 8 realistic interview questions for a candidate applying to this role:
+    Job Title: ${resolvedJobTitle}
+    Job Description: ${resolvedJobDescription}
+    
+    Parameters:
+    Interview Type Focus: ${type}
+    Difficulty: ${difficulty}
+    
+    You must output exactly 8 questions. Each question must include a short helpful hint for the candidate to use if they get stuck.
+    
+    Return ONLY a valid JSON object matching this schema. Do not output markdown code blocks, backticks, or introductory text. Just the raw JSON content:
+    {
+      "questions": [
+        {
+          "id": 1,
+          "type": "Technical | Behavioral | Culture Fit",
+          "difficulty": "Easy | Medium | Hard",
+          "question": "question text (approx 20px font, professional, challenging)",
+          "hint": "short hint, e.g. use STAR method, mention specific frameworks"
+        }
+      ]
+    }`;
+
+    const response = await helpAnthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1800,
+      temperature: 0.6,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const content = response.content?.find((item) => item.type === "text")?.text || "";
+    const parsed = safeParseHelpJson(content);
+
+    if (!parsed || !parsed.questions || parsed.questions.length === 0) {
+      throw new Error("Failed to parse Claude questions JSON response or empty questions array");
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: parsed,
+      provider: "Claude AI"
+    });
+
+  } catch (error) {
+    console.error("AI questions generation error:", error);
+    const mockQuestions = getMockSimQuestions(req.body.jobTitle || "Software Engineer", req.body.type || "Full Interview", req.body.difficulty || "Medium");
+    return res.status(200).json({
+      success: true,
+      data: { questions: mockQuestions },
+      provider: "Mock AI (Fallback)",
+      error: error.message
+    });
+  }
+};
+
+exports.evaluateSimAnswer = async (req, res) => {
+  try {
+    const { question, answer, difficulty, confidenceMode = "OFF" } = req.body;
+
+    if (!question || !answer) {
+      return res.status(400).json({
+        success: false,
+        message: "Question and Answer are required for evaluation"
+      });
+    }
+
+    if (IS_DEMO_MODE || !helpAnthropic) {
+      const mockEval = getMockSimEvaluation(question, answer, difficulty, confidenceMode);
+      return res.status(200).json({
+        success: true,
+        data: mockEval,
+        provider: "Mock AI (Demo Mode)"
+      });
+    }
+
+    const systemPrompt = `You are an expert AI interview evaluator. You rate candidates' answers objectively on a 1.0 to 10.0 scale and provide professional coaching advice.`;
+    const userPrompt = `Evaluate the candidate's response to the following interview question:
+    
+    Question: ${question}
+    Candidate's Answer: ${answer}
+    
+    Context/Parameters:
+    Difficulty Level: ${difficulty}
+    Confidence Mode: ${confidenceMode} (If Confidence Mode is ON, apply stricter, less forgiving scoring metrics, and avoid encouraging fillers in the feedback. If Confidence Mode is OFF, be more constructive and encouraging).
+    
+    Provide an evaluation that returns:
+    1. score: a number between 1.0 and 10.0
+    2. grade: A (score >= 8.5), B (7.0 - 8.4), C (5.0 - 6.9), or D (< 5.0)
+    3. strengths: 1-3 strong aspects of their response (array of strings)
+    4. improvements: 1-3 clear gaps or suggestions for improvement (array of strings)
+    5. betterAnswer: a model rewrite or better structured version of how to answer this question
+    6. keywordsHit: list of tech/behavioral keywords they correctly used in their answer (array of strings)
+    7. keywordsMissed: list of important tech/behavioral keywords they should have mentioned (array of strings)
+    8. oneLineFeedback: a single-sentence punchy feedback summary of their response
+    
+    Return ONLY a valid JSON object matching this schema. Do not output markdown code blocks, backticks, or introductory text. Just the raw JSON content:
+    {
+      "score": 7.8,
+      "grade": "B",
+      "strengths": ["...", "..."],
+      "improvements": ["...", "..."],
+      "betterAnswer": "...",
+      "keywordsHit": ["...", "..."],
+      "keywordsMissed": ["...", "..."],
+      "oneLineFeedback": "..."
+    }`;
+
+    const response = await helpAnthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1500,
+      temperature: 0.3,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const content = response.content?.find((item) => item.type === "text")?.text || "";
+    const parsed = safeParseHelpJson(content);
+
+    if (!parsed) {
+      throw new Error("Failed to parse Claude evaluation JSON response");
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: parsed,
+      provider: "Claude AI"
+    });
+
+  } catch (error) {
+    console.error("AI answer evaluation error:", error);
+    const mockEval = getMockSimEvaluation(req.body.question, req.body.answer, req.body.difficulty, req.body.confidenceMode);
+    return res.status(200).json({
+      success: true,
+      data: mockEval,
+      provider: "Mock AI (Fallback)",
+      error: error.message
+    });
+  }
+};

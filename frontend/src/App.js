@@ -34,6 +34,7 @@ const AIToolsPage = lazy(() => import("./pages/AIToolsPage"));
 const ProfileCompletion = lazy(() => import("./pages/ProfileCompletion"));
 const OrbitalNetworkPage = lazy(() => import("./pages/OrbitalNetworkPage"));
 const ResumeScorePage = lazy(() => import("./pages/ResumeScorePage"));
+const InterviewSimPage = lazy(() => import("./pages/InterviewSimPage"));
 import { useAuth } from "./context/AuthContext";
 
 // Log API configuration on app start
@@ -222,6 +223,15 @@ const AppRoutes = () => {
           element={(
             <ProtectedRoute allowedRoles={["candidate"]}>
               <AnimatedPage><ResumeScorePage /></AnimatedPage>
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route
+          path="/interview-prep"
+          element={(
+            <ProtectedRoute allowedRoles={["candidate"]}>
+              <AnimatedPage><InterviewSimPage /></AnimatedPage>
             </ProtectedRoute>
           )}
         />

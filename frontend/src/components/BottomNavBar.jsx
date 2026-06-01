@@ -63,7 +63,7 @@ const BottomNavBar = () => {
   const navItems = [
     { label: "Explore", path: "/apply", icon: Compass },
     { label: "Jobs", path: "/saved-jobs", icon: Bookmark },
-    { label: "AI Scorer", path: "/resume-score", icon: Sparkles },
+    { label: "Interview Prep", path: "/interview-prep", icon: Sparkles },
     { label: "Applied", path: "/applications", icon: ClipboardList },
     { label: "Profile", path: "/profile", icon: User },
   ];
@@ -90,8 +90,8 @@ const BottomNavBar = () => {
     setTappedIndex(index);
     setTimeout(() => setTappedIndex(null), 300);
 
-    // Clear badge count if Profile or AI Scorer is clicked
-    if (item.label === "Profile" || item.label === "AI Scorer") {
+    // Clear badge count if Profile or Interview Prep is clicked
+    if (item.label === "Profile" || item.label === "Interview Prep") {
       setUnreadCount(0);
     }
   };
@@ -118,7 +118,7 @@ const BottomNavBar = () => {
       {navItems.map((item, index) => {
         const isActive = getIsActive(item.path);
         const Icon = item.icon;
-        const showBadge = (item.label === "Profile" || item.label === "AI Scorer") && unreadCount > 0;
+        const showBadge = (item.label === "Profile" || item.label === "Interview Prep") && unreadCount > 0;
 
         return (
           <Link

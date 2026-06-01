@@ -16,6 +16,8 @@ const {
   chatHelpAssistant,
   scoreResumeWithAI,
   improveResumeSection,
+  generateSimQuestions,
+  evaluateSimAnswer,
 } = require("../controllers/aiController");
 const protect = require("../middleware/authMiddleware");
 
@@ -70,5 +72,9 @@ router.post("/generate-improvements", generateResumeImprovements);
 // Resume Scorer
 router.post("/resume-score", protect, scoreResumeWithAI);
 router.post("/improve-resume-section", protect, improveResumeSection);
+
+// AI Interview Simulator
+router.post("/sim-questions", protect, generateSimQuestions);
+router.post("/sim-evaluate", protect, evaluateSimAnswer);
 
 module.exports = router;
