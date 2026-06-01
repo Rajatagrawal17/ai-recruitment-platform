@@ -1056,13 +1056,17 @@ const getMockScoreResult = (jd = "", cv = "", keywordScore = 70, formatScore = 8
   };
 };
 
-const getMockSectionImprovement = (sectionName, text, jd) => {
+const getMockSectionImprovement = (sectionName, text, jd, keywordsMissing = []) => {
+  const kwString = Array.isArray(keywordsMissing) && keywordsMissing.length > 0
+    ? keywordsMissing.slice(0, 4).join(", ")
+    : "AWS, CI/CD, Docker";
+    
   return `### Improved ${sectionName}
 
-• Engineered scalable, high-performance services using React and Node.js, increasing application speed by 42% and reducing latency by 150ms.
-• Led cross-functional agile development team of 5 engineers to deliver features 2 weeks ahead of target schedules.
-• Optimized ATS-ready keyword alignment with ${sectionName.toLowerCase()} metrics, resulting in a 25% higher candidate screening success rate.
-• Integrated Docker containers and automated CI/CD deployment pipelines on AWS Cloud infrastructures, saving $12,000 in monthly operational costs.`;
+• Engineered scalable, high-performance services using React and Node.js, incorporating target technologies like ${kwString} to optimize system throughput.
+• Collaborated in cross-functional agile sprints to deliver robust APIs, enhancing alignment with microservices design patterns.
+• Redesigned data structures using standard conventions, resulting in a 35% improvement in query performance and easier ATS scanning.
+• Configured secure deployment environments integrating CI/CD pipelines, saving significant development overhead.`;
 };
 
 exports.scoreResumeWithAI = async (req, res) => {
@@ -1157,7 +1161,7 @@ exports.scoreResumeWithAI = async (req, res) => {
 
 exports.improveResumeSection = async (req, res) => {
   try {
-    const { sectionName, currentText, jobDescription } = req.body;
+    const { sectionName, currentText, jobDescription, keywordsMissing = [] } = req.body;
 
     if (!sectionName) {
       return res.status(400).json({
@@ -1169,7 +1173,7 @@ exports.improveResumeSection = async (req, res) => {
     const cleanedText = (currentText || "").trim() || `[Original ${sectionName} content not found in CV]`;
 
     if (IS_DEMO_MODE || !helpAnthropic) {
-      const mockImprovement = getMockSectionImprovement(sectionName, cleanedText, jobDescription);
+      const mockImprovement = getMockSectionImprovement(sectionName, cleanedText, jobDescription, keywordsMissing);
       return res.status(200).json({
         success: true,
         data: { improvedText: mockImprovement },
@@ -1177,24 +1181,24 @@ exports.improveResumeSection = async (req, res) => {
       });
     }
 
-    const prompt = `You are a senior resume writer and recruiter. Improve the following section of the candidate's resume to better align with the job description.
+    const prompt = `Rewrite this CV section to naturally include these missing keywords: 
+    ${Array.isArray(keywordsMissing) ? keywordsMissing.join(', ') : ''}
     
-    Job Description:
-    ${jobDescription || "Not provided"}
-    
-    Section Name:
-    ${sectionName}
-    
-    Current Section Text:
+    Original section (${sectionName}):
     ${cleanedText}
     
-    Rewrite this section to make it more professional, ATS-friendly, and show key achievements with quantifiable metrics matching the job.
-    Return ONLY the improved text for this section, without any introductory or concluding remarks.`;
+    Rules:
+    - Sound natural, not keyword-stuffed
+    - Keep the same facts, just improve wording
+    - Add missing keywords where genuinely applicable
+    - Keep under 120 words
+    
+    Return the rewritten section only.`;
 
     const response = await helpAnthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1000,
-      temperature: 0.4,
+      max_tokens: 600,
+      temperature: 0.3,
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -1208,7 +1212,7 @@ exports.improveResumeSection = async (req, res) => {
 
   } catch (error) {
     console.error("AI section improvement error:", error);
-    const mockImprovement = getMockSectionImprovement(req.body.sectionName, req.body.currentText, req.body.jobDescription);
+    const mockImprovement = getMockSectionImprovement(req.body.sectionName, req.body.currentText, req.body.jobDescription, req.body.keywordsMissing);
     return res.status(200).json({
       success: true,
       data: { improvedText: mockImprovement },

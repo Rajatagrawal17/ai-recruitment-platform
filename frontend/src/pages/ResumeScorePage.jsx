@@ -701,7 +701,7 @@ export default function ResumeScorePage() {
                         <div key={section.name} className="space-y-2">
                           <div className="flex items-center justify-between text-xs font-medium">
                             <span className="text-slate-200">{section.name}</span>
-                            <span style={{ color: getScoreColor(section.score) }}>{section.score}/100</span>
+                            <span style={{ color: getScoreColor(section.score) }}>{section.score}</span>
                           </div>
                           
                           {/* Progress bar with animated mount */}
@@ -719,41 +719,83 @@ export default function ResumeScorePage() {
                     </div>
                   </div>
 
-                  {/* FORMAT ISSUES */}
-                  {results.formatIssues && results.formatIssues.length > 0 && (
-                    <div className="rounded-2xl border border-red-500/10 bg-red-500/5 p-5 space-y-3">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-red-400 flex items-center gap-1.5 border-b border-red-500/10 pb-2">
-                        <AlertCircle size={14} />
-                        Format Issues Detected
-                      </h4>
-                      <div className="grid gap-2">
-                        {results.formatIssues.map((issue, idx) => (
-                          <div key={idx} className="flex items-start gap-2.5 rounded-xl bg-red-500/10 border border-red-500/20 p-3.5 text-xs text-red-300">
-                            <XCircle size={14} className="shrink-0 text-red-400 mt-0.5" />
-                            <span>{issue}</span>
+                  {/* FORMAT ISSUES & WARNINGS */}
+                  {((results.formatIssues && results.formatIssues.length > 0) || (results.formatWarnings && results.formatWarnings.length > 0)) && (
+                    <div className="space-y-4">
+                      {results.formatIssues && results.formatIssues.length > 0 && (
+                        <div className="rounded-2xl border border-red-500/15 bg-red-500/5 p-5 space-y-3">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-red-400 flex items-center gap-1.5 border-b border-red-500/10 pb-2">
+                            <AlertCircle size={14} className="text-red-400" />
+                            Format Issues
+                          </h4>
+                          <div className="grid gap-2">
+                            {results.formatIssues.map((issue, idx) => (
+                              <div key={idx} className="flex items-start gap-2.5 rounded-xl bg-red-500/10 border border-red-500/20 p-3.5 text-xs text-red-300">
+                                <XCircle size={14} className="shrink-0 text-red-400 mt-0.5" />
+                                <span>{issue}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      )}
+
+                      {results.formatWarnings && results.formatWarnings.length > 0 && (
+                        <div className="rounded-2xl border border-amber-500/15 bg-amber-500/5 p-5 space-y-3">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5 border-b border-amber-500/10 pb-2">
+                            <AlertCircle size={14} className="text-amber-400" />
+                            Format Warnings
+                          </h4>
+                          <div className="grid gap-2">
+                            {results.formatWarnings.map((warning, idx) => (
+                              <div key={idx} className="flex items-start gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 p-3.5 text-xs text-amber-300">
+                                <AlertCircle size={14} className="shrink-0 text-amber-400 mt-0.5" />
+                                <span>{warning}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* FORMAT WARNINGS */}
-                  {results.formatWarnings && results.formatWarnings.length > 0 && (
-                    <div className="rounded-2xl border border-amber-500/10 bg-amber-500/5 p-5 space-y-3">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5 border-b border-amber-500/10 pb-2">
-                        <AlertCircle size={14} />
-                        Format Warnings
-                      </h4>
-                      <div className="grid gap-2">
-                        {results.formatWarnings.map((warning, idx) => (
-                          <div key={idx} className="flex items-start gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 p-3.5 text-xs text-amber-300">
-                            <AlertCircle size={14} className="shrink-0 text-amber-400 mt-0.5" />
-                            <span>{warning}</span>
+                  {/* KEYWORDS */}
+                  <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5 backdrop-blur-sm space-y-4">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-300">ATS Keyword Analysis</h4>
+                    
+                    {/* Found Keywords */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] text-emerald-400 font-medium uppercase tracking-wider block">Keywords Found ({results.keywordsFound.length})</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {results.keywordsFound.map(kw => (
+                          <span key={kw} className="rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 text-[10px] text-emerald-300">
+                            {kw}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Missed Keywords */}
+                    <div className="space-y-2 pt-2 border-t border-white/5">
+                      <span className="text-[10px] text-red-400 font-medium uppercase tracking-wider block">Keywords Missed ({results.keywordsMissing.length})</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {results.keywordsMissing.map(kw => (
+                          <div key={kw} className="group relative inline-flex items-center gap-1.5 rounded-full bg-red-500/10 border border-red-500/25 pl-2.5 pr-1.5 py-1 text-[10px] text-red-300">
+                            <span>{kw}</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(kw);
+                                toast.success(`Copied "${kw}"! Add it naturally to your CV.`);
+                              }}
+                              className="text-[8px] bg-red-500/25 text-red-400 px-1.5 py-0.5 rounded hover:bg-red-500/40 active:scale-95 transition font-semibold"
+                              title="Click to copy keyword"
+                            >
+                              Add to CV
+                            </button>
                           </div>
                         ))}
                       </div>
                     </div>
-                  )}
+                  </div>
 
                   {/* 3 COLUMNS: STRENGTHS, GAPS, WINS */}
                   <div className="grid gap-5 md:grid-cols-3">
@@ -806,38 +848,6 @@ export default function ResumeScorePage() {
                       </ul>
                     </div>
 
-                  </div>
-
-                  {/* KEYWORDS */}
-                  <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5 backdrop-blur-sm space-y-4">
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-300">ATS Keyword Analysis</h4>
-                    
-                    {/* Found Keywords */}
-                    <div className="space-y-2">
-                      <span className="text-[10px] text-emerald-400 font-medium uppercase tracking-wider block">Keywords Found ({results.keywordsFound.length})</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {results.keywordsFound.map(kw => (
-                          <span key={kw} className="rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-1 text-[10px] text-emerald-300">
-                            {kw}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Missed Keywords */}
-                    <div className="space-y-2 pt-2 border-t border-white/5">
-                      <span className="text-[10px] text-red-400 font-medium uppercase tracking-wider block">Keywords Missed ({results.keywordsMissing.length})</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {results.keywordsMissing.map(kw => (
-                          <div key={kw} className="group relative inline-flex items-center gap-1.5 rounded-full bg-red-500/10 border border-red-500/25 px-2.5 py-1 text-[10px] text-red-300">
-                            <span>{kw}</span>
-                            <span className="text-[8px] bg-red-500/20 text-red-400 px-1 rounded hover:bg-red-500/30 cursor-help" title={`Add this keyword naturally to your CV text.`}>
-                              Add to CV
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
                   </div>
 
                   {/* IMPROVE BUTTON SECTION */}
