@@ -16,6 +16,7 @@ const {
   chatHelpAssistant,
   scoreResumeWithAI,
   improveResumeSection,
+  generateCoverLetter,
 } = require("../controllers/aiController");
 const protect = require("../middleware/authMiddleware");
 
@@ -70,5 +71,6 @@ router.post("/generate-improvements", generateResumeImprovements);
 // Resume Scorer
 router.post("/resume-score", protect, scoreResumeWithAI);
 router.post("/improve-resume-section", protect, improveResumeSection);
+router.post("/cover-letter", protect, generateCoverLetter);
 
 module.exports = router;

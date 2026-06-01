@@ -127,10 +127,16 @@ const CandidateDashboard = () => {
               Track your applications, review AI feedback, and discover high-match opportunities tailored to your profile.
             </p>
           </div>
-          <Link to="/jobs" className="btn-primary">
-            <BriefcaseBusiness size={16} className="mr-2" />
-            Browse Jobs
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link to="/cover-letter" className="btn-secondary">
+              <Sparkles size={16} className="mr-2 text-[#00D4FF]" />
+              AI Cover Letter
+            </Link>
+            <Link to="/jobs" className="btn-primary">
+              <BriefcaseBusiness size={16} className="mr-2" />
+              Browse Jobs
+            </Link>
+          </div>
         </div>
       </section>
 

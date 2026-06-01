@@ -166,5 +166,6 @@ export const getAnalytics = () => API.get("/analytics");
 
 export const scoreResume = (data) => API.post("/ai/resume-score", data);
 export const improveResumeSection = (data) => API.post("/ai/improve-resume-section", data);
+export const generateCoverLetter = (data) => API.post("/ai/cover-letter", data);
 
 export default API;
