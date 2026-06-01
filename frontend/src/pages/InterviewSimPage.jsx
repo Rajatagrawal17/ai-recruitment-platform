@@ -4,10 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Sparkles, Clock, ArrowRight, ChevronDown, ChevronUp, CheckCircle2, 
   AlertTriangle, RotateCcw, Share2, Copy, Lock, Unlock, BookOpen, 
-  Award, HelpCircle, Send, Check, ChevronRight, Play, Loader2
+  Award, HelpCircle, Send, Check, ChevronRight, Play
 } from "lucide-react";
 import { getJobs, generateSimQuestions, evaluateSimAnswer } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import WaveLoader from "../components/WaveLoader";
 
 // Score Ring Component (1-10 Scale)
 const ScoreRing = ({ score, size = 80, strokeWidth = 8 }) => {
@@ -573,7 +574,7 @@ export default function InterviewSimPage() {
                   <div className="relative">
                     {loadingJobs ? (
                       <div className="flex items-center justify-center h-12 bg-slate-900/40 rounded-xl border border-slate-800/60 text-xs text-text-muted">
-                        <Loader2 size={16} className="animate-spin mr-2" /> Loading active jobs...
+                        <WaveLoader size="sm" className="mr-2" /> Loading active jobs...
                       </div>
                     ) : (
                       <select
@@ -692,7 +693,7 @@ export default function InterviewSimPage() {
               >
                 {loadingQuestions ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Generating Interview Setup...
+                    <WaveLoader size="sm" /> Generating Interview Setup...
                   </>
                 ) : (
                   <>
@@ -789,7 +790,7 @@ export default function InterviewSimPage() {
                     >
                       {isSubmitting ? (
                         <>
-                          <Loader2 size={14} className="animate-spin" /> Evaluating Answer...
+                          <WaveLoader size="sm" /> Evaluating Answer...
                         </>
                       ) : (
                         <>

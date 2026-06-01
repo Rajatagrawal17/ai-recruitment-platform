@@ -24,10 +24,10 @@ import {
   Briefcase,
   Layers,
   ArrowLeft,
-  Loader2,
   RefreshCw
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import WaveLoader from "../components/WaveLoader";
 
 const getMockScoreResult = (jd = "", cv = "", keywordScore = 70, formatScore = 80) => {
   const experienceScore = Math.floor(60 + Math.random() * 30);
@@ -477,7 +477,7 @@ export default function ResumeScorePage() {
                   >
                     {fileLoading ? (
                       <div className="space-y-3 py-6">
-                        <Loader2 className="animate-spin mx-auto text-[#6366f1]" size={28} />
+                        <WaveLoader size="lg" className="mx-auto" />
                         <p className="text-sm font-medium">Extracting text using PDFJS-dist...</p>
                       </div>
                     ) : (
@@ -524,7 +524,7 @@ export default function ResumeScorePage() {
               >
                 {loading ? (
                   <>
-                    <Loader2 size={16} className="animate-spin text-white" />
+                    <WaveLoader size="sm" className="text-white" />
                     Analyzing CV...
                   </>
                 ) : (
@@ -571,7 +571,7 @@ export default function ResumeScorePage() {
                 >
                   <div className="max-w-md mx-auto w-full space-y-6">
                     <div className="flex items-center gap-3">
-                      <Loader2 size={24} className="animate-spin text-[#6366f1]" />
+                      <WaveLoader size="md" className="text-[#6366f1]" />
                       <h3 className="text-lg font-bold text-white">Scoring ATS Resume...</h3>
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed">
@@ -596,7 +596,7 @@ export default function ResumeScorePage() {
                             {isDone ? (
                               <CheckCircle size={16} className="text-emerald-400 shrink-0" />
                             ) : isActive ? (
-                              <Loader2 size={16} className="animate-spin text-[#6366f1] shrink-0" />
+                              <WaveLoader size="sm" className="text-[#6366f1] shrink-0" />
                             ) : (
                               <div className="w-4 h-4 rounded-full border border-white/10 shrink-0" />
                             )}
@@ -866,7 +866,7 @@ export default function ResumeScorePage() {
                       >
                         {isImproving ? (
                           <>
-                            <Loader2 size={12} className="animate-spin" />
+                            <WaveLoader size="sm" className="text-white" />
                             Improving...
                           </>
                         ) : (

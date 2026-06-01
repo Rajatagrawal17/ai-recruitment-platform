@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Bookmark, BookmarkCheck, MapPin, Calendar, Users, Loader2, Clock } from "lucide-react";
+import { Bookmark, BookmarkCheck, MapPin, Calendar, Users, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSavedJobs } from "../context/SavedJobsContext";
+import { TiltCard } from "./TiltCard";
 import "./JobCard.css";
 
 function getAvatarColor(name) {
@@ -124,7 +125,8 @@ const JobCard = ({
 
   if (isMobile) {
     return (
-      <motion.div
+      <TiltCard
+        layoutId={`card-${job._id}`}
         onClick={handleView}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -149,12 +151,12 @@ const JobCard = ({
           cursor: 'pointer',
           transition: 'all 0.15s ease',
           boxSizing: 'border-box',
-          transform: isHovered ? 'translateX(3px)' : 'none',
         }}
       >
         {/* Left: 36px company avatar */}
         <div style={{ display: 'flex', flexShrink: 0 }}>
-          <div
+          <motion.div
+            layoutId={`avatar-${job._id}`}
             style={{
               width: '36px',
               height: '36px',
@@ -170,12 +172,13 @@ const JobCard = ({
             }}
           >
             {companyInitials}
-          </div>
+          </motion.div>
         </div>
 
         {/* Center: job title (13px) + company + location (10px muted) */}
         <div style={{ flex: 1, minWidth: 0, marginLeft: '12px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-          <h3 
+          <motion.h3 
+            layoutId={`title-${job._id}`}
             style={{
               fontSize: '13px',
               fontWeight: 500,
@@ -187,7 +190,7 @@ const JobCard = ({
             }}
           >
             {highlightText(job.title, searchQuery)}
-          </h3>
+          </motion.h3>
           <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {job.company} • {job.location || "Remote"}
           </span>
@@ -222,7 +225,7 @@ const JobCard = ({
             }}
           >
             {isApplying ? (
-              <Loader2 size={10} className="animate-spin text-white" />
+              <WaveLoader size="sm" />
             ) : justApplied ? (
               "Applied ✓"
             ) : (
@@ -230,12 +233,13 @@ const JobCard = ({
             )}
           </motion.button>
         </div>
-      </motion.div>
+      </TiltCard>
     );
   }
 
   return (
-    <motion.div
+    <TiltCard
+      layoutId={`card-${job._id}`}
       onClick={handleView}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -260,7 +264,6 @@ const JobCard = ({
         cursor: 'pointer',
         transition: 'all 0.15s ease',
         boxSizing: 'border-box',
-        transform: isHovered ? 'translateX(3px)' : 'none',
       }}
     >
       {/* 1. Company Avatar & Name */}
@@ -273,7 +276,8 @@ const JobCard = ({
           flexShrink: 0 
         }}
       >
-        <div
+        <motion.div
+          layoutId={`avatar-${job._id}`}
           style={{
             width: '44px',
             height: '44px',
@@ -289,7 +293,7 @@ const JobCard = ({
           }}
         >
           {companyInitials}
-        </div>
+        </motion.div>
         <span 
           style={{
             fontSize: '10px',
@@ -309,7 +313,8 @@ const JobCard = ({
       {/* 2. Center Content */}
       <div style={{ flex: 1, minWidth: 0, marginLeft: '16px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
         {/* Row 1: Job Title + NEW badge */}
-        <h3 
+        <motion.h3 
+          layoutId={`title-${job._id}`}
           style={{
             fontSize: '15px',
             fontWeight: 500,
@@ -329,7 +334,7 @@ const JobCard = ({
               NEW
             </span>
           )}
-        </h3>
+        </motion.h3>
 
         {/* Row 2: pin icon + location + work-type badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)' }}>
@@ -450,7 +455,7 @@ const JobCard = ({
           }}
         >
           {isApplying ? (
-            <Loader2 size={12} className="animate-spin text-white" />
+            <WaveLoader size="sm" />
           ) : justApplied ? (
             "Applied ✓"
           ) : (
@@ -478,7 +483,7 @@ const JobCard = ({
           {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
         </motion.button>
       </div>
-    </motion.div>
+    </TiltCard>
   );
 };
 

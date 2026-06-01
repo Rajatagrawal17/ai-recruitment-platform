@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useState, useRef } from "react";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
 import {
@@ -17,50 +17,50 @@ import {
   MapPin,
   Sparkles,
 } from "lucide-react";
+import ParticleCanvas from "../components/ParticleCanvas";
+import { ScrollReveal } from "../components/ScrollReveal";
+import { StaggerList } from "../components/StaggerList";
+import { TiltCard } from "../components/TiltCard";
+import { MagneticButton } from "../components/MagneticButton";
 import "./ModernLandingPage.css";
 
 // ============================================================================
-// ANIMATED COUNTER COMPONENT (requestAnimationFrame)
+// ANIMATED COUNTER COMPONENT (framer-motion)
 // ============================================================================
 
-const AnimatedCounter = ({ targetValue, label, suffix = "" }) => {
-  const [count, setCount] = useState(0);
-  const { ref, inView } = useInView({
-    threshold: 0.3,
-    triggerOnce: true,
-  });
+const AnimatedCounter = ({ to, duration = 2, suffix = "", label }) => {
+  const ref = useRef(null);
+  const [started, setStarted] = useState(false);
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (v) => Math.round(v).toLocaleString() + suffix);
 
   useEffect(() => {
-    if (!inView) return;
-
-    let animationFrameId;
-    const startTime = performance.now();
-    const duration = 2000; // 2 seconds
-
-    const updateCount = (timestamp) => {
-      const elapsed = timestamp - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // Ease out quad
-      const easeProgress = progress * (2 - progress);
-      setCount(Math.floor(easeProgress * targetValue));
-
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(updateCount);
-      }
-    };
-
-    animationFrameId = requestAnimationFrame(updateCount);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [targetValue, inView]);
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started) {
+          setStarted(true);
+          animate(count, to, {
+            duration,
+            ease: [0.4, 0, 0.2, 1],
+          });
+        }
+      },
+      { threshold: 0.5 }
+    );
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [to, duration, started, count]);
 
   return (
-    <div ref={ref} className="flex flex-col items-center p-4">
-      <span className="text-4xl sm:text-5xl font-extrabold text-[#00D4FF] tracking-tight">
-        {count.toLocaleString()}{suffix}
-      </span>
-      <p className="text-xs sm:text-sm text-[#94A3B8] font-semibold uppercase tracking-wider mt-2">
-        {label}
-      </p>
+    <div className="flex flex-col items-center p-4">
+      <motion.span ref={ref} className="text-4xl sm:text-5xl font-extrabold text-[#00D4FF] tracking-tight">
+        {rounded}
+      </motion.span>
+      {label && (
+        <p className="text-xs sm:text-sm text-[#94A3B8] font-semibold uppercase tracking-wider mt-2">
+          {label}
+        </p>
+      )}
     </div>
   );
 };
@@ -100,10 +100,6 @@ const logoVariants = {
   },
 };
 
-// ============================================================================
-// MAIN HERO SECTION
-// ============================================================================
-
 const HeroSection = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -130,16 +126,17 @@ const HeroSection = () => {
   const headlineSecondLine = "Powered by AI".split(" ");
 
   return (
-    <section className="hero-section py-20 lg:py-32">
-      {/* Background Mesh Overlay */}
-      <div className="hero-mesh-overlay" />
-
-      {/* Floating Blurred Orbs */}
-      <div className="background-orbs-container">
-        <div className="hero-orb orb-1" />
-        <div className="hero-orb orb-2" />
-        <div className="hero-orb orb-3" />
+    <section className="hero-section py-20 lg:py-32" style={{ position: "relative", overflow: "hidden", zIndex: 1 }}>
+      {/* Background Aurora and Grid texture */}
+      <div className="aurora-bg">
+        <div className="orb-1 aurora-orb" />
+        <div className="orb-2 aurora-orb" />
+        <div className="orb-3 aurora-orb" />
+        <div className="orb-4 aurora-orb" />
+        <div className="grid-texture" />
       </div>
+      <div className="noise-overlay" />
+      <ParticleCanvas />
 
       <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto flex flex-col items-center">
         {/* Label Pill */}
@@ -173,7 +170,7 @@ const HeroSection = () => {
             </motion.span>
           ))}
           <br />
-          <span className="gradient-text">
+          <span className="gradient-text-animated">
             {headlineSecondLine.map((word, i) => (
               <motion.span
                 key={`line2-${i}`}
@@ -230,62 +227,48 @@ const HeroSection = () => {
             <option value="Hyderabad">📍 Hyderabad</option>
             <option value="San Francisco">📍 San Francisco</option>
           </select>
-          <button type="submit" className="search-action-btn ml-3">
+          <MagneticButton type="submit" className="search-action-btn ml-3">
             <span>Find Jobs</span>
             <ArrowRight size={16} />
-          </button>
+          </MagneticButton>
         </motion.form>
 
         {/* Floating Job Category Chips */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 1.0 }}
-          className="flex flex-wrap items-center justify-center gap-3 mb-16"
-        >
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-16">
           <span className="text-xs text-slate-400 font-semibold tracking-wider uppercase mr-2">
             Popular:
           </span>
-          {popularCategories.map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => handleChipClick(category)}
-              className="category-chip"
-            >
-              {category}
-            </button>
-          ))}
-        </motion.div>
+          <StaggerList className="flex flex-wrap items-center justify-center gap-3">
+            {popularCategories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => handleChipClick(category)}
+                className="category-chip"
+              >
+                {category}
+              </button>
+            ))}
+          </StaggerList>
+        </div>
 
         {/* Social Proof Row */}
-        <motion.div
-          variants={parentLogoVariants}
-          initial="hidden"
-          animate="visible"
-          className="flex flex-col items-center gap-4 mt-8"
-        >
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.1 }}
-            className="text-xs font-semibold tracking-widest text-slate-500 uppercase"
-          >
+        <div className="flex flex-col items-center gap-4 mt-8">
+          <p className="text-xs font-semibold tracking-widest text-slate-500 uppercase">
             Trusted by teams at
-          </motion.p>
-          <div className="flex items-center justify-center gap-4 sm:gap-6 flex-wrap">
+          </p>
+          <StaggerList className="flex items-center justify-center gap-4 sm:gap-6 flex-wrap">
             {socialLogos.map((logo) => (
-              <motion.div
+              <div
                 key={logo.initials}
-                variants={logoVariants}
                 className="social-logo-circle"
                 title={logo.name}
               >
                 {logo.initials}
-              </motion.div>
+              </div>
             ))}
-          </div>
-        </motion.div>
+          </StaggerList>
+        </div>
       </div>
     </section>
   );
@@ -299,11 +282,11 @@ const StatsSection = () => {
   return (
     <section className="py-12 sm:py-16 bg-[#070b16] px-4 sm:px-6 lg:px-8 border-y border-white/5">
       <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 justify-center">
-          <AnimatedCounter targetValue={10000} suffix="+" label="Verified Jobs" />
-          <AnimatedCounter targetValue={500} suffix="+" label="Top Companies" />
-          <AnimatedCounter targetValue={95} suffix="%" label="AI Match Accuracy" />
-        </div>
+        <StaggerList className="grid grid-cols-1 sm:grid-cols-3 gap-8 justify-center">
+          <AnimatedCounter to={10000} suffix="+" label="Verified Jobs" />
+          <AnimatedCounter to={500} suffix="+" label="Top Companies" />
+          <AnimatedCounter to={95} suffix="%" label="AI Match Accuracy" />
+        </StaggerList>
       </div>
     </section>
   );
@@ -339,23 +322,17 @@ const HowItWorksSection = () => {
     <section className="py-20 sm:py-32 bg-[#0A0F1E] px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Section Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16 sm:mb-20"
-        >
+        <div className="text-center mb-16 sm:mb-20">
           <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            How HireAI Works
+            How <span className="gradient-text-animated">HireAI</span> Works
           </h2>
           <p className="text-lg text-[#94A3B8]">Three simple steps to smarter hiring</p>
-        </motion.div>
+        </div>
 
         {/* Steps Grid */}
-        <div className="grid md:grid-cols-3 gap-8 relative">
+        <div className="relative">
           {/* Arrows on desktop */}
-          <div className="hidden md:block absolute top-20 left-0 right-0 h-1 pointer-events-none">
+          <div className="hidden md:block absolute top-20 left-0 right-0 h-1 pointer-events-none z-10">
             <div className="flex justify-between h-full px-[18%]">
               <div className="flex-1 flex items-center justify-end pr-8">
                 <ArrowRight className="text-[#00D4FF]/40 w-6 h-6" />
@@ -366,34 +343,28 @@ const HowItWorksSection = () => {
             </div>
           </div>
 
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            return (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{
-                  duration: 0.6,
-                  delay: index * 0.15,
-                }}
-                className="p-8 rounded-2xl bg-white/4 border border-[#00D4FF]/15 backdrop-blur-sm hover:border-[#00D4FF]/50 hover:bg-white/6 transition-all duration-300 group cursor-pointer"
-                whileHover={{ y: -6 }}
-              >
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="p-3 rounded-lg bg-[#00D4FF]/10">
-                    <Icon className="text-[#00D4FF] w-6 h-6" />
+          <StaggerList className="grid md:grid-cols-3 gap-8">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <TiltCard
+                  key={index}
+                  className="p-8 rounded-2xl bg-white/4 border border-[#00D4FF]/15 backdrop-blur-sm hover:border-[#00D4FF]/50 hover:bg-white/6 transition-all duration-300 group cursor-pointer"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="p-3 rounded-lg bg-[#00D4FF]/10">
+                      <Icon className="text-[#00D4FF] w-6 h-6" />
+                    </div>
+                    <span className="text-3xl font-bold text-[#00D4FF]/40">
+                      {step.number}
+                    </span>
                   </div>
-                  <span className="text-3xl font-bold text-[#00D4FF]/40">
-                    {step.number}
-                  </span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
-                <p className="text-[#94A3B8] leading-relaxed">{step.desc}</p>
-              </motion.div>
-            );
-          })}
+                  <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
+                  <p className="text-[#94A3B8] leading-relaxed">{step.desc}</p>
+                </TiltCard>
+              );
+            })}
+          </StaggerList>
         </div>
       </div>
     </section>
@@ -425,25 +396,15 @@ const DualRoleSection = () => {
     <section className="py-20 sm:py-32 bg-[#0A0F1E] px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Section Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16 sm:mb-20"
-        >
+        <div className="text-center mb-16 sm:mb-20">
           <h2 className="text-4xl sm:text-5xl font-bold text-white">
-            Built for Everyone in Hiring
+            Built for Everyone in <span className="gradient-text-animated">Hiring</span>
           </h2>
-        </motion.div>
+        </div>
 
         <div className="grid md:grid-cols-2 gap-8">
           {/* Recruiter Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
+          <TiltCard
             className="p-8 sm:p-12 rounded-2xl bg-gradient-to-br from-purple-500/5 via-white/2 to-transparent border border-purple-500/30 backdrop-blur-md"
           >
             <div className="inline-block px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 mb-6">
@@ -461,38 +422,28 @@ const DualRoleSection = () => {
 
             <div className="space-y-4 mb-8">
               {recruiterFeatures.map((feature, idx) => (
-                <motion.div
+                <div
                   key={idx}
-                  initial={{ opacity: 0, x: -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: idx * 0.08 }}
                   className="flex items-center gap-3 text-[#E2E8F0]"
                 >
                   <span className="text-purple-400 font-bold">✓</span>
                   <span>{feature}</span>
-                </motion.div>
+                </div>
               ))}
             </div>
 
             <Link to="/login">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
+              <MagneticButton
                 className="px-6 py-3 border-2 border-purple-500/50 text-purple-400 rounded-lg font-semibold hover:bg-purple-500/10 transition-all duration-300 flex items-center gap-2 group"
               >
                 Start Recruiting
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
+              </MagneticButton>
             </Link>
-          </motion.div>
+          </TiltCard>
 
           {/* Candidate Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
+          <TiltCard
             className="p-8 sm:p-12 rounded-2xl bg-gradient-to-br from-cyan-500/5 via-white/2 to-transparent border border-[#00D4FF]/20 backdrop-blur-md"
           >
             <div className="inline-block px-3 py-1 rounded-full bg-[#00D4FF]/20 border border-[#00D4FF]/40 mb-6">
@@ -510,31 +461,25 @@ const DualRoleSection = () => {
 
             <div className="space-y-4 mb-8">
               {candidateFeatures.map((feature, idx) => (
-                <motion.div
+                <div
                   key={idx}
-                  initial={{ opacity: 0, x: 10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: idx * 0.08 }}
                   className="flex items-center gap-3 text-[#E2E8F0]"
                 >
                   <span className="text-[#00D4FF] font-bold">✓</span>
                   <span>{feature}</span>
-                </motion.div>
+                </div>
               ))}
             </div>
 
             <Link to="/jobs">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
+              <MagneticButton
                 className="px-6 py-3 border-2 border-[#00D4FF]/50 text-[#00D4FF] rounded-lg font-semibold hover:bg-[#00D4FF]/10 transition-all duration-300 flex items-center gap-2 group"
               >
                 Find Jobs
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
+              </MagneticButton>
             </Link>
-          </motion.div>
+          </TiltCard>
         </div>
       </div>
     </section>
@@ -544,7 +489,6 @@ const DualRoleSection = () => {
 // ============================================================================
 // BENTO GRID FEATURES SECTION
 // ============================================================================
-
 const BentoGridSection = () => {
   const features = [
     {
@@ -616,36 +560,22 @@ const BentoGridSection = () => {
     <section className="py-20 sm:py-32 bg-[#0A0F1E] px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Section Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16 sm:mb-20"
-        >
+        <div className="text-center mb-16 sm:mb-20">
           <h2 className="text-4xl sm:text-5xl font-bold text-white">
-            Everything You Need to Hire with AI
+            Everything You Need to Hire with <span className="gradient-text-animated">AI</span>
           </h2>
-        </motion.div>
+        </div>
 
         {/* Bento Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-max">
+        <StaggerList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-max">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             const isLarge = feature.isLarge;
             const colSpan = isLarge ? "sm:col-span-2" : "";
 
             return (
-              <motion.div
+              <TiltCard
                 key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{
-                  duration: 0.6,
-                  delay: index * 0.1,
-                }}
-                whileHover={{ y: -6, borderColor: "rgba(0,212,255,0.5)" }}
                 className={`p-6 sm:p-8 rounded-2xl bg-white/4 border border-white/8 backdrop-blur-sm transition-all duration-300 ${colSpan}`}
               >
                 <div className="flex items-start gap-4 mb-4">
@@ -677,10 +607,10 @@ const BentoGridSection = () => {
                     <MatchBar label="Education" percentage={90} />
                   </div>
                 )}
-              </motion.div>
+              </TiltCard>
             );
           })}
-        </div>
+        </StaggerList>
       </div>
     </section>
   );
@@ -698,15 +628,9 @@ const FinalCTASection = () => {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#00D4FF]/5 rounded-full blur-3xl" />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7 }}
-        className="max-w-4xl mx-auto text-center relative z-10"
-      >
+      <div className="max-w-4xl mx-auto text-center relative z-10">
         <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-          Ready to Hire Smarter?
+          Ready to Hire <span className="gradient-text-animated">Smarter?</span>
         </h2>
 
         <p className="text-lg sm:text-xl text-[#94A3B8] mb-12">
@@ -714,34 +638,24 @@ const FinalCTASection = () => {
           better hiring decisions.
         </p>
 
-        <motion.div
-          className="flex flex-col sm:flex-row gap-6 justify-center"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-        >
+        <div className="flex flex-col sm:flex-row gap-6 justify-center">
           <Link to="/login">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.97 }}
+            <MagneticButton
               className="px-8 sm:px-10 py-4 bg-[#00D4FF] text-[#0A0F1E] rounded-full font-bold text-base sm:text-lg hover:shadow-lg hover:shadow-[#00D4FF]/50 transition-all duration-300 btn-primary text-white"
             >
               Get Started Free
-            </motion.button>
+            </MagneticButton>
           </Link>
 
           <Link to="/jobs">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.97 }}
+            <MagneticButton
               className="px-8 sm:px-10 py-4 border-2 border-white text-white rounded-full font-bold text-base sm:text-lg hover:bg-white/8 transition-all duration-300"
             >
               View Jobs
-            </motion.button>
+            </MagneticButton>
           </Link>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </section>
   );
 };
@@ -761,12 +675,12 @@ const ModernLandingPage = () => {
 
   return (
     <div className="bg-[#0A0F1E] text-white overflow-x-hidden">
-      <HeroSection />
-      <StatsSection />
-      <HowItWorksSection />
-      <DualRoleSection />
-      <BentoGridSection />
-      <FinalCTASection />
+      <ScrollReveal><HeroSection /></ScrollReveal>
+      <ScrollReveal><StatsSection /></ScrollReveal>
+      <ScrollReveal><HowItWorksSection /></ScrollReveal>
+      <ScrollReveal><DualRoleSection /></ScrollReveal>
+      <ScrollReveal><BentoGridSection /></ScrollReveal>
+      <ScrollReveal><FinalCTASection /></ScrollReveal>
     </div>
   );
 };

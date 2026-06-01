@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { LayoutDashboard, LogOut, Menu, Moon, Sparkles, Sun, X, Zap } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -19,10 +19,27 @@ const NavbarFixed = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const dropdownRef = useRef(null);
 
+  const [totalDocHeight, setTotalDocHeight] = useState(1000);
+  const [windowHeight, setWindowHeight] = useState(800);
+
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const updateHeights = () => {
+      setTotalDocHeight(document.documentElement.scrollHeight || document.body.scrollHeight || 1000);
+      setWindowHeight(window.innerHeight || 800);
+    };
+    updateHeights();
+    window.addEventListener("resize", updateHeights);
+    const interval = setInterval(updateHeights, 1000);
+    return () => {
+      window.removeEventListener("resize", updateHeights);
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -65,37 +82,61 @@ const NavbarFixed = () => {
 
   const isLoggedIn = isAuthenticated && token;
 
+  const { scrollY } = useScroll();
+  const navBg = useTransform(scrollY, [0, 80], ['rgba(10, 15, 30, 0)', 'rgba(10, 15, 30, 0.85)']);
+  const navBlur = useTransform(scrollY, [0, 80], ['blur(0px)', 'blur(24px)']);
+  const navBorderOpacity = useTransform(scrollY, [0, 80], [0, 0.08]);
+  const navHeight = useTransform(scrollY, [0, 80], [72, 56]);
+  const navShadow = useTransform(scrollY, [0, 80], ['0 0 0 0 transparent', '0 4px 30px rgba(0, 0, 0, 0.3)']);
+  const logoScale = useTransform(scrollY, [0, 80], [1, 0.9]);
+  
+  const progress = useTransform(
+    scrollY,
+    [0, Math.max(1, totalDocHeight - windowHeight)],
+    ['0%', '100%']
+  );
+
   return (
-    <motion.header
-      className={`sticky top-0 z-50 border-b transition-colors duration-300 ${
-        isScrolled
-          ? "border-border/50 bg-surface/80 backdrop-blur-xl shadow-sm"
-          : "border-transparent bg-transparent"
-      }`}
+    <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      style={{
+        backgroundColor: navBg,
+        backdropFilter: navBlur,
+        WebkitBackdropFilter: navBlur,
+        borderBottom: `1px solid rgba(255, 255, 255, ${navBorderOpacity})`,
+        height: navHeight,
+        boxShadow: navShadow,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        transition: 'height 0.3s ease'
+      }}
     >
-      <motion.div
-        className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-6"
-        animate={{ height: isScrolled ? "3.5rem" : "4.25rem" }}
-      >
-        <Link to="/" className="group flex flex-shrink-0 items-center gap-2">
-          <motion.div
-            className="rounded-xl bg-gradient-to-tr from-primary to-accent px-2 py-1 text-sm font-extrabold text-white shadow-card"
-            whileHover={reduceMotion ? undefined : { rotate: 10, scale: 1.1 }}
-          >
-            C
-          </motion.div>
-          <div className="leading-tight">
-            <span className="block whitespace-nowrap bg-gradient-to-r from-primary to-accent bg-clip-text text-lg font-extrabold text-transparent">
-              CogniFit
-            </span>
-            <span className="hidden text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted md:block">
-              Intelligent hiring workspace
-            </span>
-          </div>
-        </Link>
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 md:px-6">
+        <motion.div style={{ scale: logoScale }}>
+          <Link to="/" className="group flex flex-shrink-0 items-center gap-2">
+            <motion.div
+              className="rounded-xl bg-gradient-to-tr from-primary to-accent px-2 py-1 text-sm font-extrabold text-white shadow-card"
+              whileHover={reduceMotion ? undefined : { rotate: 10, scale: 1.1 }}
+            >
+              C
+            </motion.div>
+            <div className="leading-tight">
+              <span className="block whitespace-nowrap bg-gradient-to-r from-primary to-accent bg-clip-text text-lg font-extrabold text-transparent">
+                CogniFit
+              </span>
+              <span className="hidden text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted md:block">
+                Intelligent hiring workspace
+              </span>
+            </div>
+          </Link>
+        </motion.div>
 
         <nav className="hidden items-center gap-1 rounded-full border border-border bg-surface-elevated px-1.5 py-1 shadow-sm backdrop-blur-xl md:flex">
           {!isLoggedIn && (
@@ -255,7 +296,7 @@ const NavbarFixed = () => {
             {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
-      </motion.div>
+      </div>
 
       <AnimatePresence>
         {mobileOpen && (
@@ -264,6 +305,13 @@ const NavbarFixed = () => {
             animate={reduceMotion ? { opacity: 1 } : { opacity: 1, height: "auto" }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 }}
             className="border-t border-border bg-surface-elevated/95 md:hidden"
+            style={{
+              position: "fixed",
+              top: "56px",
+              left: 0,
+              right: 0,
+              zIndex: 999,
+            }}
           >
             <div className="space-y-2 px-4 py-3">
               {!isLoggedIn && (
@@ -351,7 +399,19 @@ const NavbarFixed = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.header>
+
+      <motion.div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          height: '1.5px',
+          background: 'gradient-linear',
+          backgroundImage: 'linear-gradient(90deg, #6366f1, #8b5cf6, #06b6d4)',
+          width: progress
+        }}
+      />
+    </motion.nav>
   );
 };
 

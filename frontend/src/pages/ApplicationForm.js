@@ -7,6 +7,7 @@ import AnimatedFormField from "../components/AnimatedFormField";
 import { NotificationContainer } from "../components/AnimatedNotification";
 import { MobileOptimizedContainer, MobileOptimizedButton } from "../components/MobileOptimizedAnimations";
 import { applyToJob } from "../services/api";
+import { celebrateApply } from "../utils/celebrate";
 import "./RecruitmentPages.css";
 
 const initialData = {
@@ -68,6 +69,7 @@ const ApplicationForm = () => {
       payload.append("resume", resumeFile);
 
       const res = await applyToJob(payload);
+      celebrateApply();
       setResult(res.data.application || null);
       addNotification("success", "Application Submitted!", "Your application has been received and will be reviewed soon.");
     } catch (err) {

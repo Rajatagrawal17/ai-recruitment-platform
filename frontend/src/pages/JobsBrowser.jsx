@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useNavigate } from "react-router-dom";
-import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform, LayoutGroup } from "framer-motion";
 import * as Dialog from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import * as Slider from "@radix-ui/react-slider";
@@ -10,18 +10,13 @@ import { formatDistanceToNow } from "date-fns";
 import {
   ArrowRight,
   Bookmark,
-  Bell,
   Building2,
   Check,
   ChevronDown,
   ChevronLeft,
-  Layers3,
-  Filter,
-  Loader2,
   MapPin,
   Search,
   Sparkles,
-  Trash2,
   X,
   DollarSign,
   Briefcase
@@ -33,6 +28,9 @@ import JobCard from "../components/JobCard";
 import ApplyDrawer from "../components/ApplyDrawer";
 import SkeletonJobCard from "../components/SkeletonJobCard";
 import { toast } from "react-hot-toast";
+import { MagneticButton } from "../components/MagneticButton";
+import WaveLoader from "../components/WaveLoader";
+
 import { normalize, getUserId, getExperienceBucket, formatSalary, displayCountText } from "../utils/jobHelpers";
 
 const JOB_TYPES = ["full-time", "part-time", "remote", "contract"];
@@ -429,7 +427,8 @@ export default function JobsBrowser() {
       <ApplyDrawer open={Boolean(applyJob)} job={applyJob} onOpenChange={(open) => !open && setApplyJob(null)} onSuccess={onApplySuccess} />
 
       <div className="mx-auto max-w-[1600px] px-4 py-6 md:px-6 lg:px-8">
-        <div className="flex gap-6 items-start w-full relative">
+        <LayoutGroup>
+          <div className="flex gap-6 items-start w-full relative">
           
           {/* LEFT 220px: Sticky Filter Sidebar (desktop only) */}
           <aside className="hidden lg:block w-[220px] shrink-0 sticky top-[90px] h-[calc(100vh-120px)] overflow-y-auto pr-1 no-scrollbar border-r border-white/5">
@@ -669,7 +668,7 @@ export default function JobsBrowser() {
                     className="flex-1 bg-transparent border-none outline-none text-white text-sm h-full"
                   />
 
-                  {isSearching && <Loader2 size={16} className="animate-spin text-[#6366f1] mr-3" />}
+                  {isSearching && <WaveLoader size="sm" className="mr-3" />}
 
                   {searchInput && (
                     <button
@@ -860,6 +859,7 @@ export default function JobsBrowser() {
           <AnimatePresence>
             {selectedJob && !isMobile && (
               <motion.aside
+                layoutId={`card-${selectedJob._id}`}
                 initial={{ x: 340, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: 340, opacity: 0 }}
@@ -877,14 +877,15 @@ export default function JobsBrowser() {
                 </div>
 
                 <div className="mt-4 flex items-center gap-3">
-                  <div
+                  <motion.div
+                    layoutId={`avatar-${selectedJob._id}`}
                     className="h-12 w-12 rounded-xl flex items-center justify-center text-lg font-bold text-white shrink-0"
                     style={{ background: `linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)` }}
                   >
                     {(selectedJob.company || "J").charAt(0).toUpperCase()}
-                  </div>
+                  </motion.div>
                   <div>
-                    <h2 className="text-base font-bold text-white leading-tight">{selectedJob.title}</h2>
+                    <motion.h2 layoutId={`title-${selectedJob._id}`} className="text-base font-bold text-white leading-tight">{selectedJob.title}</motion.h2>
                     <p className="text-xs text-slate-400 mt-1">{selectedJob.company}</p>
                   </div>
                 </div>
@@ -904,17 +905,21 @@ export default function JobsBrowser() {
 
                 {/* Apply full width & Save Outline */}
                 <div className="flex flex-col gap-2 mt-5">
-                  <button
-                    disabled={appliedJobIds.has(String(selectedJob._id))}
-                    onClick={() => setApplyJob(selectedJob)}
-                    className={`w-full py-2.5 rounded-full text-xs font-semibold text-center text-white ${
-                      appliedJobIds.has(String(selectedJob._id))
-                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 cursor-not-allowed"
-                        : "bg-gradient-to-r from-[#6366f1] to-[#06b6d4] hover:opacity-90 transition"
-                    }`}
-                  >
-                    {appliedJobIds.has(String(selectedJob._id)) ? "Applied ✓" : "Apply Now"}
-                  </button>
+                  {appliedJobIds.has(String(selectedJob._id)) ? (
+                    <button
+                      disabled
+                      className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 cursor-not-allowed"
+                    >
+                      Applied ✓
+                    </button>
+                  ) : (
+                    <MagneticButton
+                      onClick={() => setApplyJob(selectedJob)}
+                      className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-white bg-gradient-to-r from-[#6366f1] to-[#06b6d4] hover:opacity-90 transition"
+                    >
+                      Apply Now
+                    </MagneticButton>
+                  )}
                   <button
                     onClick={() => toggleSaveJob(selectedJob)}
                     className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-slate-300 border border-white/10 hover:border-white/20 hover:bg-white/5 transition"
@@ -1044,20 +1049,24 @@ export default function JobsBrowser() {
 
                     {/* Quick Apply and Save */}
                     <div className="flex flex-col gap-2 mt-5">
-                      <button
-                        disabled={appliedJobIds.has(String(selectedJob._id))}
-                        onClick={() => {
-                          setSelectedJobId(null);
-                          setApplyJob(selectedJob);
-                        }}
-                        className={`w-full py-2.5 rounded-full text-xs font-semibold text-center text-white ${
-                          appliedJobIds.has(String(selectedJob._id))
-                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 cursor-not-allowed"
-                            : "bg-gradient-to-r from-[#6366f1] to-[#06b6d4]"
-                        }`}
-                      >
-                        {appliedJobIds.has(String(selectedJob._id)) ? "Applied ✓" : "Apply Now"}
-                      </button>
+                      {appliedJobIds.has(String(selectedJob._id)) ? (
+                        <button
+                          disabled
+                          className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 cursor-not-allowed"
+                        >
+                          Applied ✓
+                        </button>
+                      ) : (
+                        <MagneticButton
+                          onClick={() => {
+                            setSelectedJobId(null);
+                            setApplyJob(selectedJob);
+                          }}
+                          className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-white bg-gradient-to-r from-[#6366f1] to-[#06b6d4]"
+                        >
+                          Apply Now
+                        </MagneticButton>
+                      )}
                       <button
                         onClick={() => toggleSaveJob(selectedJob)}
                         className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-slate-300 border border-white/10"
@@ -1163,6 +1172,7 @@ export default function JobsBrowser() {
           </Dialog.Root>
 
         </div>
+        </LayoutGroup>
       </div>
     </main>
   );

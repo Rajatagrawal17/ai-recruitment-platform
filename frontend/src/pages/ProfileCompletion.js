@@ -4,6 +4,7 @@ import { Save, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
+import { celebrateProfile } from '../utils/celebrate';
 import './ProfileCompletion.css';
 
 const ProfileCompletion = () => {
@@ -18,6 +19,12 @@ const ProfileCompletion = () => {
   const completenessMotion = useMotionValue(0);
   const springValue = useSpring(completenessMotion, { stiffness: 100, damping: 15 });
   const [displayPercent, setDisplayPercent] = useState(0);
+
+  useEffect(() => {
+    if (profileCompleteness === 100) {
+      celebrateProfile();
+    }
+  }, [profileCompleteness]);
 
   useEffect(() => {
     if (!loading) {

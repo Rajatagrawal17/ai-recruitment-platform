@@ -7,6 +7,7 @@ import { useInView } from "react-intersection-observer";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "react-hot-toast";
 import { applyToJob } from "../services/api";
+import { celebrateApply } from "../utils/celebrate";
 import { useAuth } from "../context/AuthContext";
 import { formatSalary, formatDisplaySalary } from "../utils/jobHelpers";
 import {
@@ -14,10 +15,10 @@ import {
   ChevronLeft,
   ChevronRight,
   FileUp,
-  Loader2,
   Sparkles,
   X,
 } from "lucide-react";
+import WaveLoader from "./WaveLoader";
 
 function getScoreMeta(score = 0) {
   if (score >= 80) return { color: "#22C55E", label: "Strong" };
@@ -299,6 +300,7 @@ function ApplyDrawer({ open, onOpenChange, job, onSuccess }) {
       }
 
       await applyToJob(form);
+      celebrateApply();
       setSubmitted(true);
       toast.success("Application submitted successfully.");
       onSuccess?.();
@@ -507,7 +509,7 @@ function ApplyDrawer({ open, onOpenChange, job, onSuccess }) {
                                 <ChevronLeft size={16} /> Back
                               </button>
                               <button onClick={submitApplication} disabled={submitting} className="btn-primary inline-flex w-full items-center justify-center gap-2 text-white disabled:cursor-not-allowed disabled:opacity-70">
-                                {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
+                                {submitting ? <WaveLoader size="sm" /> : null}
                                 Submit Application
                               </button>
                             </div>

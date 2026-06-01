@@ -12,6 +12,10 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { getBackendUrl, getApiEndpoint } from "./utils/apiConfig";
 import API from "./services/api"; // ✅ Import API for health check
 import SkeletonLoading from "./components/SkeletonLoading";
+import { PageTransition } from "./components/PageTransition";
+import SpotlightCursor from "./components/SpotlightCursor";
+import { ToastProvider } from "./contexts/ToastContext";
+import ToastSystem from "./components/ToastSystem";
 
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
@@ -60,24 +64,7 @@ const pageVariants = {
 };
 
 const AnimatedPage = ({ children }) => {
-  const reduceMotion = useReducedMotion();
-  const location = useLocation();
-
-  if (reduceMotion) {
-    return <>{children}</>;
-  }
-
-  return (
-    <motion.div
-      key={location.pathname}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={pageVariants}
-    >
-      {children}
-    </motion.div>
-  );
+  return children;
 };
 
 const roleHome = (role) => {
@@ -99,7 +86,7 @@ const AppRoutes = () => {
   const { isAuthenticated, role } = useAuth();
 
   return (
-    <AnimatePresence>
+    <PageTransition>
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<AnimatedPage><ModernLandingPage /></AnimatedPage>} />
         <Route path="/experience" element={<AnimatedPage><ExperienceHubPage /></AnimatedPage>} />
@@ -281,7 +268,7 @@ const AppRoutes = () => {
         <Route path="/profile" element={<Navigate to="/complete-profile" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </AnimatePresence>
+    </PageTransition>
   );
 };
 
@@ -310,20 +297,26 @@ const ColdStartHandler = ({ children }) => {
 };
 
 function App() {
+  const hasPointer = typeof window !== "undefined" && window.matchMedia('(pointer: fine)').matches;
+
   return (
     <ColdStartHandler>
-      <MotionConfig reducedMotion="user">
-        <Router>
-          <ScrollProgress />
-          <NavbarFixed />
-          <Suspense fallback={<SkeletonLoading />}>
-            <AppRoutes />
-          </Suspense>
-          <ThemeToggle />
-          <AIHelpWidget />
-          <BottomNavBar />
-        </Router>
-      </MotionConfig>
+      <ToastProvider>
+        <MotionConfig reducedMotion="user">
+          <Router>
+            <ScrollProgress />
+            <NavbarFixed />
+            <Suspense fallback={<SkeletonLoading />}>
+              <AppRoutes />
+            </Suspense>
+            <ThemeToggle />
+            <AIHelpWidget />
+            <BottomNavBar />
+            {hasPointer && <SpotlightCursor />}
+            <ToastSystem />
+          </Router>
+        </MotionConfig>
+      </ToastProvider>
     </ColdStartHandler>
   );
 }
