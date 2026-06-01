@@ -33,6 +33,7 @@ const SearchHistoryManager = lazy(() => import("./pages/SearchHistoryManager"));
 const AIToolsPage = lazy(() => import("./pages/AIToolsPage"));
 const ProfileCompletion = lazy(() => import("./pages/ProfileCompletion"));
 const OrbitalNetworkPage = lazy(() => import("./pages/OrbitalNetworkPage"));
+const ResumeScorePage = lazy(() => import("./pages/ResumeScorePage"));
 import { useAuth } from "./context/AuthContext";
 
 // Log API configuration on app start
@@ -212,6 +213,15 @@ const AppRoutes = () => {
           element={(
             <ProtectedRoute allowedRoles={["candidate"]}>
               <AnimatedPage><AIToolsPage /></AnimatedPage>
+            </ProtectedRoute>
+          )}
+        />
+
+        <Route
+          path="/resume-score"
+          element={(
+            <ProtectedRoute allowedRoles={["candidate"]}>
+              <AnimatedPage><ResumeScorePage /></AnimatedPage>
             </ProtectedRoute>
           )}
         />

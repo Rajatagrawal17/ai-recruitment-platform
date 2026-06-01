@@ -184,17 +184,30 @@ const NavbarFixed = () => {
                       </button>
 
                       {role === "candidate" && (
-                        <button
-                          onClick={() => {
-                            navigate("/ai-tools");
-                            setDropdownOpen(false);
-                          }}
-                          onMouseEnter={() => import("../pages/AIToolsPage").catch(() => {})}
-                          className="dropdown-menu-item"
-                        >
-                          <Zap size={16} />
-                          AI Tools
-                        </button>
+                        <>
+                          <button
+                            onClick={() => {
+                              navigate("/resume-score");
+                              setDropdownOpen(false);
+                            }}
+                            onMouseEnter={() => import("../pages/ResumeScorePage").catch(() => {})}
+                            className="dropdown-menu-item"
+                          >
+                            <Sparkles size={16} />
+                            AI Scorer
+                          </button>
+                          <button
+                            onClick={() => {
+                              navigate("/ai-tools");
+                              setDropdownOpen(false);
+                            }}
+                            onMouseEnter={() => import("../pages/AIToolsPage").catch(() => {})}
+                            className="dropdown-menu-item"
+                          >
+                            <Zap size={16} />
+                            AI Tools
+                          </button>
+                        </>
                       )}
 
                       <div className="dropdown-divider" />

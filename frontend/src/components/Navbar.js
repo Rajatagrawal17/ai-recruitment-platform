@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2, Heart, Clock, LogOut, Bookmark } from "lucide-react";
+import { Menu, Moon, Sun, X, BriefcaseBusiness, LayoutDashboard, UserCircle2, Heart, Clock, LogOut, Bookmark, Sparkles } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useSavedJobs } from "../context/SavedJobsContext";
@@ -52,6 +52,7 @@ const Navbar = () => {
     if (role === "candidate") {
       return [
         { path: "/apply", label: "Apply Jobs", icon: BriefcaseBusiness },
+        { path: "/resume-score", label: "AI Scorer", icon: Sparkles },
         { path: "/saved-jobs", label: "Saved", icon: Bookmark, badge: getSavedJobsCount() },
         { path: "/experience", label: "Experience", icon: LayoutDashboard },
       ];

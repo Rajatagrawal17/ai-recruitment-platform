@@ -1027,3 +1027,178 @@ exports.generateResumeImprovements = async (req, res) => {
     });
   }
 };
+
+const getMockScoreResult = (jd = "", cv = "") => {
+  const score = Math.floor(55 + Math.random() * 35); // 55 to 90
+  return {
+    overallScore: score,
+    atsFriendly: score >= 70,
+    sections: [
+      { name: "Professional Experience", score: Math.round(score * 0.95), feedback: "Great detail on achievements and metrics. Highlight key leadership duties more clearly." },
+      { name: "Skills Alignment", score: Math.round(score * 0.88), feedback: "Found match for Python, React, and SQL. Consider adding Docker or Kubernetes." },
+      { name: "Education & Certifications", score: Math.round(score * 1.02) > 100 ? 100 : Math.round(score * 1.02), feedback: "Degree and certifications are clearly laid out in chronological order." },
+      { name: "ATS Formatting", score: score >= 75 ? 90 : 65, feedback: score >= 75 ? "Excellent format. Standard headings used." : "Tables or complex columns detected. Consider using a single-column layout." }
+    ],
+    topStrengths: [
+      "Quantifiable metrics in work experience (e.g. revenue, speedups)",
+      "Strong alignment in frontend technology stacks",
+      "Clear chronological format and standard font usage"
+    ],
+    criticalGaps: [
+      "Missing Cloud Architecture experience (AWS/Azure)",
+      "No mention of CI/CD pipeline automation",
+      "Incomplete credentials for Agile/Scrum certifications"
+    ],
+    quickWins: [
+      "Convert tables or multi-column grids to a linear single-column layout",
+      "Add a professional summary at the top featuring matching job keywords",
+      "Explicitly list certification names instead of abbreviations"
+    ],
+    verdict: "Strong matching candidate with minor structural adjustments needed for ATS screens.",
+    keywordsFound: ["React", "JavaScript", "Python", "SQL", "Git", "REST APIs"],
+    keywordsMissed: ["Docker", "Kubernetes", "AWS", "CI/CD", "Agile", "Scrum"]
+  };
+};
+
+const getMockSectionImprovement = (sectionName, text, jd) => {
+  return `### Improved ${sectionName}
+
+• Engineered scalable, high-performance services using React and Node.js, increasing application speed by 42% and reducing latency by 150ms.
+• Led cross-functional agile development team of 5 engineers to deliver features 2 weeks ahead of target schedules.
+• Optimized ATS-ready keyword alignment with ${sectionName.toLowerCase()} metrics, resulting in a 25% higher candidate screening success rate.
+• Integrated Docker containers and automated CI/CD deployment pipelines on AWS Cloud infrastructures, saving $12,000 in monthly operational costs.`;
+};
+
+exports.scoreResumeWithAI = async (req, res) => {
+  try {
+    const { jobDescription, cvText } = req.body;
+
+    if (!jobDescription || !cvText) {
+      return res.status(400).json({
+        success: false,
+        message: "Job description and CV text are required",
+      });
+    }
+
+    if (IS_DEMO_MODE || !helpAnthropic) {
+      const mockResult = getMockScoreResult(jobDescription, cvText);
+      return res.status(200).json({
+        success: true,
+        data: mockResult,
+        provider: "Mock AI (Demo Mode)"
+      });
+    }
+
+    const systemPrompt = `You are an expert ATS system and senior recruiter with 15 years experience. Analyse the CV against the job description thoroughly.`;
+    const userPrompt = `Job Description: ${jobDescription}
+      
+      CV: ${cvText}
+      
+      Return ONLY valid JSON with this exact structure:
+      {
+        "overallScore": number 0-100,
+        "atsFriendly": boolean,
+        "sections": [
+          { "name": string, "score": number, "feedback": string }
+        ],
+        "topStrengths": [string, string, string],
+        "criticalGaps": [string, string, string],
+        "quickWins": [string, string, string],
+        "verdict": string under 20 words,
+        "keywordsFound": [string array],
+        "keywordsMissed": [string array]
+      }`;
+
+    const response = await helpAnthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1500,
+      temperature: 0.3,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const content = response.content?.find((item) => item.type === "text")?.text || "";
+    const parsed = safeParseHelpJson(content);
+
+    if (!parsed) {
+      throw new Error("Failed to parse Claude JSON response");
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: parsed,
+      provider: "Claude AI"
+    });
+
+  } catch (error) {
+    console.error("AI scoring error:", error);
+    const mockResult = getMockScoreResult(req.body.jobDescription, req.body.cvText);
+    return res.status(200).json({
+      success: true,
+      data: mockResult,
+      provider: "Mock AI (Fallback)",
+      error: error.message
+    });
+  }
+};
+
+exports.improveResumeSection = async (req, res) => {
+  try {
+    const { sectionName, currentText, jobDescription } = req.body;
+
+    if (!sectionName || !currentText) {
+      return res.status(400).json({
+        success: false,
+        message: "Section name and current text are required",
+      });
+    }
+
+    if (IS_DEMO_MODE || !helpAnthropic) {
+      const mockImprovement = getMockSectionImprovement(sectionName, currentText, jobDescription);
+      return res.status(200).json({
+        success: true,
+        data: { improvedText: mockImprovement },
+        provider: "Mock AI (Demo Mode)"
+      });
+    }
+
+    const prompt = `You are a senior resume writer and recruiter. Improve the following section of the candidate's resume to better align with the job description.
+    
+    Job Description:
+    ${jobDescription || "Not provided"}
+    
+    Section Name:
+    ${sectionName}
+    
+    Current Section Text:
+    ${currentText}
+    
+    Rewrite this section to make it more professional, ATS-friendly, and show key achievements with quantifiable metrics matching the job.
+    Return ONLY the improved text for this section, without any introductory or concluding remarks.`;
+
+    const response = await helpAnthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1000,
+      temperature: 0.4,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const improvedText = response.content?.find((item) => item.type === "text")?.text || "";
+
+    return res.status(200).json({
+      success: true,
+      data: { improvedText: improvedText.trim() },
+      provider: "Claude AI"
+    });
+
+  } catch (error) {
+    console.error("AI section improvement error:", error);
+    const mockImprovement = getMockSectionImprovement(req.body.sectionName, req.body.currentText, req.body.jobDescription);
+    return res.status(200).json({
+      success: true,
+      data: { improvedText: mockImprovement },
+      provider: "Mock AI (Fallback)",
+      error: error.message
+    });
+  }
+};

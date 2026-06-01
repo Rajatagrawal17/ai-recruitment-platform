@@ -14,6 +14,8 @@ const {
   matchResumeToJob,
   generateResumeImprovements,
   chatHelpAssistant,
+  scoreResumeWithAI,
+  improveResumeSection,
 } = require("../controllers/aiController");
 const protect = require("../middleware/authMiddleware");
 
@@ -64,5 +66,9 @@ router.post("/match-resume-to-job", matchResumeToJob);
 
 // Generate Resume Improvements - Get detailed improvement plan
 router.post("/generate-improvements", generateResumeImprovements);
+
+// Resume Scorer
+router.post("/resume-score", protect, scoreResumeWithAI);
+router.post("/improve-resume-section", protect, improveResumeSection);
 
 module.exports = router;

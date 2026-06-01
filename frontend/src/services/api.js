@@ -164,4 +164,7 @@ export const scoreCandidate = (data) => API.post("/matching/score", data);
 export const getTopCandidates = () => API.get("/matching/top-candidates");
 export const getAnalytics = () => API.get("/analytics");
 
+export const scoreResume = (data) => API.post("/ai/resume-score", data);
+export const improveResumeSection = (data) => API.post("/ai/improve-resume-section", data);
+
 export default API;
