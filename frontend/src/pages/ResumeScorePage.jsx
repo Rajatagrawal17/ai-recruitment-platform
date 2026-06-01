@@ -223,16 +223,23 @@ export default function ResumeScorePage() {
     // Look for heading match in CV text
     let originalSecText = "";
     const lines = cvText.split("\n");
-    const headerIndex = lines.findIndex(line => 
-      line.toLowerCase().includes(weakest.name.toLowerCase()) || 
-      weakest.name.toLowerCase().includes(line.toLowerCase().trim())
-    );
+    const headerIndex = lines.findIndex(line => {
+      const trimmed = line.trim().toLowerCase();
+      if (!trimmed) return false;
+      return (
+        trimmed.includes(weakest.name.toLowerCase()) ||
+        weakest.name.toLowerCase().includes(trimmed)
+      );
+    });
 
     if (headerIndex !== -1) {
       originalSecText = lines.slice(headerIndex, headerIndex + 8).join("\n");
-    } else {
+    }
+
+    if (!originalSecText || !originalSecText.trim()) {
       originalSecText = `[Original ${weakest.name} content from CV text...]`;
     }
+    
     setOriginalText(originalSecText);
 
     try {

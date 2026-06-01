@@ -1146,15 +1146,17 @@ exports.improveResumeSection = async (req, res) => {
   try {
     const { sectionName, currentText, jobDescription } = req.body;
 
-    if (!sectionName || !currentText) {
+    if (!sectionName) {
       return res.status(400).json({
         success: false,
-        message: "Section name and current text are required",
+        message: "Section name is required",
       });
     }
 
+    const cleanedText = (currentText || "").trim() || `[Original ${sectionName} content not found in CV]`;
+
     if (IS_DEMO_MODE || !helpAnthropic) {
-      const mockImprovement = getMockSectionImprovement(sectionName, currentText, jobDescription);
+      const mockImprovement = getMockSectionImprovement(sectionName, cleanedText, jobDescription);
       return res.status(200).json({
         success: true,
         data: { improvedText: mockImprovement },
@@ -1171,7 +1173,7 @@ exports.improveResumeSection = async (req, res) => {
     ${sectionName}
     
     Current Section Text:
-    ${currentText}
+    ${cleanedText}
     
     Rewrite this section to make it more professional, ATS-friendly, and show key achievements with quantifiable metrics matching the job.
     Return ONLY the improved text for this section, without any introductory or concluding remarks.`;
