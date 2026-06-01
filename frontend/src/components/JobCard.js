@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Bookmark, BookmarkCheck, MapPin, Calendar, Users, Briefcase } from "lucide-react";
+import { Bookmark, BookmarkCheck, MapPin, Calendar, Users, Loader2, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSavedJobs } from "../context/SavedJobsContext";
 import "./JobCard.css";
@@ -57,14 +57,21 @@ const JobCard = ({
   onApply,
   onSaveToggle,
   isSaved = false,
-  searchQuery = ""
+  searchQuery = "",
+  isSelected = false
 }) => {
   const navigate = useNavigate();
   const { toggleSaveJob } = useSavedJobs();
   const [isHovered, setIsHovered] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [justApplied, setJustApplied] = useState(isApplied);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 768 : false
   );
+
+  useEffect(() => {
+    setJustApplied(isApplied);
+  }, [isApplied]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -80,11 +87,15 @@ const JobCard = ({
     else toggleSaveJob(job);
   };
 
-  const handleApply = (event) => {
+  const handleApply = async (event) => {
     event.stopPropagation();
-    if (isApplied) return;
+    if (isApplied || isApplying || justApplied) return;
+    setIsApplying(true);
+    // Simulate loading for 1s
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setIsApplying(false);
+    setJustApplied(true);
     if (onApply) onApply(job);
-    else navigate(`/jobs/${job._id}/apply`);
   };
 
   const handleView = (event) => {
@@ -92,6 +103,10 @@ const JobCard = ({
     if (onViewDetails) onViewDetails(job);
     else navigate(`/jobs/${job._id}`);
   };
+
+  const isNew = job.createdAt 
+    ? (Date.now() - new Date(job.createdAt).getTime()) < 24 * 60 * 60 * 1000 
+    : false;
 
   const postedLabel = job.createdAt
     ? formatDistanceToNow(new Date(job.createdAt), { addSuffix: true })
@@ -107,6 +122,118 @@ const JobCard = ({
   const score = Number(matchScore || job.matchScore || 0);
   const salaryText = getEstimatedSalary(job.title, job.salary);
 
+  if (isMobile) {
+    return (
+      <motion.div
+        onClick={handleView}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          width: '100%',
+          padding: '12px 14px',
+          background: isSelected 
+            ? 'rgba(99,102,241,0.08)' 
+            : (isHovered ? 'rgba(22,33,62,0.95)' : 'rgba(22,33,62,0.8)'),
+          backdropFilter: 'blur(12px)',
+          border: isSelected 
+            ? '1px solid rgba(99,102,241,0.4)' 
+            : '1px solid rgba(255,255,255,0.06)',
+          borderLeft: isHovered 
+            ? '2.5px solid #6366f1' 
+            : (isSelected ? '2.5px solid rgba(99,102,241,0.6)' : '1px solid rgba(255,255,255,0.06)'),
+          borderRadius: '14px',
+          marginBottom: '8px',
+          cursor: 'pointer',
+          transition: 'all 0.15s ease',
+          boxSizing: 'border-box',
+          transform: isHovered ? 'translateX(3px)' : 'none',
+        }}
+      >
+        {/* Left: 36px company avatar */}
+        <div style={{ display: 'flex', flexShrink: 0 }}>
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${avatarBgColor} 0%, ${avatarBgColor}88 100%)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              color: 'white',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+            }}
+          >
+            {companyInitials}
+          </div>
+        </div>
+
+        {/* Center: job title (13px) + company + location (10px muted) */}
+        <div style={{ flex: 1, minWidth: 0, marginLeft: '12px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <h3 
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'white',
+              margin: 0,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
+            {highlightText(job.title, searchQuery)}
+          </h3>
+          <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {job.company} • {job.location || "Remote"}
+          </span>
+        </div>
+
+        {/* Right: Apply button (small) + salary (10px green) */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0, marginLeft: '8px' }}>
+          <span style={{ fontSize: '10px', color: '#34d399', fontWeight: 500, whiteSpace: 'nowrap' }}>
+            {salaryText}
+          </span>
+          <motion.button
+            disabled={justApplied || isApplying}
+            onClick={handleApply}
+            animate={(isApplying || justApplied) ? { scale: [0.95, 1.05, 1] } : { scale: 1 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              padding: '4px 10px',
+              background: justApplied 
+                ? 'rgba(16, 185, 129, 0.1)' 
+                : 'linear-gradient(135deg, #6366f1, #06b6d4)',
+              border: justApplied ? '1px solid rgba(16, 185, 129, 0.2)' : 'none',
+              borderRadius: '20px',
+              color: justApplied ? '#34d399' : 'white',
+              fontSize: '11px',
+              fontWeight: 500,
+              cursor: (justApplied || isApplying) ? 'not-allowed' : 'pointer',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px'
+            }}
+          >
+            {isApplying ? (
+              <Loader2 size={10} className="animate-spin text-white" />
+            ) : justApplied ? (
+              "Applied ✓"
+            ) : (
+              "Apply"
+            )}
+          </motion.button>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       onClick={handleView}
@@ -116,41 +243,46 @@ const JobCard = ({
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: isMobile ? '12px' : '20px',
         width: '100%',
-        padding: '18px 24px',
-        background: isHovered ? 'rgba(22,33,62,0.95)' : 'rgba(22,33,62,0.8)',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255,255,255,0.06)',
-        borderLeft: isHovered ? '3px solid #6366f1' : '1px solid rgba(255,255,255,0.06)',
+        padding: '16px 20px',
+        background: isSelected 
+          ? 'rgba(99,102,241,0.08)' 
+          : (isHovered ? 'rgba(22,33,62,0.95)' : 'rgba(22,33,62,0.8)'),
+        backdropFilter: 'blur(12px)',
+        border: isSelected 
+          ? '1px solid rgba(99,102,241,0.4)' 
+          : '1px solid rgba(255,255,255,0.06)',
+        borderLeft: isHovered 
+          ? '2.5px solid #6366f1' 
+          : (isSelected ? '2.5px solid rgba(99,102,241,0.6)' : '1px solid rgba(255,255,255,0.06)'),
         borderRadius: '14px',
-        marginBottom: '10px',
+        marginBottom: '8px',
         cursor: 'pointer',
-        transition: 'all 0.18s ease',
+        transition: 'all 0.15s ease',
         boxSizing: 'border-box',
         transform: isHovered ? 'translateX(3px)' : 'none',
       }}
     >
-      {/* SECTION 1 — LEFT */}
+      {/* 1. Company Avatar & Name */}
       <div 
         style={{ 
           display: 'flex', 
           flexDirection: 'column', 
           alignItems: 'center', 
-          width: '56px',
+          width: '44px',
           flexShrink: 0 
         }}
       >
         <div
           style={{
-            width: '48px',
-            height: '48px',
+            width: '44px',
+            height: '44px',
             borderRadius: '50%',
             background: `linear-gradient(135deg, ${avatarBgColor} 0%, ${avatarBgColor}88 100%)`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '18px',
+            fontSize: '16px',
             fontWeight: 'bold',
             color: 'white',
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
@@ -160,10 +292,10 @@ const JobCard = ({
         </div>
         <span 
           style={{
-            fontSize: '11px',
-            color: 'rgba(255, 255, 255, 0.45)',
+            fontSize: '10px',
+            color: 'rgba(255, 255, 255, 0.4)',
             textAlign: 'center',
-            marginTop: '6px',
+            marginTop: '4px',
             width: '100%',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -174,34 +306,42 @@ const JobCard = ({
         </span>
       </div>
 
-      {/* SECTION 2 — CENTER */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {/* Title */}
+      {/* 2. Center Content */}
+      <div style={{ flex: 1, minWidth: 0, marginLeft: '16px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+        {/* Row 1: Job Title + NEW badge */}
         <h3 
           style={{
-            fontSize: '16px',
+            fontSize: '15px',
             fontWeight: 500,
             color: 'white',
             margin: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis'
           }}
         >
           {highlightText(job.title, searchQuery)}
+          {isNew && (
+            <span style={{ fontSize: '9px', background: 'rgba(99,102,241,0.2)', border: '1px solid #6366f1', color: '#a5b4fc', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+              NEW
+            </span>
+          )}
         </h3>
 
-        {/* Location + badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#94a3b8' }}>
+        {/* Row 2: pin icon + location + work-type badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
             <MapPin size={12} className="text-[#6366f1]" />
             {job.location || "Remote"}
           </span>
           <span 
             style={{
-              padding: '2px 8px',
-              borderRadius: '12px',
-              background: 'rgba(255, 255, 255, 0.05)',
+              padding: '1px 6px',
+              borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.04)',
               border: '1px solid rgba(255, 255, 255, 0.08)',
               fontSize: '11px',
               color: '#cbd5e1'
@@ -209,55 +349,40 @@ const JobCard = ({
           >
             {job.location === "Remote" || job.type === "remote" ? "Remote" : "Onsite"}
           </span>
-          {isCandidate && score > 0 && (
-            <span 
-              style={{
-                padding: '2px 8px',
-                borderRadius: '12px',
-                background: 'rgba(139, 92, 246, 0.15)',
-                border: '1px solid rgba(139, 92, 246, 0.25)',
-                fontSize: '11px',
-                color: '#a5b4fc',
-                fontWeight: 600
-              }}
-            >
-              {score}% match
-            </span>
-          )}
         </div>
 
-        {/* Posted time + applicants */}
-        <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.35)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span>{postedLabel}</span>
-          {!isMobile && (
-            <>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <Users size={11} className="text-[#06b6d4]" />
-                {job.applicantsCount || 0} applied
-              </span>
-            </>
-          )}
+        {/* Row 3: clock icon + posted time + people icon + applied count */}
+        <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+            <Clock size={11} />
+            {postedLabel}
+          </span>
+          <span>•</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+            <Users size={11} className="text-[#06b6d4]" />
+            {job.applicantsCount || 0} applied
+          </span>
         </div>
       </div>
 
-      {/* SECTION 3 — RIGHT */}
+      {/* 3. Right Content */}
       <div 
         style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: isMobile ? '8px' : '12px', 
-          flexShrink: 0 
+          gap: '10px', 
+          flexShrink: 0,
+          marginLeft: '12px'
         }}
       >
-        {/* Employment Type */}
+        {/* Employment Type badge (purple pill) */}
         <span 
           style={{
             background: 'rgba(99,102,241,0.15)',
             color: '#a5b4fc',
-            padding: '4px 10px',
+            padding: '3px 8px',
             borderRadius: '20px',
-            fontSize: '12px',
+            fontSize: '11px',
             textTransform: 'capitalize',
             whiteSpace: 'nowrap'
           }}
@@ -265,58 +390,89 @@ const JobCard = ({
           {job.type || "Full Time"}
         </span>
 
-        {/* Salary */}
-        {!isMobile && (
+        {/* Salary pill (green tint) */}
+        <span 
+          style={{ 
+            fontSize: '13px', 
+            background: 'rgba(52,211,153,0.15)',
+            border: '1px solid rgba(52,211,153,0.25)',
+            color: '#34d399', 
+            fontWeight: 500,
+            padding: '3px 8px',
+            borderRadius: '20px',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {salaryText}
+        </span>
+
+        {/* Match % badge (purple) */}
+        {isCandidate && score > 0 && (
           <span 
-            style={{ 
-              fontSize: '13px', 
-              color: '#34d399', 
-              fontWeight: 500,
+            style={{
+              padding: '3px 8px',
+              borderRadius: '20px',
+              background: 'rgba(139, 92, 246, 0.15)',
+              border: '1px solid rgba(139, 92, 246, 0.25)',
+              fontSize: '11px',
+              color: '#a5b4fc',
+              fontWeight: 600,
               whiteSpace: 'nowrap'
             }}
           >
-            {salaryText}
+            {score}% match
           </span>
         )}
 
         {/* Apply Button */}
-        <button
-          disabled={isApplied}
+        <motion.button
+          disabled={justApplied || isApplying}
           onClick={handleApply}
+          animate={(isApplying || justApplied) ? { scale: [0.95, 1.05, 1] } : { scale: 1 }}
+          transition={{ duration: 0.3 }}
           style={{
-            padding: isMobile ? '6px 14px' : '8px 20px',
-            background: isApplied 
+            padding: '8px 20px',
+            background: justApplied 
               ? 'rgba(16, 185, 129, 0.1)' 
               : 'linear-gradient(135deg, #6366f1, #06b6d4)',
-            border: isApplied ? '1px solid rgba(16, 185, 129, 0.2)' : 'none',
+            border: justApplied ? '1px solid rgba(16, 185, 129, 0.2)' : 'none',
             borderRadius: '20px',
-            color: isApplied ? '#34d399' : 'white',
+            color: justApplied ? '#34d399' : 'white',
             fontSize: '13px',
             fontWeight: 500,
-            cursor: isApplied ? 'not-allowed' : 'pointer',
+            cursor: (justApplied || isApplying) ? 'not-allowed' : 'pointer',
             whiteSpace: 'nowrap',
-            transition: 'all 0.2s'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            transition: 'background 0.2s, border 0.2s'
           }}
         >
-          {isApplied ? "Applied" : "Apply"}
-        </button>
+          {isApplying ? (
+            <Loader2 size={12} className="animate-spin text-white" />
+          ) : justApplied ? (
+            "Applied ✓"
+          ) : (
+            "Apply"
+          )}
+        </motion.button>
 
         {/* Bookmark Button */}
         <motion.button
           onClick={handleSave}
-          animate={isSaved ? { rotateY: 360 } : { rotateY: 0 }}
-          transition={{ duration: 0.4 }}
+          whileTap={{ scale: 1.3, rotate: 15 }}
           style={{
             background: 'transparent',
             border: '1px solid rgba(255,255,255,0.12)',
             borderRadius: '8px',
             padding: '8px',
-            color: isSaved ? '#8b5cf6' : 'rgba(255,255,255,0.4)',
+            color: isSaved ? '#a5b4fc' : 'rgba(255,255,255,0.4)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'all 0.2s ease',
+            transition: 'color 0.2s ease, border-color 0.2s ease',
           }}
         >
           {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
