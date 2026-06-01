@@ -168,4 +168,8 @@ export const scoreResume = (data) => API.post("/ai/resume-score", data);
 export const improveResumeSection = (data) => API.post("/ai/improve-resume-section", data);
 export const generateCoverLetter = (data) => API.post("/ai/cover-letter", data);
 
+// AI Interview Simulator
+export const generateSimQuestions = (data) => API.post("/ai/sim-questions", data);
+export const evaluateSimAnswer = (data) => API.post("/ai/sim-evaluate", data);
+
 export default API;
