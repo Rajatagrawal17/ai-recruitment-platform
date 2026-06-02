@@ -95,6 +95,10 @@ const NavbarFixed = () => {
     [0, Math.max(1, totalDocHeight - windowHeight)],
     ['0%', '100%']
   );
+  
+  if (location.pathname.startsWith("/recruiter")) {
+    return null;
+  }
 
   return (
     <motion.nav

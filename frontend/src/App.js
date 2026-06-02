@@ -28,6 +28,7 @@ const EnhancedJobsPage = lazy(() => import("./pages/EnhancedJobsPage"));
 const JobDetailPage = lazy(() => import("./pages/JobDetailPage"));
 const ApplicationForm = lazy(() => import("./pages/ApplicationForm"));
 const SimpleRecruiterDashboard = lazy(() => import("./pages/SimpleRecruiterDashboard"));
+const RecruiterDashboard = lazy(() => import("./pages/RecruiterDashboard"));
 const CandidateDashboard = lazy(() => import("./pages/CandidateDashboard"));
 const PersonalizedDashboard = lazy(() => import("./pages/PersonalizedDashboard"));
 const SavedJobs = lazy(() => import("./pages/SavedJobs"));
@@ -249,7 +250,11 @@ const AppRoutes = () => {
 
         <Route
           path="/recruiter/dashboard"
-          element={<Navigate to="/dashboard" replace />}
+          element={(
+            <ProtectedRoute allowedRoles={["recruiter", "admin"]}>
+              <AnimatedPage><RecruiterDashboard /></AnimatedPage>
+            </ProtectedRoute>
+          )}
         />
 
         <Route
@@ -262,7 +267,7 @@ const AppRoutes = () => {
         />
 
         <Route path="/candidate" element={<Navigate to="/candidate/dashboard" replace />} />
-        <Route path="/recruiter" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/recruiter" element={<Navigate to="/recruiter/dashboard" replace />} />
         <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
         <Route path="/applications" element={<Navigate to="/candidate/dashboard" replace />} />
         <Route path="/profile" element={<Navigate to="/complete-profile" replace />} />

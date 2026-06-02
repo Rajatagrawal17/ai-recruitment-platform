@@ -19,6 +19,7 @@ const {
   generateCoverLetter,
   generateSimQuestions,
   evaluateSimAnswer,
+  getAIBriefing,
 } = require("../controllers/aiController");
 const protect = require("../middleware/authMiddleware");
 
@@ -78,5 +79,8 @@ router.post("/cover-letter", protect, generateCoverLetter);
 // AI Interview Simulator
 router.post("/sim-questions", protect, generateSimQuestions);
 router.post("/sim-evaluate", protect, evaluateSimAnswer);
+
+// Recruiter AI Briefing
+router.get("/briefing", protect, getAIBriefing);
 
 module.exports = router;

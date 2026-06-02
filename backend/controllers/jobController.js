@@ -124,7 +124,11 @@ exports.createJob = async (req, res) => {
       createdBy: req.user._id,
     });
 
+    // Bust jobs list cache so next request fetches fresh data
+    exports.bustJobsCache();
+
     res.status(201).json({ success: true, message: "Job created successfully ✅", job });
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -163,24 +167,66 @@ exports.getJob = async (req, res) => {
 /* =========================
    GET ALL JOBS (PUBLIC)
 ========================= */
+
+// Simple in-memory cache: { cacheKey: { data, expiresAt } }
+const jobsCache = new Map();
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+// Call this whenever jobs are created/modified to bust cache
+exports.bustJobsCache = () => jobsCache.clear();
+
 exports.getAllJobs = async (req, res) => {
   try {
-    console.log("📋 Fetching all jobs...");
-    
-    const jobs = await Job.find().populate("createdBy", "name email");
-    
-    console.log(`✅ Found ${jobs.length} jobs in database`);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 50));
+    const skip = (page - 1) * limit;
+    const fetchAll = req.query.all === "true";
 
-    res.status(200).json({
+    // Check cache first
+    const cacheKey = `${fetchAll ? "all" : `p${page}_l${limit}`}`;
+    const cached = jobsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return res.status(200).json(cached.data);
+    }
+
+    console.log(`📋 Fetching jobs (page=${page}, limit=${limit}, all=${fetchAll})...`);
+
+
+    const projection = "title company location type salary skills experience yearsOfExperience description createdAt status";
+
+    let query = Job.find()
+      .select(projection)
+      .sort({ createdAt: -1 });
+
+    if (!fetchAll) {
+      query = query.skip(skip).limit(limit);
+    }
+
+    const [jobs, totalCount] = await Promise.all([
+      query.lean(),
+      fetchAll ? null : Job.countDocuments(),
+    ]);
+
+    console.log(`✅ Returning ${jobs.length} jobs (total: ${totalCount || jobs.length})`);
+
+    const responseData = {
       success: true,
       count: jobs.length,
+      total: totalCount || jobs.length,
+      page: fetchAll ? 1 : page,
+      pages: fetchAll ? 1 : Math.ceil((totalCount || 0) / limit),
       jobs,
       message: jobs.length === 0 ? "No jobs available yet" : "Jobs fetched successfully",
-    });
+    };
+
+    // Store in cache
+    jobsCache.set(cacheKey, { data: responseData, expiresAt: Date.now() + CACHE_TTL_MS });
+
+    res.status(200).json(responseData);
+
   } catch (error) {
     console.error("❌ Error fetching jobs:", error.message);
-    
-    // Check if it's a database connection error
+
     if (error.message.includes("connect") || error.name === "MongoNetworkError") {
       console.error("🚨 Database connection failed!");
       return res.status(503).json({
@@ -190,8 +236,7 @@ exports.getAllJobs = async (req, res) => {
         code: "DB_DISCONNECTED",
       });
     }
-    
-    // Generic error
+
     res.status(500).json({
       success: false,
       message: "Failed to fetch jobs: " + error.message,
@@ -199,6 +244,7 @@ exports.getAllJobs = async (req, res) => {
     });
   }
 };
+
 
 /* =========================
    GET RECOMMENDED JOBS (CANDIDATE)

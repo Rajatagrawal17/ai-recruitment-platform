@@ -215,31 +215,49 @@ const SimpleRecruiterDashboard = () => {
   const loadWorkspace = useCallback(async () => {
     setLoading(true);
     try {
-      const [jobsRes, companiesRes, analyticsRes] = await Promise.all([
+      // Fetch first page immediately for fast render
+      const [firstJobsRes, companiesRes, analyticsRes] = await Promise.all([
         getJobs(),
         getCompanies().catch(() => ({ data: { companies: [] } })),
         getAnalytics().catch(() => ({ data: { analytics: null } })),
       ]);
 
-      const nextJobs = extractJobs(jobsRes);
+      const firstJobs = extractJobs(firstJobsRes);
+      const totalPages = firstJobsRes?.data?.pages || 1;
       const nextCompanies = Array.isArray(companiesRes?.data?.companies) ? companiesRes.data.companies : [];
-      setJobs(nextJobs);
+      setJobs(firstJobs);
       setCompanies(nextCompanies);
       setAnalytics(analyticsRes?.data?.analytics || null);
 
       if (!selectedCompany) {
-        const firstCompany = nextCompanies[0]?.name || nextJobs[0]?.company || "";
+        const firstCompany = nextCompanies[0]?.name || firstJobs[0]?.company || "";
         setSelectedCompany(firstCompany);
       }
-      if (!selectedJobId && nextJobs[0]?._id) {
-        setSelectedJobId(nextJobs[0]._id);
+      if (!selectedJobId && firstJobs[0]?._id) {
+        setSelectedJobId(firstJobs[0]._id);
+      }
+
+      setLoading(false);
+
+      // Load remaining pages in background
+      if (totalPages > 1) {
+        let allJobs = [...firstJobs];
+        for (let p = 2; p <= totalPages; p++) {
+          try {
+            const res = await getJobs();
+            allJobs = [...allJobs, ...extractJobs(res)];
+            setJobs([...allJobs]);
+          } catch {
+            break;
+          }
+        }
       }
     } catch (error) {
       notify("error", error?.response?.data?.message || "Failed to load workspace");
-    } finally {
       setLoading(false);
     }
   }, [notify, selectedCompany, selectedJobId]);
+
 
   useEffect(() => {
     loadWorkspace();

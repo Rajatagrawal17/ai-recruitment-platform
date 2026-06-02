@@ -7,6 +7,7 @@ import API from "../services/api";
 const UserProfileCard = () => {
   const { user } = useAuth();
   const [profileCompleteness, setProfileCompleteness] = useState(75); // Default fallback
+  const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -53,6 +54,9 @@ const UserProfileCard = () => {
           setProfileCompleteness(response.data.profileCompleteness);
         } else {
           console.warn("⚠️ No profileCompleteness in response:", response.data);
+        }
+        if (response.data.user) {
+          setProfileData(response.data.user);
         }
       } catch (error) {
         console.error("❌ Error fetching profile completeness:", error);
@@ -233,6 +237,37 @@ const UserProfileCard = () => {
               />
             </div>
           </div>
+
+          {/* Mobile Profile Completion Checklist */}
+          {isMobile && profileCompleteness < 100 && (
+            <div className="w-full mt-4 mb-3 space-y-2 flex flex-col items-stretch">
+              {[
+                { label: "Full Name", completed: !!profileData?.name || !!user?.name },
+                { label: "Phone Number", completed: !!profileData?.phoneNumber },
+                { label: "Current Location", completed: !!profileData?.currentLocation },
+                { label: "Fields of Interest", completed: (profileData?.fieldOfInterest || []).length > 0 },
+                { label: "Detected Skills", completed: (profileData?.skills || []).length > 0 },
+                { label: "Upload Resume", completed: !!profileData?.resumeUrl },
+              ].map((item, idx) => (
+                <Link
+                  key={idx}
+                  to="/complete-profile"
+                  className="flex items-center justify-between px-3 rounded-xl border border-white/5 bg-white/5 transition hover:bg-white/10 active:scale-[0.98]"
+                  style={{
+                    height: '44px',
+                    textDecoration: 'none',
+                    color: 'white',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <span className="text-xs font-semibold">{item.label}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${item.completed ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
+                    {item.completed ? "✓ Filled" : "Pending"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
 
           <p className="text-xs text-text-muted mt-2 text-center md:text-left">
             {profileCompleteness === 100 

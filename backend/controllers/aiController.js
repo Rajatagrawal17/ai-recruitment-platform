@@ -1832,3 +1832,86 @@ exports.evaluateSimAnswer = async (req, res) => {
     });
   }
 };
+
+exports.getAIBriefing = async (req, res) => {
+  try {
+    const recruiterName = req.user?.name || "Recruiter";
+    
+    // Time of day greeting
+    const hour = new Date().getHours();
+    let timeOfDay = "morning";
+    if (hour >= 12 && hour < 17) {
+      timeOfDay = "afternoon";
+    } else if (hour >= 17 || hour < 4) {
+      timeOfDay = "evening";
+    }
+    
+    if (IS_DEMO_MODE || !helpAnthropic) {
+      const mockBriefing = {
+        greeting: `Good ${timeOfDay}, ${recruiterName}!`,
+        topPriority: "Review 5 new applicants for the Senior Frontend Engineer role.",
+        insight: "Applicants with Next.js experience are matching 15% higher than last week's average.",
+        alert: "Urgent: 2 offers for Lead Data Scientist are expiring in less than 24 hours."
+      };
+      return res.status(200).json({
+        success: true,
+        data: mockBriefing,
+        provider: "Mock AI (Demo Mode)"
+      });
+    }
+
+    const systemPrompt = `You are a smart recruiting assistant. You analyze recruiter status and generate a daily briefing. Always return valid JSON only matching the schema.`;
+    const userPrompt = `Generate a daily briefing for a recruiter named ${recruiterName}. The current time of day is ${timeOfDay}.
+    
+    Return ONLY valid JSON matching this schema:
+    {
+      "greeting": "string with time of day (e.g., Good ${timeOfDay}, ${recruiterName})",
+      "topPriority": "string one actionable recruiter priority today",
+      "insight": "string one high-quality hiring or market trend insight",
+      "alert": "string or null if there is an urgent hiring issue"
+    }`;
+
+    const response = await helpAnthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 400,
+      temperature: 0.7,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const content = response.content?.find((item) => item.type === "text")?.text || "";
+    const parsed = safeParseHelpJson(content);
+
+    if (!parsed) {
+      throw new Error("Failed to parse Claude briefing JSON response");
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: parsed,
+      provider: "Claude AI"
+    });
+
+  } catch (error) {
+    console.error("AI briefing generation error:", error);
+    // Fallback
+    const recruiterName = req.user?.name || "Recruiter";
+    const hour = new Date().getHours();
+    let timeOfDay = "morning";
+    if (hour >= 12 && hour < 17) timeOfDay = "afternoon";
+    else if (hour >= 17 || hour < 4) timeOfDay = "evening";
+    
+    const mockBriefing = {
+      greeting: `Good ${timeOfDay}, ${recruiterName}!`,
+      topPriority: "Review the new candidate pipeline for senior engineering roles.",
+      insight: "Candidates matching 70%+ tend to respond 3x faster to interview invites.",
+      alert: "Note: Some applicant offers are pending review."
+    };
+    return res.status(200).json({
+      success: true,
+      data: mockBriefing,
+      provider: "Mock AI (Fallback)",
+      error: error.message
+    });
+  }
+};

@@ -16,6 +16,13 @@ export function TiltCard({
   const shineX = useTransform(x, [-0.5, 0.5], ['0%', '100%']);
   const shineY = useTransform(y, [-0.5, 0.5], ['0%', '100%']);
 
+  const shineBg = useMotionTemplate`
+    radial-gradient(circle at
+    ${shineX} ${shineY},
+    rgba(255,255,255,0.08) 0%,
+    transparent 60%)
+  `;
+
   const handleMouseMove = (e) => {
     if (!ref.current) return;
     const rect = ref.current.getBoundingClientRect();
@@ -58,11 +65,7 @@ export function TiltCard({
           position: 'absolute',
           inset: 0,
           borderRadius: 'inherit',
-          background: useMotionTemplate`
-            radial-gradient(circle at
-            ${shineX} ${shineY},
-            rgba(255,255,255,0.08) 0%,
-            transparent 60%)`,
+          background: shineBg,
           pointerEvents: 'none',
           zIndex: 1
         }}

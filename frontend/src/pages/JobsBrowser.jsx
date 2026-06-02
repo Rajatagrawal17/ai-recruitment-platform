@@ -231,24 +231,59 @@ export default function JobsBrowser() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  const [totalJobs, setTotalJobs] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   async function loadJobs() {
     if (!hasLoadedOnce) setLoading(true);
     try {
-      const response = await getJobs();
-      setAllJobs(response.data.jobs || []);
+      // Load first page fast for immediate render
+      const firstPage = await API.get("/jobs?page=1&limit=50");
+      const firstJobs = firstPage.data.jobs || [];
+      const total = firstPage.data.total || firstJobs.length;
+      const totalPages = firstPage.data.pages || 1;
+
+      setAllJobs(firstJobs);
+      setTotalJobs(total);
       setError("");
       setHasLoadedOnce(true);
+      setLoading(false);
+
+      // Load remaining pages in background if there are more
+      if (totalPages > 1) {
+        setLoadingMore(true);
+        const remainingPages = [];
+        for (let p = 2; p <= totalPages; p++) {
+          remainingPages.push(p);
+        }
+
+        // Fetch in batches of 3 concurrent requests
+        const batchSize = 3;
+        let accumulatedJobs = [...firstJobs];
+        for (let i = 0; i < remainingPages.length; i += batchSize) {
+          const batch = remainingPages.slice(i, i + batchSize);
+          const responses = await Promise.all(
+            batch.map((p) => API.get(`/jobs?page=${p}&limit=50`).catch(() => ({ data: { jobs: [] } })))
+          );
+          responses.forEach((res) => {
+            accumulatedJobs = [...accumulatedJobs, ...(res.data.jobs || [])];
+          });
+          setAllJobs([...accumulatedJobs]);
+        }
+        setLoadingMore(false);
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Unable to load jobs right now.");
       setAllJobs([]);
-    } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }
 
   useEffect(() => {
     loadJobs();
   }, []);
+
 
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -750,7 +785,7 @@ export default function JobsBrowser() {
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
                   <h1 className="text-2xl font-bold md:text-3xl gradient-text">Explore Careers</h1>
-                  <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                  <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
                     Showing{" "}
                     <AnimatePresence mode="wait">
                       <motion.span
@@ -764,7 +799,10 @@ export default function JobsBrowser() {
                         {filteredJobs.length}
                       </motion.span>
                     </AnimatePresence>{" "}
-                    matching positions.
+                    matching positions{totalJobs > allJobs.length && !debouncedSearch ? ` (${totalJobs} total)` : ""}.
+                    {loadingMore && (
+                      <span className="text-[11px] text-indigo-400 animate-pulse">Loading more…</span>
+                    )}
                   </p>
                 </div>
 
@@ -924,11 +962,15 @@ export default function JobsBrowser() {
               </div>
 
               {/* Mobile Job Count */}
-              <div className="lg:hidden mt-2 mb-1 px-1">
+              <div className="lg:hidden mt-2 mb-1 px-1 flex items-center gap-2">
                 <span className="text-[13px] text-slate-400 font-medium">
-                  Showing {filteredJobs.length} jobs
+                  Showing {filteredJobs.length}{totalJobs > filteredJobs.length && !debouncedSearch ? ` of ${totalJobs}` : ""} jobs
                 </span>
+                {loadingMore && (
+                  <span className="text-[11px] text-indigo-400 animate-pulse">· loading more…</span>
+                )}
               </div>
+
             </motion.header>
 
             {/* List area */}

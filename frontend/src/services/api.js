@@ -134,7 +134,8 @@ export const sendResetOTP = (data) => API.post("/auth/send-reset-otp", data);
 export const verifyResetOTP = (data) => API.post("/auth/verify-reset-otp", data);
 export const resetPassword = (data) => API.post("/auth/reset-password", data);
 
-export const getJobs = () => API.get("/jobs");
+export const getJobs = (params = {}) => API.get("/jobs", { params });
+
 export const getCompanies = () => API.get("/companies");
 export const getRecommendedJobs = () => API.get("/jobs/recommendations");
 export const getJobById = (jobId) => API.get(`/jobs/${jobId}`);
@@ -171,5 +172,7 @@ export const generateCoverLetter = (data) => API.post("/ai/cover-letter", data);
 // AI Interview Simulator
 export const generateSimQuestions = (data) => API.post("/ai/sim-questions", data);
 export const evaluateSimAnswer = (data) => API.post("/ai/sim-evaluate", data);
+
+export const getAIBriefing = () => API.get("/ai/briefing");
 
 export default API;

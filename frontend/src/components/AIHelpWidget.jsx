@@ -240,7 +240,7 @@ const AIHelpWidget = () => {
 
   // hide on auth pages
   const hiddenPaths = ["/login", "/register"];
-  if (hiddenPaths.includes(location.pathname)) return null;
+  const isHidden = hiddenPaths.includes(location.pathname);
 
   // auto-scroll
   const scrollToBottom = useCallback(() => {
@@ -355,6 +355,8 @@ const AIHelpWidget = () => {
         visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 320, damping: 32 } },
         exit: { y: "100%", opacity: 0, transition: { duration: 0.22, ease: "easeIn" } },
       };
+
+  if (isHidden) return null;
 
   return (
     <>
