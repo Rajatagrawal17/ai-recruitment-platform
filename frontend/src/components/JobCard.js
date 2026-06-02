@@ -59,7 +59,9 @@ const JobCard = ({
   onSaveToggle,
   isSaved = false,
   searchQuery = "",
-  isSelected = false
+  isSelected = false,
+  scores = {},
+  userProfile = null
 }) => {
   const navigate = useNavigate();
   const { toggleSaveJob } = useSavedJobs();
@@ -120,7 +122,7 @@ const JobCard = ({
     ? job.company.slice(0, 9) + '…'
     : job.company || 'Company';
 
-  const score = Number(matchScore || job.matchScore || 0);
+  const scoreData = scores[job._id];
   const salaryText = getEstimatedSalary(job.title, job.salary);
 
   if (isMobile) {
@@ -411,22 +413,60 @@ const JobCard = ({
           {salaryText}
         </span>
 
-        {/* Match % badge (purple) */}
-        {isCandidate && score > 0 && (
-          <span 
-            style={{
-              padding: '3px 8px',
-              borderRadius: '20px',
-              background: 'rgba(139, 92, 246, 0.15)',
-              border: '1px solid rgba(139, 92, 246, 0.25)',
-              fontSize: '11px',
-              color: '#a5b4fc',
-              fontWeight: 600,
-              whiteSpace: 'nowrap'
-            }}
-          >
-            {score}% match
-          </span>
+        {/* Match % badge */}
+        {isCandidate && (
+          <>
+            {scoreData ? (
+              <div
+                title={
+                  scoreData.breakdown
+                    ? `${scoreData.reason}\n\nBreakdown:\n• Keywords: ${scoreData.breakdown.keywords}%\n• Experience: ${scoreData.breakdown.experience}%\n• Education: ${scoreData.breakdown.education}%\n• Location: ${scoreData.breakdown.location}%`
+                    : scoreData.reason
+                }
+                style={{
+                  fontSize: '11px',
+                  padding: '3px 10px',
+                  borderRadius: '20px',
+                  whiteSpace: 'nowrap',
+                  cursor: 'help',
+                  background: scoreData.score >= 80
+                    ? 'rgba(16,185,129,0.15)'
+                    : scoreData.score >= 60
+                    ? 'rgba(245,158,11,0.15)'
+                    : 'rgba(255,255,255,0.06)',
+                  color: scoreData.score >= 80
+                    ? '#6ee7b7'
+                    : scoreData.score >= 60
+                    ? '#fcd34d'
+                    : 'rgba(255,255,255,0.4)',
+                  border: `0.5px solid ${
+                    scoreData.score >= 80
+                      ? 'rgba(16,185,129,0.3)'
+                      : scoreData.score >= 60
+                      ? 'rgba(245,158,11,0.3)'
+                      : 'rgba(255,255,255,0.1)'
+                  }`,
+                  fontWeight: 600
+                }}
+              >
+                {scoreData.score}% match
+              </div>
+            ) : userProfile?.skills?.length ? (
+              <div 
+                className="animate-pulse"
+                style={{
+                  fontSize: '11px',
+                  padding: '3px 10px',
+                  borderRadius: '20px',
+                  background: 'rgba(255,255,255,0.04)',
+                  color: 'rgba(255,255,255,0.25)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                Scoring...
+              </div>
+            ) : null}
+          </>
         )}
 
         {/* Apply Button */}

@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useSavedJobs } from "../context/SavedJobsContext";
-import { applyToJob, getCandidateApplications, getCandidateJobMatches, getJobs } from "../services/api";
+import API, { applyToJob, getCandidateApplications, getCandidateJobMatches, getJobs } from "../services/api";
+import { useJobMatching } from "../hooks/useJobMatching";
 import JobCard from "../components/JobCard";
 import ApplyDrawer from "../components/ApplyDrawer";
 import SkeletonJobCard from "../components/SkeletonJobCard";
@@ -163,8 +164,10 @@ export default function JobsBrowser() {
   const isCandidate = role === "candidate";
   const userId = getUserId(user);
 
+  const [candidateProfile, setCandidateProfile] = useState(null);
   const [viewMode, setViewMode] = useState("all");
   const [allJobs, setAllJobs] = useState([]);
+  const { scores, scoreJob } = useJobMatching(allJobs, candidateProfile);
   const [matchedJobs, setMatchedJobs] = useState([]);
   const [candidateApplications, setCandidateApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -244,6 +247,18 @@ export default function JobsBrowser() {
   useEffect(() => {
     loadJobs();
   }, []);
+
+  useEffect(() => {
+    if (isCandidate && userId) {
+      API.get('/users/profile-info')
+        .then(res => {
+          if (res.data && res.data.user) {
+            setCandidateProfile(res.data.user);
+          }
+        })
+        .catch(err => console.error("Error loading candidate profile for match scoring:", err));
+    }
+  }, [isCandidate, userId]);
 
   useEffect(() => {
     if (isCandidate && userId) {
@@ -334,11 +349,11 @@ export default function JobsBrowser() {
 
     if (isCandidate && minMatch > 0) {
       jobs = jobs.filter((job) => {
-        const score = Number(candidateMatchMap[job._id]?.matchScore || job.matchScore || 0);
+        const score = scores[job._id]?.score ?? 0;
         if (viewMode === "matched") {
           return score >= minMatch;
         }
-        return !candidateMatchMap[job._id] || score >= minMatch;
+        return !scores[job._id] || score >= minMatch;
       });
     }
 
@@ -347,11 +362,16 @@ export default function JobsBrowser() {
     } else if (sortBy === "salary-high") {
       jobs.sort((a, b) => Number(b.salary || 0) - Number(a.salary || 0));
     } else {
-      jobs.sort((a, b) => Number(b.matchScore || candidateMatchMap[b._id]?.matchScore || 0) - Number(a.matchScore || candidateMatchMap[a._id]?.matchScore || 0));
+      // Best Match sorting based on new multi-factor scores
+      jobs.sort((a, b) => {
+        const scoreA = scores[a._id]?.score ?? -1;
+        const scoreB = scores[b._id]?.score ?? -1;
+        return scoreB - scoreA;
+      });
     }
 
     return jobs;
-  }, [baseJobs, debouncedSearch, selectedTypes, selectedExperience, selectedSkills, salaryMin, salaryMax, minMatch, sortBy, isCandidate, candidateMatchMap]);
+  }, [baseJobs, debouncedSearch, selectedTypes, selectedExperience, selectedSkills, salaryMin, salaryMax, minMatch, sortBy, isCandidate, candidateMatchMap, scores]);
 
   const hasActiveFilters = useMemo(() => {
     return Boolean(
@@ -818,6 +838,8 @@ export default function JobsBrowser() {
                                   isSaved={isJobSaved(job._id)}
                                   searchQuery={debouncedSearch}
                                   isSelected={isSelected}
+                                  scores={scores}
+                                  userProfile={candidateProfile}
                                 />
                               </motion.div>
                             </div>
@@ -844,6 +866,8 @@ export default function JobsBrowser() {
                                 isSaved={isJobSaved(job._id)}
                                 searchQuery={debouncedSearch}
                                 isSelected={isSelected}
+                                scores={scores}
+                                userProfile={candidateProfile}
                               />
                             </motion.div>
                           );
