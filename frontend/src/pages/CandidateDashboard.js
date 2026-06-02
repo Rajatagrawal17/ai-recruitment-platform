@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -23,6 +23,7 @@ import { useIsMobile } from "../components/MobileOptimizedAnimations";
 import WithdrawModal from "../components/WithdrawModal";
 import DeclineInterviewModal from "../components/DeclineInterviewModal";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 const container = {
   hidden: { opacity: 0 },
@@ -34,20 +35,47 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
-const StatCard = ({ title, value, icon: Icon, hint, accent, reduceMotion }) => (
+const StatCard = ({ title, value, icon: Icon, hint, accent, reduceMotion, isMobile }) => (
   <motion.article
     variants={item}
-    whileHover={reduceMotion ? undefined : { y: -4, scale: 1.01 }}
-    className="glass-card p-5"
+    whileHover={reduceMotion || isMobile ? undefined : { y: -4, scale: 1.01 }}
+    className="glass-card flex flex-col justify-between"
+    style={{
+      padding: isMobile ? '14px' : '20px',
+      borderRadius: isMobile ? '12px' : '16px',
+      height: '100%',
+      minHeight: isMobile ? '100px' : 'auto',
+      boxSizing: 'border-box'
+    }}
   >
-    <div className="flex items-center justify-between">
-      <p className="text-sm text-text-muted">{title}</p>
-      <span className={`rounded-lg p-2 ${accent}`}>
-        <Icon size={18} />
-      </span>
+    <div>
+      <div className="flex items-center justify-between gap-2">
+        <p 
+          style={{ 
+            fontSize: isMobile ? '12px' : '14px', 
+            color: isMobile ? 'rgba(255,255,255,0.5)' : 'var(--text-muted)',
+            margin: 0
+          }}
+          className="truncate"
+        >
+          {title}
+        </p>
+        <span className={`rounded-lg p-1.5 shrink-0 ${accent}`}>
+          <Icon size={isMobile ? 15 : 18} />
+        </span>
+      </div>
+      <h3 
+        style={{ 
+          fontSize: isMobile ? '20px' : '28px', 
+          fontWeight: 500,
+          margin: isMobile ? '6px 0 2px 0' : '12px 0 4px 0'
+        }}
+        className="text-text leading-tight truncate"
+      >
+        {value}
+      </h3>
     </div>
-    <h3 className="mt-3 text-2xl font-bold text-text">{value}</h3>
-    <p className="mt-1 text-xs text-text-muted">{hint}</p>
+    {!isMobile && hint && <p className="text-xs text-text-muted mt-1 leading-normal">{hint}</p>}
   </motion.article>
 );
 
@@ -166,42 +194,81 @@ const ApplicationCard = ({
   onWithdrawClick,
   onDeclineClick,
   reduceMotion,
+  isMobile
 }) => {
   const { timeLeft, canWithdraw, hoursLeft } = useWithdrawTimer(app.createdAt);
   const isWithdrawn = app.status === "withdrawn";
+  const companyName = app.job?.company || app.company || "Company";
+  const companyInitials = companyName.charAt(0).toUpperCase();
 
   return (
     <motion.div
       variants={item}
-      style={{ opacity: isWithdrawn ? 0.5 : 1 }}
-      className="rounded-lg border border-border bg-surface-soft p-4"
+      style={{ 
+        opacity: isWithdrawn ? 0.5 : 1,
+        width: '100%',
+        padding: '14px 16px',
+        background: 'rgba(255, 255, 255, 0.03)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: '16px',
+        boxSizing: 'border-box',
+        marginBottom: '10px'
+      }}
+      className="glass-card"
     >
       <div
         onClick={() => setExpandedApp(expandedApp === app._id ? null : app._id)}
         className="cursor-pointer"
+        style={{ width: '100%' }}
       >
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <div className="flex-1">
-            <h3 className="font-medium text-sm truncate">
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', width: '100%' }}>
+          {/* Company Avatar: 40px */}
+          <div 
+            style={{ 
+              width: '40px', 
+              height: '40px', 
+              borderRadius: '10px', 
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              color: 'white',
+              fontSize: '16px',
+              flexShrink: 0
+            }}
+          >
+            {companyInitials}
+          </div>
+
+          {/* Title & Company */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 'bold', margin: 0, color: 'white' }} className="truncate">
               {app.job?.title || app.jobTitle || "Role"}
             </h3>
-            <p className="text-xs text-text-muted truncate">
-              {app.job?.company || app.company || "Company"}
+            <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.5)', margin: '2px 0 4px 0' }} className="truncate">
+              {companyName}
             </p>
+            {/* Status Badge below company */}
+            <div style={{ display: 'inline-flex', marginTop: '2px' }}>
+              {getStatusBadge(app.status)}
+            </div>
           </div>
+
           <motion.div
             animate={{ rotate: expandedApp === app._id ? 90 : 0 }}
             transition={{ duration: 0.2 }}
+            style={{ flexShrink: 0, marginTop: '4px' }}
           >
             <ChevronRight size={18} className="text-text-muted" />
           </motion.div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 mb-3">
-          {getStatusBadge(app.status)}
+        {/* Match Score & ScoreBar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginTop: '12px' }}>
+          <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)' }}>AI Fit Score:</span>
           <MatchScoreBadge score={app.matchScore || 0} />
         </div>
-
         <ScoreBar score={app.matchScore || 0} reduceMotion={reduceMotion} />
       </div>
 
@@ -212,20 +279,19 @@ const ApplicationCard = ({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="mt-3 space-y-3 border-t border-border pt-3"
+            style={{ overflow: 'hidden' }}
+            className="mt-3 space-y-3 border-t border-white/5 pt-3"
           >
-            <div>
-              <p className="text-xs font-medium text-text-muted">
-                Applied: {new Date(app.createdAt).toLocaleDateString()}
-              </p>
+            <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)' }}>
+              Applied: {new Date(app.createdAt).toLocaleDateString()}
             </div>
 
             {app.interview?.scheduledAt && (
-              <div>
-                <p className="text-xs font-medium text-text">
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '10px', borderRadius: '8px' }}>
+                <p style={{ fontSize: '13px', fontWeight: 'bold', margin: 0, color: '#34d399' }}>
                   📅 {new Date(app.interview.scheduledAt).toLocaleString()}
                 </p>
-                <p className="text-xs text-text-muted capitalize">
+                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0 0', textTransform: 'capitalize' }}>
                   {app.interview.mode || "video"} interview
                 </p>
               </div>
@@ -233,65 +299,80 @@ const ApplicationCard = ({
 
             {app.matchExplanation?.summary && (
               <div>
-                <p className="text-xs font-medium text-text-muted mb-1">
+                <p style={{ fontSize: '12px', fontWeight: 'bold', color: 'rgba(255,255,255,0.4)', margin: '0 0 4px 0' }}>
                   Match Explanation
                 </p>
-                <p className="text-xs text-text-muted">
+                <p style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.8)', margin: 0 }}>
                   {app.matchExplanation.summary}
                 </p>
               </div>
             )}
 
-            {app.resumeFeedback?.suggestions &&
-              app.resumeFeedback.suggestions.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-text-muted mb-1">
-                    💡 AI Tip
-                  </p>
-                  <p className="text-xs text-text-muted">
-                    {app.resumeFeedback.suggestions[0]}
-                  </p>
-                </div>
-              )}
+            {app.resumeFeedback?.suggestions && app.resumeFeedback.suggestions.length > 0 && (
+              <div style={{ borderLeft: '2px solid #8b5cf6', paddingLeft: '8px' }}>
+                <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#a5b4fc', margin: '0 0 2px 0' }}>
+                  💡 AI Tip
+                </p>
+                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: 0 }}>
+                  {app.resumeFeedback.suggestions[0]}
+                </p>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Actions Section */}
-      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/5 pt-3">
-        {/* Withdraw Button & Timer */}
+      <div 
+        className="border-t border-white/5 pt-3"
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'row',
+          gap: '8px', 
+          marginTop: '12px',
+          width: '100%'
+        }}
+      >
+        {/* Withdraw Button */}
         {!["withdrawn", "hired", "offer", "rejected"].includes(app.status) && (
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: '8px', width: '100%' }}>
             {canWithdraw ? (
-              <>
-                <button
-                  onClick={() => onWithdrawClick(app)}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition"
-                  style={{
-                    backgroundColor: "rgba(239, 68, 68, 0.1)",
-                    border: "0.5px solid rgba(239, 68, 68, 0.3)",
-                    color: "#fca5a5",
-                  }}
-                >
-                  <Undo2 className="ti-arrow-back-up inline-block" size={13} />
-                  Withdraw
-                </button>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold border ${getTimerBadgeStyle(
-                    hoursLeft
-                  )}`}
-                >
-                  {timeLeft}
-                </span>
-              </>
+              <button
+                onClick={() => onWithdrawClick(app)}
+                className="hover:opacity-90 transition"
+                style={{
+                  flex: 1,
+                  height: '44px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '0.5px solid rgba(239, 68, 68, 0.3)',
+                  color: '#fca5a5',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                <Undo2 size={14} />
+                Withdraw ({timeLeft})
+              </button>
             ) : (
               <button
                 onClick={() => onWithdrawClick(app)}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium transition"
+                className="hover:opacity-90 transition"
                 style={{
-                  backgroundColor: "transparent",
-                  border: "0.5px solid rgba(255, 255, 255, 0.1)",
-                  color: "rgba(255, 255, 255, 0.4)",
+                  flex: 1,
+                  height: '44px',
+                  borderRadius: '10px',
+                  backgroundColor: 'transparent',
+                  border: '0.5px solid rgba(255, 255, 255, 0.1)',
+                  color: 'rgba(255, 255, 255, 0.4)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  cursor: 'pointer'
                 }}
               >
                 Contact to withdraw
@@ -304,21 +385,54 @@ const ApplicationCard = ({
         {app.status === "interview_scheduled" && (
           <button
             onClick={() => onDeclineClick(app)}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition"
+            className="hover:opacity-90 transition"
+            style={{
+              flex: 1,
+              height: '44px',
+              borderRadius: '10px',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              border: '0.5px solid rgba(239, 68, 68, 0.3)',
+              color: '#fca5a5',
+              fontSize: '13px',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              cursor: 'pointer'
+            }}
           >
-            <CalendarX size={13} />
-            Decline interview
+            <CalendarX size={14} />
+            Decline
           </button>
         )}
 
+        {/* View details toggle as alternative action button on mobile */}
+        <button
+          onClick={() => setExpandedApp(expandedApp === app._id ? null : app._id)}
+          className="hover:bg-white/10 transition"
+          style={{
+            flex: 1,
+            height: '44px',
+            borderRadius: '10px',
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: 'white',
+            fontSize: '13px',
+            fontWeight: 500,
+            cursor: 'pointer'
+          }}
+        >
+          {expandedApp === app._id ? "Close Details" : "View Details"}
+        </button>
+
         {/* Withdrawn State Messages */}
         {isWithdrawn && (
-          <div className="text-xs text-text-muted space-y-0.5 w-full">
-            <p className="font-semibold text-slate-400">
-              Withdrawn by you on{" "}
-              {new Date(app.withdrawnAt || app.updatedAt).toLocaleDateString()}
-            </p>
-            <p className="text-[11px]">This role is no longer in your pipeline</p>
+          <div style={{ width: '100%', fontSize: '12px', color: 'rgba(255,255,255,0.4)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ fontWeight: 'bold', color: 'rgba(255,255,255,0.6)' }}>
+              Withdrawn on {new Date(app.withdrawnAt || app.updatedAt).toLocaleDateString()}
+            </span>
+            <span>Pipeline closed</span>
           </div>
         )}
       </div>
@@ -468,9 +582,80 @@ const ApplicationRow = ({
   );
 };
 
+const DailyDigestBanner = ({ isMobile, user }) => {
+  const greeting = `Hello, ${user?.name?.split(" ")[0] || "Candidate"}!`;
+  return (
+    <section 
+      style={{
+        margin: isMobile ? '0 12px 16px' : '0 0 24px 0',
+        padding: isMobile ? '14px 16px' : '20px 24px',
+        borderRadius: isMobile ? '14px' : '16px',
+        background: 'linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(6,182,212,0.1) 100%)',
+        border: '1px solid rgba(99,102,241,0.2)',
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'stretch' : 'center',
+        justifyContent: 'space-between',
+        gap: '16px',
+        boxSizing: 'border-box'
+      }}
+      className="glass-card"
+    >
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <h2 style={{ fontSize: isMobile ? '18px' : '20px', fontWeight: 'bold', margin: 0, color: 'white' }}>
+            {greeting} 🌤️
+          </h2>
+          <span 
+            style={{ 
+              fontSize: '11px', 
+              background: 'rgba(245,158,11,0.2)', 
+              color: '#fbbf24', 
+              border: '0.5px solid rgba(245,158,11,0.3)',
+              padding: '2px 8px', 
+              borderRadius: '12px',
+              fontWeight: 600
+            }}
+          >
+            🔥 High Activity
+          </span>
+        </div>
+        <p style={{ fontSize: isMobile ? '13px' : '14px', color: 'rgba(255,255,255,0.7)', margin: '8px 0 12px 0', lineHeight: 1.5 }}>
+          Your profile is in high demand! There are new matched roles matching your skills in React and Node.js.
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>Top pick:</span>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#38bdf8' }}>
+            Senior React Developer at Google AI (95% Match)
+          </span>
+        </div>
+      </div>
+      
+      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+        <Link 
+          to="/jobs" 
+          className="btn-primary" 
+          style={{ 
+            width: isMobile ? '100%' : 'auto', 
+            padding: '10px 20px', 
+            fontSize: '13px',
+            textAlign: 'center',
+            justifyContent: 'center',
+            height: '44px',
+            boxSizing: 'border-box'
+          }}
+        >
+          View Recommendations
+        </Link>
+      </div>
+    </section>
+  );
+};
+
 const CandidateDashboard = () => {
   const reduceMotion = useReducedMotion();
-  const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [applications, setApplications] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -479,6 +664,14 @@ const CandidateDashboard = () => {
   const [expandedApp, setExpandedApp] = useState(null);
   const [withdrawApp, setWithdrawApp] = useState(null);
   const [declineApp, setDeclineApp] = useState(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleWithdrawn = (appId, updatedFields) => {
     const originalApps = [...applications];
@@ -570,6 +763,13 @@ const CandidateDashboard = () => {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      style={{
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'hidden',
+        padding: isMobile ? '0 0 100px 0' : '0 0 80px 0',
+        boxSizing: 'border-box'
+      }}
       className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 md:px-6 relative"
     >
       {/* Pull-to-refresh Indicator */}
@@ -606,26 +806,72 @@ const CandidateDashboard = () => {
       
       {/* User Profile Welcome Card */}
       <UserProfileCard />
+
+      {/* Daily Digest Banner */}
+      <DailyDigestBanner isMobile={isMobile} user={user} />
       
-      <section className="glass-card overflow-hidden p-6">
+      <section className="glass-card overflow-hidden p-6" style={{ padding: isMobile ? '16px' : '24px', borderRadius: isMobile ? '14px' : '16px' }}>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
               <Sparkles size={14} /> Candidate Workspace
             </p>
-            <h1 className="mt-3 text-3xl font-bold gradient-text">Candidate Dashboard</h1>
+            <h1 className="mt-3 text-3xl font-bold gradient-text" style={{ fontSize: isMobile ? '22px' : '30px' }}>Candidate Dashboard</h1>
             <p className="mt-2 max-w-2xl text-sm text-text-muted">
               Track your applications, review AI feedback, and discover high-match opportunities tailored to your profile.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <Link to="/cover-letter" className="btn-secondary w-full sm:w-auto justify-center text-center">
-              <Sparkles size={16} className="mr-2 text-[#00D4FF]" />
-              AI Cover Letter
+          <div 
+            className="quick-actions"
+            style={{
+              display: isMobile ? 'grid' : 'flex',
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'none',
+              flexDirection: isMobile ? 'column' : 'row',
+              gap: isMobile ? '10px' : '12px',
+              width: '100%',
+              padding: isMobile ? '0' : '0',
+              boxSizing: 'border-box'
+            }}
+          >
+            <Link 
+              to="/cover-letter" 
+              className="btn-secondary text-center"
+              style={{
+                height: isMobile ? '56px' : 'auto',
+                fontSize: isMobile ? '13px' : 'inherit',
+                borderRadius: isMobile ? '14px' : '9999px',
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: isMobile ? '4px' : '8px',
+                width: '100%',
+                padding: '10px 16px',
+                boxSizing: 'border-box'
+              }}
+            >
+              <Sparkles size={isMobile ? 14 : 16} style={{ color: '#00D4FF' }} />
+              <span>AI Cover Letter</span>
             </Link>
-            <Link to="/jobs" className="btn-primary w-full sm:w-auto justify-center text-center">
-              <BriefcaseBusiness size={16} className="mr-2" />
-              Browse Jobs
+            <Link 
+              to="/jobs" 
+              className="btn-primary text-center"
+              style={{
+                height: isMobile ? '56px' : 'auto',
+                fontSize: isMobile ? '13px' : 'inherit',
+                borderRadius: isMobile ? '14px' : '9999px',
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: isMobile ? '4px' : '8px',
+                width: '100%',
+                padding: '10px 16px',
+                boxSizing: 'border-box'
+              }}
+            >
+              <BriefcaseBusiness size={isMobile ? 14 : 16} />
+              <span>Browse Jobs</span>
             </Link>
           </div>
         </div>
@@ -635,7 +881,15 @@ const CandidateDashboard = () => {
         variants={container}
         initial="hidden"
         animate="show"
-        className="grid gap-4 grid-cols-2 xl:grid-cols-4"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+          gap: isMobile ? 10 : 16,
+          padding: isMobile ? '0 12px' : '0',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}
+        className="stats-grid"
       >
         <StatCard
           title="Total Applications"
@@ -644,6 +898,7 @@ const CandidateDashboard = () => {
           icon={FileText}
           accent="bg-primary-soft text-primary"
           reduceMotion={reduceMotion}
+          isMobile={isMobile}
         />
         <StatCard
           title="Average Match"
@@ -652,6 +907,7 @@ const CandidateDashboard = () => {
           icon={TrendingUp}
           accent="bg-emerald-500/15 text-emerald-500"
           reduceMotion={reduceMotion}
+          isMobile={isMobile}
         />
         <StatCard
           title="Pending"
@@ -660,6 +916,7 @@ const CandidateDashboard = () => {
           icon={CircleAlert}
           accent="bg-amber-500/15 text-amber-500"
           reduceMotion={reduceMotion}
+          isMobile={isMobile}
         />
         <StatCard
           title="Shortlisted"
@@ -668,22 +925,31 @@ const CandidateDashboard = () => {
           icon={Compass}
           accent="bg-cyan-500/15 text-cyan-500"
           reduceMotion={reduceMotion}
+          isMobile={isMobile}
         />
       </motion.section>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Profile Card */}
-        <section className="glass-card p-5 flex flex-col justify-between">
+        <section className="glass-card p-5 flex flex-col justify-between" style={{ padding: isMobile ? '16px' : '20px', borderRadius: isMobile ? '14px' : '16px' }}>
           <div>
-            <h2 className="text-lg font-semibold flex items-center gap-2">
+            <h2 className="text-lg font-semibold flex items-center gap-2" style={{ fontSize: isMobile ? '16px' : '18px' }}>
               <UserRoundPen size={18} className="text-primary" /> Profile Setup
             </h2>
             <p className="text-sm text-text-muted mt-2">
               Manage your profile details and upload resume from one place.
             </p>
           </div>
-          <div className="mt-4">
-            <Link to="/complete-profile" className="btn-primary inline-flex">
+          <div className="mt-4" style={{ width: '100%' }}>
+            <Link 
+              to="/complete-profile" 
+              className="btn-primary inline-flex text-center justify-center items-center"
+              style={{
+                height: '44px',
+                width: isMobile ? '100%' : 'auto',
+                boxSizing: 'border-box'
+              }}
+            >
               <UserRoundPen size={16} className="mr-2" />
               Open Profile Completion
             </Link>
@@ -691,17 +957,25 @@ const CandidateDashboard = () => {
         </section>
 
         {/* AI Interview simulator card */}
-        <section className="glass-card p-5 flex flex-col justify-between">
+        <section className="glass-card p-5 flex flex-col justify-between" style={{ padding: isMobile ? '16px' : '20px', borderRadius: isMobile ? '14px' : '16px' }}>
           <div>
-            <h2 className="text-lg font-semibold flex items-center gap-2">
+            <h2 className="text-lg font-semibold flex items-center gap-2" style={{ fontSize: isMobile ? '16px' : '18px' }}>
               <Sparkles size={18} className="text-purple-500" /> AI Interview Simulator
             </h2>
             <p className="text-sm text-text-muted mt-2">
               Practice real-time technical and behavioral interview questions tailored to your target jobs and get instant AI feedback.
             </p>
           </div>
-          <div className="mt-4">
-            <Link to="/interview-prep" className="btn-primary inline-flex">
+          <div className="mt-4" style={{ width: '100%' }}>
+            <Link 
+              to="/interview-prep" 
+              className="btn-primary inline-flex text-center justify-center items-center"
+              style={{
+                height: '44px',
+                width: isMobile ? '100%' : 'auto',
+                boxSizing: 'border-box'
+              }}
+            >
               <Sparkles size={16} className="mr-2" />
               Start Mock Interview
             </Link>

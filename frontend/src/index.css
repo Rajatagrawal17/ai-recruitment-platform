@@ -334,3 +334,102 @@ input, textarea, select, button {
     scrollbar-width: none !important;
   }
 }
+
+/* iPhone specific style overrides */
+@supports (-webkit-touch-callout: none) {
+  .job-list-container {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+  
+  .bottom-sheet {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+  
+  .bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@supports (height: 100dvh) {
+  .full-height { height: 100dvh; }
+  .bottom-sheet { max-height: 88dvh; }
+}
+
+@supports not (height: 100dvh) {
+  .full-height { height: 100vh; }
+  .bottom-sheet { max-height: 88vh; }
+}
+
+/* Reusable responsive design system utilities */
+.responsive-container {
+  width: 100%;
+  max-width: 100%;
+  padding-left: 12px;
+  padding-right: 12px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .responsive-container {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+.responsive-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.responsive-card {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .responsive-card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+}
+
+.safe-bottom-spacing {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 16px)) !important;
+}
+
+.mobile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .mobile-stack {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+

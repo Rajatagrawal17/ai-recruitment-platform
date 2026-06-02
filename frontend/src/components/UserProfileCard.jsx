@@ -8,10 +8,19 @@ const UserProfileCard = () => {
   const { user } = useAuth();
   const [profileCompleteness, setProfileCompleteness] = useState(75); // Default fallback
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const completenessMotion = useMotionValue(0);
   const springValue = useSpring(completenessMotion, { stiffness: 100, damping: 15 });
   const [displayPercent, setDisplayPercent] = useState(0);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     if (!loading) {
@@ -173,26 +182,26 @@ const UserProfileCard = () => {
         >
           {/* Mobile Profile Completion Ring */}
           <div className="flex flex-col items-center justify-center md:hidden my-3">
-            <div className="relative w-[120px] h-[120px]">
-              <svg width="120" height="120" className="-rotate-90">
+            <div className="relative w-[100px] h-[100px]">
+              <svg width="100" height="100" className="-rotate-90">
                 <circle
-                  cx="60"
-                  cy="60"
-                  r="50"
+                  cx="50"
+                  cy="50"
+                  r="42"
                   fill="transparent"
                   stroke="rgba(255, 255, 255, 0.05)"
                   strokeWidth="8"
                 />
                 <motion.circle
-                  cx="60"
-                  cy="60"
-                  r="50"
+                  cx="50"
+                  cy="50"
+                  r="42"
                   fill="transparent"
                   stroke="url(#profile-grad)"
                   strokeWidth="8"
-                  strokeDasharray="314.16"
-                  initial={{ strokeDashoffset: 314.16 }}
-                  animate={{ strokeDashoffset: 314.16 - (314.16 * displayPercent) / 100 }}
+                  strokeDasharray="263.89"
+                  initial={{ strokeDashoffset: 263.89 }}
+                  animate={{ strokeDashoffset: 263.89 - (263.89 * displayPercent) / 100 }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
                   strokeLinecap="round"
                 />
@@ -204,8 +213,8 @@ const UserProfileCard = () => {
                 </defs>
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-xl font-extrabold text-white">{displayPercent}%</span>
-                <span className="text-[9px] uppercase font-bold text-text-muted tracking-wider">Done</span>
+                <span className="text-lg font-extrabold text-white">{displayPercent}%</span>
+                <span className="text-[8px] uppercase font-bold text-text-muted tracking-wider">Done</span>
               </div>
             </div>
             <span className="text-xs font-semibold text-text mt-3">Profile Completeness</span>
@@ -230,21 +239,30 @@ const UserProfileCard = () => {
               ? "✅ Profile complete! You're ready for AI recommendations"
               : `${100 - displayPercent}% to go. Complete your profile to unlock AI-powered recommendations`}
           </p>
-          <div className="flex flex-wrap gap-3 mt-4 justify-center md:justify-start">
+          <div 
+            className="flex flex-col sm:flex-row gap-3 mt-4 justify-center md:justify-start"
+            style={{ width: '100%' }}
+          >
             {profileCompleteness < 100 && (
               <Link 
                 to="/complete-profile" 
                 style={{
-                  display: 'inline-block',
-                  padding: '0.5rem 1rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '44px',
+                  padding: '0 1.25rem',
                   background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
                   color: 'white',
-                  borderRadius: '6px',
+                  borderRadius: '10px',
                   textDecoration: 'none',
                   fontWeight: '600',
                   fontSize: '0.85rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
+                  width: isMobile ? '100%' : 'auto',
+                  textAlign: 'center',
+                  boxSizing: 'border-box'
                 }}
                 onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
                 onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
@@ -255,17 +273,23 @@ const UserProfileCard = () => {
             <Link 
               to="/cover-letter" 
               style={{
-                display: 'inline-block',
-                padding: '0.5rem 1rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '44px',
+                padding: '0 1.25rem',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 background: 'rgba(255, 255, 255, 0.04)',
                 color: 'white',
-                borderRadius: '6px',
+                borderRadius: '10px',
                 textDecoration: 'none',
                 fontWeight: '600',
                 fontSize: '0.85rem',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
+                width: isMobile ? '100%' : 'auto',
+                textAlign: 'center',
+                boxSizing: 'border-box'
               }}
               onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
               onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
