@@ -471,13 +471,13 @@ const CoverLetterPage = () => {
               {/* Tone Selector */}
               <div>
                 <label className="block text-sm font-semibold mb-3 text-[#E2E8F0]">Tone</label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-nowrap overflow-x-auto gap-2 pb-2 no-scrollbar" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                   {tones.map((t) => (
                     <button
                       key={t}
                       type="button"
                       onClick={() => setTone(t)}
-                      className={`rounded-full px-4 py-2 text-xs font-medium transition ${
+                      className={`rounded-full px-4 py-2 text-xs font-medium transition shrink-0 ${
                         tone === t
                           ? "bg-gradient-to-r from-[#0052FF] to-[#00D4FF] text-white shadow-md shadow-[#00D4FF]/10"
                           : "border border-white/10 bg-white/[0.03] text-[#94A3B8] hover:bg-white/[0.08] hover:text-white"
@@ -582,7 +582,7 @@ const CoverLetterPage = () => {
 
         {/* Right Panel: Preview */}
         <section className="lg:col-span-7 space-y-4 right-panel">
-          <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-6 md:p-8 backdrop-blur-md flex flex-col min-h-[600px] h-full shadow-2xl relative overflow-hidden">
+          <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-4 md:p-8 backdrop-blur-md flex flex-col min-h-[300px] lg:min-h-[600px] h-full shadow-2xl relative overflow-hidden">
             
             {/* Header (hidden in print) */}
             <div className="flex items-center justify-between border-b border-white/8 pb-4 mb-6 right-header no-print">
@@ -647,7 +647,7 @@ const CoverLetterPage = () => {
               )}
 
               {(generatedLetter || streamedLetter) && (
-                <div className="relative p-2 rounded-2xl bg-white/[0.01] border border-white/5 font-mono text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-wrap min-h-[400px] md:min-h-[500px] overflow-y-auto selection:bg-[#00D4FF]/20 selection:text-white letter-content">
+                <div className="relative p-2 rounded-2xl bg-white/[0.01] border border-white/5 font-mono text-sm text-slate-300 leading-relaxed whitespace-pre-wrap min-h-[400px] md:min-h-[500px] overflow-y-auto selection:bg-[#00D4FF]/20 selection:text-white letter-content">
                   {streamedLetter}
                   {isStreaming && <span className="inline-block w-1.5 h-4 ml-0.5 bg-[#00D4FF] animate-pulse">█</span>}
                 </div>

@@ -82,9 +82,9 @@ const BottomNavBar = () => {
   };
 
   const handleTap = (index, item) => {
-    // Haptic vibration
+    // Haptic vibration 8ms
     if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(10);
+      navigator.vibrate(8);
     }
 
     setTappedIndex(index);
@@ -101,7 +101,7 @@ const BottomNavBar = () => {
     bottom: 0,
     left: 0,
     right: 0,
-    height: "64px",
+    height: "calc(64px + env(safe-area-inset-bottom))",
     background: "rgba(15, 15, 26, 0.9)",
     backdropFilter: "blur(20px)",
     WebkitBackdropFilter: "blur(20px)",
@@ -126,26 +126,33 @@ const BottomNavBar = () => {
             to={item.path}
             onClick={() => handleTap(index, item)}
             className="flex-1 flex flex-col items-center justify-center h-full relative no-underline select-none"
+            style={{ minWidth: "44px", minHeight: "44px" }}
           >
             {/* Subtle indicator dot above active icon */}
             {isActive && (
               <motion.span
                 layoutId="activeDot"
-                className="absolute top-1.5 w-1 h-1 rounded-full bg-purple-500"
+                className="absolute top-1.5 bg-[#8b5cf6]"
+                style={{
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: '50%'
+                }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               />
             )}
 
             {/* Icon Container with Tap scale animation */}
             <motion.div
-              animate={tappedIndex === index ? { scale: [1, 1.2, 1] } : { scale: 1 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
+              animate={tappedIndex === index ? { scale: 0.85 } : { scale: 1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
               className="relative flex items-center justify-center p-1"
             >
               <Icon
                 size={22}
                 style={{
-                  color: isActive ? "#A855F7" : "rgba(255, 255, 255, 0.6)",
+                  color: isActive ? "#a5b4fc" : "rgba(255, 255, 255, 0.35)",
+                  transform: isActive ? "scale(1.1)" : "scale(1)",
                   transition: "color 0.3s ease, transform 0.3s ease",
                 }}
               />
@@ -159,7 +166,7 @@ const BottomNavBar = () => {
             </motion.div>
 
             {/* Label appears below active icon (inactive labels are hidden) */}
-            <div className="h-4 flex items-center justify-center overflow-hidden">
+            <div className="h-5 flex items-center justify-center overflow-hidden">
               <AnimatePresence mode="wait">
                 {isActive && (
                   <motion.span
@@ -167,7 +174,7 @@ const BottomNavBar = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 5 }}
                     transition={{ duration: 0.2 }}
-                    className="text-[9px] font-semibold text-purple-500 mt-0.5"
+                    className="text-[12px] font-semibold text-[#a5b4fc] mt-0.5"
                   >
                     {item.label}
                   </motion.span>

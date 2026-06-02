@@ -30,9 +30,9 @@ export function TiltCard({
 
   if (typeof window !== 'undefined' && 'ontouchstart' in window) {
     return (
-      <div className={className} style={style} {...props}>
+      <motion.div className={className} style={style} {...props}>
         {children}
-      </div>
+      </motion.div>
     );
   }
 

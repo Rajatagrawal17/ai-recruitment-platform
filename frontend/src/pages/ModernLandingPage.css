@@ -376,3 +376,14 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+@media (max-width: 768px) {
+  .aurora-orb, .hero-orb {
+    animation-duration: 40s !important;
+    opacity: 0.2 !important;
+    filter: blur(60px) !important;
+  }
+  .particle-canvas {
+    display: none !important;
+  }
+}

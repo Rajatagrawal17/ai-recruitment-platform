@@ -677,3 +677,18 @@
     display: none !important;
   }
 }
+
+/* Mobile Optimization - Hamburger Nav */
+@media (max-width: 768px) {
+  .nav-desktop-links {
+    display: none !important;
+  }
+  .nav-hamburger {
+    display: flex !important;
+  }
+}
+@media (min-width: 769px) {
+  .nav-hamburger {
+    display: none !important;
+  }
+}

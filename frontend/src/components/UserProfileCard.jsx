@@ -171,29 +171,73 @@ const UserProfileCard = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs sm:text-sm font-medium text-text">Profile Completeness</span>
-            <span className="text-xs font-semibold text-primary">{loading ? "..." : `${displayPercent}%`}</span>
+          {/* Mobile Profile Completion Ring */}
+          <div className="flex flex-col items-center justify-center md:hidden my-3">
+            <div className="relative w-[120px] h-[120px]">
+              <svg width="120" height="120" className="-rotate-90">
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="50"
+                  fill="transparent"
+                  stroke="rgba(255, 255, 255, 0.05)"
+                  strokeWidth="8"
+                />
+                <motion.circle
+                  cx="60"
+                  cy="60"
+                  r="50"
+                  fill="transparent"
+                  stroke="url(#profile-grad)"
+                  strokeWidth="8"
+                  strokeDasharray="314.16"
+                  initial={{ strokeDashoffset: 314.16 }}
+                  animate={{ strokeDashoffset: 314.16 - (314.16 * displayPercent) / 100 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  strokeLinecap="round"
+                />
+                <defs>
+                  <linearGradient id="profile-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="var(--primary)" />
+                    <stop offset="100%" stopColor="var(--accent)" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xl font-extrabold text-white">{displayPercent}%</span>
+                <span className="text-[9px] uppercase font-bold text-text-muted tracking-wider">Done</span>
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-text mt-3">Profile Completeness</span>
           </div>
-          <div className="w-full h-2 bg-surface-soft rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
-              style={{ width: `${displayPercent}%` }}
-            />
+
+          {/* Desktop Progress Bar */}
+          <div className="hidden md:block">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs sm:text-sm font-medium text-text">Profile Completeness</span>
+              <span className="text-xs font-semibold text-primary">{loading ? "..." : `${displayPercent}%`}</span>
+            </div>
+            <div className="w-full h-2 bg-surface-soft rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                style={{ width: `${displayPercent}%` }}
+              />
+            </div>
           </div>
-          <p className="text-xs text-text-muted mt-2">
+
+          <p className="text-xs text-text-muted mt-2 text-center md:text-left">
             {profileCompleteness === 100 
               ? "✅ Profile complete! You're ready for AI recommendations"
               : `${100 - displayPercent}% to go. Complete your profile to unlock AI-powered recommendations`}
           </p>
-          <div className="flex flex-wrap gap-3 mt-4">
+          <div className="flex flex-wrap gap-3 mt-4 justify-center md:justify-start">
             {profileCompleteness < 100 && (
               <Link 
                 to="/complete-profile" 
                 style={{
                   display: 'inline-block',
                   padding: '0.5rem 1rem',
-                  background: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
                   color: 'white',
                   borderRadius: '6px',
                   textDecoration: 'none',

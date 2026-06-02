@@ -250,6 +250,40 @@ export default function JobsBrowser() {
     loadJobs();
   }, []);
 
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const startYRef = useRef(0);
+
+  const handleTouchStart = (e) => {
+    if (window.scrollY === 0) {
+      startYRef.current = e.touches[0].clientY;
+    } else {
+      startYRef.current = -1;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (startYRef.current === -1 || isRefreshing) return;
+    const currentY = e.touches[0].clientY;
+    const distance = currentY - startYRef.current;
+    if (distance > 0) {
+      setPullDistance(Math.min(80, distance));
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (startYRef.current === -1 || isRefreshing) return;
+    if (pullDistance > 60) {
+      setIsRefreshing(true);
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+      await loadJobs();
+      setIsRefreshing(false);
+    }
+    setPullDistance(0);
+  };
+
   useEffect(() => {
     if (isCandidate && userId) {
       API.get('/users/profile-info')
@@ -430,6 +464,22 @@ export default function JobsBrowser() {
     return () => clearInterval(timer);
   }, [undoToast]);
 
+  const handleWithdrawJob = async (appId) => {
+    try {
+      const response = await API.delete(`/applications/${appId}`);
+      if (response.data.success) {
+        toast.success("Application withdrawn successfully");
+        setCandidateApplications(prev => prev.filter(app => app._id !== appId));
+        setSelectedJobId(null);
+      } else {
+        throw new Error(response.data.message || "Failed to withdraw application");
+      }
+    } catch (err) {
+      console.error("Error withdrawing application in detail view:", err);
+      toast.error(err.response?.data?.message || err.message || "Could not withdraw application");
+    }
+  };
+
   const handleUndo = async () => {
     if (!undoToast) return;
     const { appId } = undoToast;
@@ -499,7 +549,42 @@ export default function JobsBrowser() {
   const [searchFocused, setSearchFocused] = useState(false);
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#0A0F1E] text-white">
+    <main 
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="min-h-screen overflow-x-hidden bg-[#0A0F1E] text-white"
+    >
+      {/* Pull-to-refresh Indicator */}
+      {(pullDistance > 0 || isRefreshing) && (
+        <div 
+          style={{
+            position: "fixed",
+            top: pullDistance > 0 ? `${pullDistance}px` : "70px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 100,
+            background: "rgba(15, 15, 26, 0.9)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+            borderRadius: "50%",
+            width: "40px",
+            height: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+            transition: isRefreshing ? "none" : "top 0.1s ease"
+          }}
+        >
+          <div 
+            className={`h-5 w-5 rounded-full border-2 border-white/10 border-t-[#6366f1] ${isRefreshing ? "animate-spin" : ""}`}
+            style={{
+              transform: isRefreshing ? "none" : `rotate(${pullDistance * 4}deg)`
+            }}
+          />
+        </div>
+      )}
       <style>{`
         .no-scrollbar::-webkit-scrollbar {
           display: none;
@@ -684,6 +769,20 @@ export default function JobsBrowser() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                  {/* Mobile Filters Button */}
+                  <button
+                    onClick={() => setMobileFiltersOpen(true)}
+                    className="lg:hidden flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-white/10"
+                  >
+                    <i className="ti ti-adjustments-horizontal mr-1" />
+                    Filters
+                    {selectedTypes.length + selectedExperience.length + selectedSkills.length + (salaryMin || salaryMax ? 1 : 0) > 0 && (
+                      <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#6366f1] text-[10px] font-bold text-white px-1">
+                        {selectedTypes.length + selectedExperience.length + selectedSkills.length + (salaryMin || salaryMax ? 1 : 0)}
+                      </span>
+                    )}
+                  </button>
+
                   {/* View mode toggle */}
                   <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 text-xs font-medium">
                     {[
@@ -728,7 +827,7 @@ export default function JobsBrowser() {
                     display: 'flex',
                     alignItems: 'center',
                     width: '100%',
-                    height: '44px',
+                    height: isMobile ? '48px' : '44px',
                     background: 'rgba(255,255,255,0.06)',
                     borderRadius: '12px',
                     borderWidth: '1px',
@@ -751,7 +850,8 @@ export default function JobsBrowser() {
                     onBlur={() => setSearchFocused(false)}
                     onChange={(e) => setSearchInput(e.target.value)}
                     placeholder="Search by title, skill or company..."
-                    className="flex-1 bg-transparent border-none outline-none text-white text-sm h-full"
+                    className="flex-1 bg-transparent border-none outline-none text-white h-full"
+                    style={{ fontSize: isMobile ? '16px' : '14px' }}
                   />
 
                   {isSearching && <WaveLoader size="sm" className="mr-3" />}
@@ -812,11 +912,22 @@ export default function JobsBrowser() {
                           ? "bg-[rgba(99,102,241,0.2)] border-[#6366f1] text-[#a5b4fc]"
                           : "border-[rgba(255,255,255,0.12)] bg-transparent text-[rgba(255,255,255,0.4)] hover:text-white hover:border-white/20"
                       }`}
+                      style={{
+                        minHeight: '36px',
+                        fontSize: '13px'
+                      }}
                     >
                       {chip.label}
                     </motion.button>
                   );
                 })}
+              </div>
+
+              {/* Mobile Job Count */}
+              <div className="lg:hidden mt-2 mb-1 px-1">
+                <span className="text-[13px] text-slate-400 font-medium">
+                  Showing {filteredJobs.length} jobs
+                </span>
               </div>
             </motion.header>
 
@@ -996,12 +1107,25 @@ export default function JobsBrowser() {
                 {/* Apply full width & Save Outline */}
                 <div className="flex flex-col gap-2 mt-5">
                   {appliedJobIds.has(String(selectedJob._id)) ? (
-                    <button
-                      disabled
-                      className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 cursor-not-allowed"
-                    >
-                      Applied ✓
-                    </button>
+                    <div className="space-y-2 w-full">
+                      <button
+                        disabled
+                        className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 cursor-not-allowed"
+                      >
+                        Applied ✓
+                      </button>
+                      {candidateApplications.find(app => (app.job?._id || app.job) === selectedJob._id) && (
+                        <button
+                          onClick={() => {
+                            const app = candidateApplications.find(a => (a.job?._id || a.job) === selectedJob._id);
+                            if (app) handleWithdrawJob(app._id);
+                          }}
+                          className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-rose-400 border border-rose-500/20 bg-rose-500/10 hover:bg-rose-500/20 transition"
+                        >
+                          Withdraw Application
+                        </button>
+                      )}
+                    </div>
                   ) : (
                     <MagneticButton
                       onClick={() => setApplyJob(selectedJob)}
@@ -1066,9 +1190,10 @@ export default function JobsBrowser() {
           </AnimatePresence>
 
           {/* MOBILE Bottom Sheet Detail drawer (<1024px viewport) */}
-          <AnimatePresence>
-            {selectedJob && isMobile && (
-              <Dialog.Portal forceMount>
+          <Dialog.Root open={!!selectedJob && isMobile} onOpenChange={(open) => !open && setSelectedJobId(null)}>
+            <AnimatePresence>
+              {selectedJob && isMobile && (
+                <Dialog.Portal forceMount>
                 <Dialog.Overlay asChild>
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -1140,12 +1265,25 @@ export default function JobsBrowser() {
                     {/* Quick Apply and Save */}
                     <div className="flex flex-col gap-2 mt-5">
                       {appliedJobIds.has(String(selectedJob._id)) ? (
-                        <button
-                          disabled
-                          className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 cursor-not-allowed"
-                        >
-                          Applied ✓
-                        </button>
+                        <div className="space-y-2 w-full">
+                          <button
+                            disabled
+                            className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 cursor-not-allowed"
+                          >
+                            Applied ✓
+                          </button>
+                          {candidateApplications.find(app => (app.job?._id || app.job) === selectedJob._id) && (
+                            <button
+                              onClick={() => {
+                                const app = candidateApplications.find(a => (a.job?._id || a.job) === selectedJob._id);
+                                if (app) handleWithdrawJob(app._id);
+                              }}
+                              className="w-full py-2.5 rounded-full text-xs font-semibold text-center text-rose-400 border border-rose-500/20 bg-rose-500/10 hover:bg-rose-500/20 transition"
+                            >
+                              Withdraw Application
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <MagneticButton
                           onClick={() => {
@@ -1214,7 +1352,170 @@ export default function JobsBrowser() {
             )}
           </AnimatePresence>
 
-          {/* RADIX compare modal */}
+          </Dialog.Root>
+
+          {/* Mobile Filters Bottom Sheet */}
+          <Dialog.Root open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+            <AnimatePresence>
+              {mobileFiltersOpen && (
+                <Dialog.Portal forceMount>
+                  <Dialog.Overlay asChild>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.6 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+                    />
+                  </Dialog.Overlay>
+                  <Dialog.Content asChild>
+                    <motion.div
+                      initial={{ y: "100%" }}
+                      animate={{ y: 0 }}
+                      exit={{ y: "100%" }}
+                      transition={{ type: "spring", damping: 32 }}
+                      className="fixed inset-x-0 bottom-0 z-50 h-[85vh] rounded-t-[20px] bg-[#0f0f1a] border-t border-[#6366f1]/20 p-5 shadow-2xl overflow-y-auto no-scrollbar flex flex-col"
+                    >
+                      {/* Top drag handle */}
+                      <div
+                        className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-white/20 cursor-pointer"
+                        onClick={() => setMobileFiltersOpen(false)}
+                      />
+
+                      <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                        <h3 className="text-base font-bold text-white">Filters</h3>
+                        <button
+                          onClick={() => {
+                            clearAllFilters();
+                            setMobileFiltersOpen(false);
+                          }}
+                          className="text-xs text-rose-400 hover:text-rose-300 font-medium"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+
+                      {/* Filter sections container */}
+                      <div className="flex-1 overflow-y-auto py-4 space-y-6">
+                        {/* Employment Type */}
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Employment Type</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                            {JOB_TYPES.map((type) => {
+                              const active = selectedTypes.includes(type);
+                              return (
+                                <button
+                                  key={type}
+                                  type="button"
+                                  onClick={() => toggleType(type)}
+                                  className={`rounded-xl px-3 py-2 text-xs text-left border transition ${
+                                    active
+                                      ? "bg-[#6366f1]/15 border-[#6366f1] text-[#a5b4fc]"
+                                      : "bg-white/[0.02] border-white/5 text-slate-400"
+                                  }`}
+                                >
+                                  <span className="capitalize">{type}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Experience Level */}
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Experience Level</h4>
+                          <div className="space-y-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedExperience([])}
+                              className={`w-full rounded-xl px-3 py-2.5 text-xs text-left border transition ${
+                                selectedExperience.length === 0
+                                  ? "bg-[#6366f1]/15 border-[#6366f1] text-[#a5b4fc]"
+                                  : "bg-white/[0.02] border-white/5 text-slate-400"
+                              }`}
+                            >
+                              All Experience
+                            </button>
+                            {EXPERIENCE_LEVELS.map((level) => {
+                              const active = selectedExperience.includes(level.value);
+                              return (
+                                <button
+                                  key={level.value}
+                                  type="button"
+                                  onClick={() => setSelectedExperience([level.value])}
+                                  className={`w-full rounded-xl px-3 py-2.5 text-xs text-left border transition ${
+                                    active
+                                      ? "bg-[#6366f1]/15 border-[#6366f1] text-[#a5b4fc]"
+                                      : "bg-white/[0.02] border-white/5 text-slate-400"
+                                  }`}
+                                >
+                                  {level.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Salary Range */}
+                        <div className="space-y-3">
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Salary Range</h4>
+                          <div className="flex justify-between text-xs text-slate-400 font-medium px-1">
+                            <span>₹{salaryMin ? Number(salaryMin) / 100000 : 0}L</span>
+                            <span>₹{salaryMax ? Number(salaryMax) / 100000 : 40}L+</span>
+                          </div>
+                          <div className="px-2">
+                            <Slider.Root
+                              className="relative flex items-center select-none touch-none w-full h-5 cursor-pointer"
+                              value={[
+                                salaryMin ? Number(salaryMin) / 100000 : 0,
+                                salaryMax ? Number(salaryMax) / 100000 : 40
+                              ]}
+                              max={40}
+                              step={1}
+                              onValueChange={([min, max]) => {
+                                setSalaryMin(min === 0 ? "" : String(min * 100000));
+                                setSalaryMax(max === 40 ? "" : String(max * 100000));
+                              }}
+                            >
+                              <Slider.Track className="bg-white/10 relative grow rounded-full h-[3px]">
+                                <Slider.Range className="absolute bg-[#6366f1] rounded-full h-full" />
+                              </Slider.Track>
+                              <Slider.Thumb className="block w-4 h-4 bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-[#6366f1] cursor-pointer" />
+                              <Slider.Thumb className="block w-4 h-4 bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-[#6366f1] cursor-pointer" />
+                            </Slider.Root>
+                          </div>
+                        </div>
+
+                        {/* Skills */}
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Required Skills</h4>
+                          <Select
+                            isMulti
+                            value={selectedSkills}
+                            onChange={setSelectedSkills}
+                            options={skillsOptions}
+                            styles={selectStyles}
+                            placeholder="Skills..."
+                            closeMenuOnSelect={false}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Actions at bottom of sheet */}
+                      <div className="pt-4 border-t border-white/5">
+                        <button
+                          type="button"
+                          onClick={() => setMobileFiltersOpen(false)}
+                          className="w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#06b6d4] py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                        >
+                          Apply Filters
+                        </button>
+                      </div>
+                    </motion.div>
+                  </Dialog.Content>
+                </Dialog.Portal>
+              )}
+            </AnimatePresence>
+          </Dialog.Root>
           <Dialog.Root open={compareOpen} onOpenChange={setCompareOpen}>
             <AnimatePresence>
               {compareOpen && (

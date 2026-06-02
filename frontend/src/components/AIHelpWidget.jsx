@@ -243,9 +243,13 @@ const AIHelpWidget = () => {
   if (hiddenPaths.includes(location.pathname)) return null;
 
   // auto-scroll
-  useEffect(() => {
+  const scrollToBottom = useCallback(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping, isOpen]);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping, isOpen, scrollToBottom]);
 
   // focus input when opened
   useEffect(() => {
@@ -254,6 +258,16 @@ const AIHelpWidget = () => {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen]);
+
+  // scroll to bottom on visual viewport resize (keyboard open)
+  useEffect(() => {
+    if (isOpen && window.visualViewport) {
+      window.visualViewport.addEventListener("resize", scrollToBottom);
+      return () => {
+        window.visualViewport?.removeEventListener("resize", scrollToBottom);
+      };
+    }
+  }, [isOpen, scrollToBottom]);
 
   // persist session
   useEffect(() => {
@@ -370,12 +384,20 @@ const AIHelpWidget = () => {
               initial="hidden"
               animate="visible"
               exit="exit"
+              drag={isDesktop ? false : "y"}
+              dragConstraints={isDesktop ? undefined : { top: 0 }}
+              dragElastic={isDesktop ? undefined : 0.2}
+              onDragEnd={isDesktop ? undefined : (event, info) => {
+                if (info.velocity.y > 500 || info.offset.y > 200) {
+                  setIsOpen(false);
+                }
+              }}
               style={{
                 position: "fixed",
                 zIndex: 1100,
                 ...(isDesktop
                   ? { right: 24, bottom: 90, width: 380, height: 520, borderRadius: 20 }
-                  : { left: 0, right: 0, bottom: 0, height: "72vh", borderRadius: "20px 20px 0 0" }),
+                  : { left: 0, right: 0, bottom: 0, height: "85dvh", borderRadius: "20px 20px 0 0", paddingBottom: "env(safe-area-inset-bottom)" }),
                 background: "rgba(15,15,26,0.92)",
                 backdropFilter: "blur(24px)",
                 WebkitBackdropFilter: "blur(24px)",
@@ -528,6 +550,9 @@ const AIHelpWidget = () => {
                 gap: "10px",
                 alignItems: "flex-end",
                 flexShrink: 0,
+                position: "sticky",
+                bottom: 0,
+                background: "rgba(15,15,26,0.98)",
                 paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))",
               }}>
                 <textarea
@@ -596,8 +621,8 @@ const AIHelpWidget = () => {
         aria-label="Open AI Assistant"
         style={{
           position: "fixed",
-          bottom: isDesktop ? 28 : 80,
-          right: 24,
+          bottom: isDesktop ? 28 : "calc(80px + 16px + env(safe-area-inset-bottom))",
+          right: isDesktop ? 24 : 16,
           width: 56, height: 56,
           borderRadius: "50%",
           border: "none",

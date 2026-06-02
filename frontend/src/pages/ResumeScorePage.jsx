@@ -624,7 +624,7 @@ export default function ResumeScorePage() {
                     
                     {/* SCORE RING */}
                     <div className="flex flex-col items-center text-center">
-                      <div className="relative w-40 h-40 flex items-center justify-center">
+                      <div className="relative w-[120px] h-[120px] md:w-40 md:h-40 flex items-center justify-center">
                         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
                           <circle
                             cx="80"
@@ -650,8 +650,8 @@ export default function ResumeScorePage() {
                         </svg>
                         
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-3xl font-extrabold text-white">{displayScore}</span>
-                          <span className="text-[10px] text-slate-400 font-semibold tracking-widest uppercase">Score</span>
+                          <span className="text-2xl md:text-3xl font-extrabold text-white">{displayScore}</span>
+                          <span className="text-[8px] md:text-[10px] text-slate-400 font-semibold tracking-widest uppercase">Score</span>
                         </div>
                       </div>
                       <p className="mt-3 text-xs text-slate-300 font-medium max-w-[200px] leading-relaxed italic">

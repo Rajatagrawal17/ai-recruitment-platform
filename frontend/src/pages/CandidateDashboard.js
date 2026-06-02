@@ -496,26 +496,60 @@ const CandidateDashboard = () => {
     return () => setApplications(originalApps);
   };
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [appsRes, recommendationRes] = await Promise.all([
-          getCandidateApplications(),
-          getRecommendedJobs().catch(() => ({ data: { recommendations: [] } })),
-        ]);
+  const loadData = useCallback(async () => {
+    try {
+      const [appsRes, recommendationRes] = await Promise.all([
+        getCandidateApplications(),
+        getRecommendedJobs().catch(() => ({ data: { recommendations: [] } })),
+      ]);
 
-        setApplications(appsRes.data.applications || []);
-        setRecommendations(recommendationRes.data.recommendations || []);
-      } catch (err) {
-        setError(err.response?.data?.message || "Could not load your candidate dashboard. Please try again.");
-      } finally {
-        setLoading(false);
-        setRecommendationLoading(false);
-      }
-    };
-
-    loadData();
+      setApplications(appsRes.data.applications || []);
+      setRecommendations(recommendationRes.data.recommendations || []);
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not load your candidate dashboard. Please try again.");
+    } finally {
+      setLoading(false);
+      setRecommendationLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const startYRef = useRef(0);
+
+  const handleTouchStart = (e) => {
+    if (window.scrollY === 0) {
+      startYRef.current = e.touches[0].clientY;
+    } else {
+      startYRef.current = -1;
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (startYRef.current === -1 || isRefreshing) return;
+    const currentY = e.touches[0].clientY;
+    const distance = currentY - startYRef.current;
+    if (distance > 0) {
+      setPullDistance(Math.min(80, distance));
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (startYRef.current === -1 || isRefreshing) return;
+    if (pullDistance > 60) {
+      setIsRefreshing(true);
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+      await loadData();
+      setIsRefreshing(false);
+    }
+    setPullDistance(0);
+  };
 
   const stats = useMemo(() => {
     const total = applications.length;
@@ -533,8 +567,41 @@ const CandidateDashboard = () => {
       initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={reduceMotion ? { duration: 0 } : { duration: 0.22 }}
-      className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 md:px-6"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 md:px-6 relative"
     >
+      {/* Pull-to-refresh Indicator */}
+      {(pullDistance > 0 || isRefreshing) && (
+        <div 
+          style={{
+            position: "fixed",
+            top: pullDistance > 0 ? `${pullDistance}px` : "70px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 100,
+            background: "rgba(15, 15, 26, 0.9)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+            borderRadius: "50%",
+            width: "40px",
+            height: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+            transition: isRefreshing ? "none" : "top 0.1s ease"
+          }}
+        >
+          <div 
+            className={`h-5 w-5 rounded-full border-2 border-white/10 border-t-[#6366f1] ${isRefreshing ? "animate-spin" : ""}`}
+            style={{
+              transform: isRefreshing ? "none" : `rotate(${pullDistance * 4}deg)`
+            }}
+          />
+        </div>
+      )}
       <AnimatedBackground />
       
       {/* User Profile Welcome Card */}
@@ -551,12 +618,12 @@ const CandidateDashboard = () => {
               Track your applications, review AI feedback, and discover high-match opportunities tailored to your profile.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Link to="/cover-letter" className="btn-secondary">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Link to="/cover-letter" className="btn-secondary w-full sm:w-auto justify-center text-center">
               <Sparkles size={16} className="mr-2 text-[#00D4FF]" />
               AI Cover Letter
             </Link>
-            <Link to="/jobs" className="btn-primary">
+            <Link to="/jobs" className="btn-primary w-full sm:w-auto justify-center text-center">
               <BriefcaseBusiness size={16} className="mr-2" />
               Browse Jobs
             </Link>
@@ -568,7 +635,7 @@ const CandidateDashboard = () => {
         variants={container}
         initial="hidden"
         animate="show"
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid gap-4 grid-cols-2 xl:grid-cols-4"
       >
         <StatCard
           title="Total Applications"

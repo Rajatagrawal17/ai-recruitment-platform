@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect, useRef } from "react";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Bookmark, BookmarkCheck, MapPin, Calendar, Users, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -71,6 +71,57 @@ const JobCard = ({
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 768 : false
   );
+  
+  const [isSkipped, setIsSkipped] = useState(false);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  
+  const dragX = useMotionValue(0);
+  const saveOpacity = useTransform(dragX, [0, 80], [0, 1]);
+  const skipOpacity = useTransform(dragX, [-80, 0], [1, 0]);
+
+  const touchTimer = useRef(null);
+  const isMoving = useRef(false);
+
+  const handleTouchStart = () => {
+    isMoving.current = false;
+    touchTimer.current = setTimeout(() => {
+      if (!isMoving.current) {
+        setShowContextMenu(true);
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          navigator.vibrate(30);
+        }
+      }
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimer.current) {
+      clearTimeout(touchTimer.current);
+    }
+  };
+
+  const handleTouchMove = () => {
+    isMoving.current = true;
+    if (touchTimer.current) {
+      clearTimeout(touchTimer.current);
+    }
+  };
+
+  const handleDragEnd = (event, info) => {
+    const offsetX = info.offset.x;
+    if (offsetX > 80) {
+      if (onSaveToggle) onSaveToggle(job);
+      else toggleSaveJob(job);
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate([10, 30, 10]);
+      }
+    } else if (offsetX < -80) {
+      setIsSkipped(true);
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(15);
+      }
+    }
+  };
 
   useEffect(() => {
     setJustApplied(isApplied);
@@ -125,6 +176,8 @@ const JobCard = ({
   const scoreData = scores[job._id];
   const salaryText = getEstimatedSalary(job.title, job.salary);
 
+  if (isSkipped) return null;
+
   if (isMobile) {
     return (
       <TiltCard
@@ -132,6 +185,13 @@ const JobCard = ({
         onClick={handleView}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchMove}
+        drag="x"
+        dragConstraints={{ left: -100, right: 100 }}
+        dragElastic={0.4}
+        onDragEnd={handleDragEnd}
         style={{
           display: 'flex',
           flexDirection: 'row',
@@ -153,8 +213,137 @@ const JobCard = ({
           cursor: 'pointer',
           transition: 'all 0.15s ease',
           boxSizing: 'border-box',
+          gap: '10px',
+          x: dragX,
+          position: 'relative',
+          overflow: 'hidden'
         }}
+        className="job-card"
       >
+        {/* Swipe Overlays */}
+        <motion.div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(16, 185, 129, 0.9)",
+            zIndex: 10,
+            opacity: saveOpacity,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "14px",
+            pointerEvents: "none"
+          }}
+        >
+          <span className="text-white font-bold text-sm uppercase tracking-wider">Save job</span>
+        </motion.div>
+        
+        <motion.div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(239, 68, 68, 0.9)",
+            zIndex: 10,
+            opacity: skipOpacity,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "14px",
+            pointerEvents: "none"
+          }}
+        >
+          <span className="text-white font-bold text-sm uppercase tracking-wider">Skip</span>
+        </motion.div>
+
+        {/* Long Press Context Menu Overlay */}
+        {showContextMenu && (
+          <div 
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowContextMenu(false);
+            }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(10, 10, 20, 0.95)",
+              backdropFilter: "blur(12px)",
+              borderRadius: "14px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-around",
+              zIndex: 50,
+              padding: "0 10px"
+            }}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSave(e);
+                setShowContextMenu(false);
+              }}
+              style={{
+                fontSize: "12px",
+                fontWeight: "bold",
+                color: "#a5b4fc",
+                background: "rgba(255,255,255,0.06)",
+                border: "0.5px solid rgba(255,255,255,0.1)",
+                borderRadius: "10px",
+                padding: "6px 12px",
+                cursor: "pointer"
+              }}
+            >
+              {isSaved ? "Saved" : "Save"}
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (typeof navigator !== "undefined" && navigator.share) {
+                  navigator.share({
+                    title: job.title,
+                    text: `Check out this job: ${job.title} at ${job.company}`,
+                    url: `${window.location.origin}/jobs/${job._id}`
+                  }).catch(() => {});
+                } else {
+                  navigator.clipboard.writeText(`${window.location.origin}/jobs/${job._id}`);
+                  alert("Link copied!");
+                }
+                setShowContextMenu(false);
+              }}
+              style={{
+                fontSize: "12px",
+                fontWeight: "bold",
+                color: "#06b6d4",
+                background: "rgba(255,255,255,0.06)",
+                border: "0.5px solid rgba(255,255,255,0.1)",
+                borderRadius: "10px",
+                padding: "6px 12px",
+                cursor: "pointer"
+              }}
+            >
+              Share
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsSkipped(true);
+                setShowContextMenu(false);
+              }}
+              style={{
+                fontSize: "12px",
+                fontWeight: "bold",
+                color: "#fca5a5",
+                background: "rgba(255,255,255,0.06)",
+                border: "0.5px solid rgba(255,255,255,0.1)",
+                borderRadius: "10px",
+                padding: "6px 12px",
+                cursor: "pointer"
+              }}
+            >
+              Hide
+            </button>
+          </div>
+        )}
+
         {/* Left: 36px company avatar */}
         <div style={{ display: 'flex', flexShrink: 0 }}>
           <motion.div
@@ -177,12 +366,12 @@ const JobCard = ({
           </motion.div>
         </div>
 
-        {/* Center: job title (13px) + company + location (10px muted) */}
-        <div style={{ flex: 1, minWidth: 0, marginLeft: '12px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        {/* Center: job title (14px) + company + location (12px muted) + type badge */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <motion.h3 
             layoutId={`title-${job._id}`}
             style={{
-              fontSize: '13px',
+              fontSize: '14px',
               fontWeight: 500,
               color: 'white',
               margin: 0,
@@ -193,14 +382,40 @@ const JobCard = ({
           >
             {highlightText(job.title, searchQuery)}
           </motion.h3>
-          <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.4)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {job.company} • {job.location || "Remote"}
           </span>
+          <div style={{ display: 'flex' }}>
+            <span 
+              style={{
+                background: 'rgba(99,102,241,0.12)',
+                color: '#a5b4fc',
+                padding: '2px 6px',
+                borderRadius: '8px',
+                fontSize: '10px',
+                textTransform: 'capitalize',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {job.type || "Full Time"}
+            </span>
+          </div>
         </div>
 
-        {/* Right: Apply button (small) + salary (10px green) */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0, marginLeft: '8px' }}>
-          <span style={{ fontSize: '10px', color: '#34d399', fontWeight: 500, whiteSpace: 'nowrap' }}>
+        {/* Right: Apply button + salary */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+          <span 
+            style={{ 
+              fontSize: '12px', 
+              background: 'rgba(52,211,153,0.15)',
+              border: '0.5px solid rgba(52,211,153,0.25)',
+              color: '#34d399', 
+              fontWeight: 500,
+              padding: '2px 8px',
+              borderRadius: '20px',
+              whiteSpace: 'nowrap'
+            }}
+          >
             {salaryText}
           </span>
           <motion.button
@@ -209,14 +424,15 @@ const JobCard = ({
             animate={(isApplying || justApplied) ? { scale: [0.95, 1.05, 1] } : { scale: 1 }}
             transition={{ duration: 0.3 }}
             style={{
-              padding: '4px 10px',
+              height: '32px',
+              padding: '0 12px',
               background: justApplied 
                 ? 'rgba(16, 185, 129, 0.1)' 
                 : 'linear-gradient(135deg, #6366f1, #06b6d4)',
               border: justApplied ? '1px solid rgba(16, 185, 129, 0.2)' : 'none',
               borderRadius: '20px',
               color: justApplied ? '#34d399' : 'white',
-              fontSize: '11px',
+              fontSize: '12px',
               fontWeight: 500,
               cursor: (justApplied || isApplying) ? 'not-allowed' : 'pointer',
               whiteSpace: 'nowrap',

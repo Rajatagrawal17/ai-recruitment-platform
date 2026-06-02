@@ -183,6 +183,17 @@ const RadarChart = ({ scores = {} }) => {
 
 export default function InterviewSimPage() {
   const { user } = useAuth();
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   
   // 4 steps: 0 = SETUP, 1 = INTERVIEW, 2 = RESULTS, 3 = SHARE
   const [step, setStep] = useState(0);
@@ -710,7 +721,7 @@ export default function InterviewSimPage() {
           <div className="flex-1 flex flex-col py-2 justify-center">
             
             {/* Question Card */}
-            <div className="glass-card p-6 border-b-0 rounded-b-none relative overflow-hidden">
+            <div className="glass-card p-5 md:p-6 border-b-0 rounded-b-none relative overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-900">
                 <div 
                   className="h-full bg-purple-500 transition-all duration-300"
@@ -768,7 +779,7 @@ export default function InterviewSimPage() {
                       value={currentAnswer}
                       onChange={(e) => setCurrentAnswer(e.target.value)}
                       disabled={isSubmitting}
-                      className="w-full h-48 bg-slate-900/80 border border-slate-800 rounded-xl p-4 text-sm focus:outline-none focus:border-purple-500 text-slate-200 resize-none font-sans leading-relaxed"
+                      className="w-full h-48 min-h-[160px] bg-slate-900/80 border border-slate-800 rounded-xl p-4 text-sm focus:outline-none focus:border-purple-500 text-slate-200 resize-none font-sans leading-relaxed"
                     />
                     <div className="absolute bottom-3 right-3 text-[10px] text-text-muted bg-slate-950 px-2 py-0.5 rounded-md">
                       {currentAnswer.length} chars
@@ -941,15 +952,45 @@ export default function InterviewSimPage() {
               {/* Score ring card */}
               <div className="glass-card p-6 flex flex-col items-center justify-center text-center">
                 <h3 className="text-xs font-bold text-text-muted uppercase tracking-wide mb-4">Overall Score</h3>
-                <ScoreRing score={overallScoreVal / 10} size={110} strokeWidth={10} />
+                <ScoreRing score={overallScoreVal / 10} size={isMobile ? 100 : 110} strokeWidth={10} />
                 <div className={`mt-4 text-xs font-extrabold px-3 py-1 rounded-full border ${overallGradeObj.color}`}>
                   Performance Grade: {overallGradeObj.grade}
                 </div>
               </div>
 
-              {/* Radar Chart */}
-              <div className="glass-card p-6 md:col-span-2 flex flex-col items-center justify-center">
-                <RadarChart scores={radarScoresVal} />
+              {/* Radar Chart / Mobile Score Bars */}
+              <div className="glass-card p-6 md:col-span-2 flex flex-col justify-center">
+                {/* Radar Chart (hidden on mobile, shown on desktop) */}
+                <div className="hidden md:flex flex-col items-center justify-center w-full">
+                  <RadarChart scores={radarScoresVal} />
+                </div>
+                
+                {/* Simple Score Bars (shown on mobile, hidden on desktop) */}
+                <div className="md:hidden flex flex-col space-y-4 w-full">
+                  <h4 className="text-sm font-semibold text-text-muted mb-2 uppercase tracking-wide text-center">Skill Breakdown</h4>
+                  {[
+                    { label: "Communication", score: radarScoresVal.Communication || 7.0 },
+                    { label: "Technical", score: radarScoresVal.Technical || 7.5 },
+                    { label: "Clarity", score: radarScoresVal.Clarity || 7.0 },
+                    { label: "Confidence", score: radarScoresVal.Confidence || 6.5 },
+                    { label: "Relevance", score: radarScoresVal.Relevance || 8.0 }
+                  ].map((item, idx) => (
+                    <div key={item.label} className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-semibold">
+                        <span className="text-slate-300">{item.label}</span>
+                        <span className="text-purple-400">{item.score.toFixed(1)} / 10</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-slate-800/80 overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${item.score * 10}%` }}
+                          transition={{ duration: 1.0, delay: idx * 0.1, ease: "easeOut" }}
+                          className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
