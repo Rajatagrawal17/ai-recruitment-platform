@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -10,6 +10,9 @@ import {
   TrendingUp,
   ChevronRight,
   UserRoundPen,
+  Undo2,
+  CalendarX,
+  XCircle
 } from "lucide-react";
 import MatchScoreBadge from "../components/MatchScoreBadge";
 import PersonalizedJobs from "../components/PersonalizedJobs";
@@ -17,6 +20,9 @@ import UserProfileCard from "../components/UserProfileCard";
 import { getCandidateApplications, getRecommendedJobs } from "../services/api";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { useIsMobile } from "../components/MobileOptimizedAnimations";
+import WithdrawModal from "../components/WithdrawModal";
+import DeclineInterviewModal from "../components/DeclineInterviewModal";
+import { toast } from "react-hot-toast";
 
 const container = {
   hidden: { opacity: 0 },
@@ -62,6 +68,406 @@ const ScoreBar = ({ score, reduceMotion }) => (
   </div>
 );
 
+function useWithdrawTimer(createdAt) {
+  const [timeLeft, setTimeLeft] = useState("");
+  const [canWithdraw, setCanWithdraw] = useState(false);
+  const [hoursLeft, setHoursLeft] = useState(24);
+
+  useEffect(() => {
+    const update = () => {
+      const elapsed = Date.now() - new Date(createdAt).getTime();
+      const left = 24 - elapsed / (1000 * 60 * 60);
+      setCanWithdraw(left > 0);
+      setHoursLeft(left);
+
+      if (left > 0) {
+        const h = Math.floor(left);
+        const m = Math.floor((left - h) * 60);
+        setTimeLeft(`${h}h ${m}m left`);
+      } else {
+        setTimeLeft("Window closed");
+      }
+    };
+    update();
+    const interval = setInterval(update, 30000);
+    return () => clearInterval(interval);
+  }, [createdAt]);
+
+  return { timeLeft, canWithdraw, hoursLeft };
+}
+
+const getTimerBadgeStyle = (hoursLeft) => {
+  if (hoursLeft > 12) {
+    return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+  } else if (hoursLeft >= 6) {
+    return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+  } else {
+    return "bg-rose-500/10 text-rose-400 border-rose-500/20";
+  }
+};
+
+const getStatusBadge = (status) => {
+  switch (status) {
+    case "withdrawn":
+      return (
+        <span className="rounded-full bg-slate-500/10 px-2.5 py-1 text-xs font-semibold border border-slate-500/20 text-slate-400 uppercase">
+          Withdrawn
+        </span>
+      );
+    case "interview_scheduled":
+      return (
+        <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold border border-emerald-500/20 text-emerald-400 uppercase animate-pulse">
+          Interview Scheduled
+        </span>
+      );
+    case "interview_declined":
+      return (
+        <span className="rounded-full bg-rose-500/10 px-2.5 py-1 text-xs font-semibold border border-rose-500/20 text-rose-400 uppercase">
+          Declined
+        </span>
+      );
+    case "hired":
+      return (
+        <span className="rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold border border-indigo-500/20 text-indigo-400 uppercase">
+          Hired
+        </span>
+      );
+    case "offer":
+      return (
+        <span className="rounded-full bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold border border-cyan-500/20 text-cyan-400 uppercase">
+          Offer Received
+        </span>
+      );
+    case "rejected":
+      return (
+        <span className="rounded-full bg-red-500/10 px-2.5 py-1 text-xs font-semibold border border-red-500/20 text-red-400 uppercase">
+          Rejected
+        </span>
+      );
+    case "shortlisted":
+      return (
+        <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold border border-amber-500/20 text-amber-400 uppercase">
+          Shortlisted
+        </span>
+      );
+    default:
+      return (
+        <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold border border-primary/20 text-primary uppercase">
+          {status || "pending"}
+        </span>
+      );
+  }
+};
+
+const ApplicationCard = ({
+  app,
+  expandedApp,
+  setExpandedApp,
+  onWithdrawClick,
+  onDeclineClick,
+  reduceMotion,
+}) => {
+  const { timeLeft, canWithdraw, hoursLeft } = useWithdrawTimer(app.createdAt);
+  const isWithdrawn = app.status === "withdrawn";
+
+  return (
+    <motion.div
+      variants={item}
+      style={{ opacity: isWithdrawn ? 0.5 : 1 }}
+      className="rounded-lg border border-border bg-surface-soft p-4"
+    >
+      <div
+        onClick={() => setExpandedApp(expandedApp === app._id ? null : app._id)}
+        className="cursor-pointer"
+      >
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <div className="flex-1">
+            <h3 className="font-medium text-sm truncate">
+              {app.job?.title || app.jobTitle || "Role"}
+            </h3>
+            <p className="text-xs text-text-muted truncate">
+              {app.job?.company || app.company || "Company"}
+            </p>
+          </div>
+          <motion.div
+            animate={{ rotate: expandedApp === app._id ? 90 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ChevronRight size={18} className="text-text-muted" />
+          </motion.div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 mb-3">
+          {getStatusBadge(app.status)}
+          <MatchScoreBadge score={app.matchScore || 0} />
+        </div>
+
+        <ScoreBar score={app.matchScore || 0} reduceMotion={reduceMotion} />
+      </div>
+
+      <AnimatePresence>
+        {expandedApp === app._id && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="mt-3 space-y-3 border-t border-border pt-3"
+          >
+            <div>
+              <p className="text-xs font-medium text-text-muted">
+                Applied: {new Date(app.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+
+            {app.interview?.scheduledAt && (
+              <div>
+                <p className="text-xs font-medium text-text">
+                  📅 {new Date(app.interview.scheduledAt).toLocaleString()}
+                </p>
+                <p className="text-xs text-text-muted capitalize">
+                  {app.interview.mode || "video"} interview
+                </p>
+              </div>
+            )}
+
+            {app.matchExplanation?.summary && (
+              <div>
+                <p className="text-xs font-medium text-text-muted mb-1">
+                  Match Explanation
+                </p>
+                <p className="text-xs text-text-muted">
+                  {app.matchExplanation.summary}
+                </p>
+              </div>
+            )}
+
+            {app.resumeFeedback?.suggestions &&
+              app.resumeFeedback.suggestions.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-text-muted mb-1">
+                    💡 AI Tip
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    {app.resumeFeedback.suggestions[0]}
+                  </p>
+                </div>
+              )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Actions Section */}
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/5 pt-3">
+        {/* Withdraw Button & Timer */}
+        {!["withdrawn", "hired", "offer", "rejected"].includes(app.status) && (
+          <div className="flex items-center gap-2">
+            {canWithdraw ? (
+              <>
+                <button
+                  onClick={() => onWithdrawClick(app)}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+                  style={{
+                    backgroundColor: "rgba(239, 68, 68, 0.1)",
+                    border: "0.5px solid rgba(239, 68, 68, 0.3)",
+                    color: "#fca5a5",
+                  }}
+                >
+                  <Undo2 className="ti-arrow-back-up inline-block" size={13} />
+                  Withdraw
+                </button>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold border ${getTimerBadgeStyle(
+                    hoursLeft
+                  )}`}
+                >
+                  {timeLeft}
+                </span>
+              </>
+            ) : (
+              <button
+                onClick={() => onWithdrawClick(app)}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium transition"
+                style={{
+                  backgroundColor: "transparent",
+                  border: "0.5px solid rgba(255, 255, 255, 0.1)",
+                  color: "rgba(255, 255, 255, 0.4)",
+                }}
+              >
+                Contact to withdraw
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Decline Interview Button */}
+        {app.status === "interview_scheduled" && (
+          <button
+            onClick={() => onDeclineClick(app)}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition"
+          >
+            <CalendarX size={13} />
+            Decline interview
+          </button>
+        )}
+
+        {/* Withdrawn State Messages */}
+        {isWithdrawn && (
+          <div className="text-xs text-text-muted space-y-0.5 w-full">
+            <p className="font-semibold text-slate-400">
+              Withdrawn by you on{" "}
+              {new Date(app.withdrawnAt || app.updatedAt).toLocaleDateString()}
+            </p>
+            <p className="text-[11px]">This role is no longer in your pipeline</p>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+const ApplicationRow = ({
+  app,
+  onWithdrawClick,
+  onDeclineClick,
+  reduceMotion,
+}) => {
+  const { timeLeft, canWithdraw, hoursLeft } = useWithdrawTimer(app.createdAt);
+  const isWithdrawn = app.status === "withdrawn";
+
+  return (
+    <motion.tr
+      variants={item}
+      style={{ opacity: isWithdrawn ? 0.5 : 1 }}
+      className="border-t border-border hover:bg-surface-soft/60"
+    >
+      <td className="px-5 py-4">
+        <p className="font-medium">{app.job?.title || app.jobTitle || "Role"}</p>
+        <p className="text-xs text-text-muted">{app.job?.company || app.company || "Company"}</p>
+      </td>
+      <td className="px-5 py-4 text-text-muted">
+        {new Date(app.createdAt).toLocaleDateString()}
+      </td>
+      <td className="px-5 py-4">
+        {getStatusBadge(app.status)}
+      </td>
+      <td className="px-5 py-4">
+        <MatchScoreBadge score={app.matchScore || 0} />
+      </td>
+      <td className="px-5 py-4">
+        <div className="w-28">
+          <ScoreBar score={app.matchScore || 0} reduceMotion={reduceMotion} />
+        </div>
+      </td>
+      <td className="px-5 py-4">
+        {app.interview?.scheduledAt ? (
+          <div className="max-w-[180px] text-xs text-text-muted">
+            <p className="font-medium text-text">
+              {new Date(app.interview.scheduledAt).toLocaleString()}
+            </p>
+            <p className="capitalize">{app.interview.mode || "video"}</p>
+          </div>
+        ) : (
+          <span className="text-xs text-text-muted">Not scheduled</span>
+        )}
+      </td>
+      <td className="px-5 py-4">
+        <div className="max-w-xs space-y-1 text-xs text-text-muted">
+          <p className="font-medium text-text">
+            {app.matchExplanation?.summary || "Explanation pending."}
+          </p>
+          {(app.matchExplanation?.matchedSkills || []).length > 0 && (
+            <p>
+              Matched: {app.matchExplanation.matchedSkills.slice(0, 3).join(", ")}
+            </p>
+          )}
+          {(app.matchExplanation?.missingSkills || []).length > 0 && (
+            <p>
+              Missing: {app.matchExplanation.missingSkills.slice(0, 3).join(", ")}
+            </p>
+          )}
+        </div>
+      </td>
+      <td className="px-5 py-4">
+        <p className="max-w-xs text-xs text-text-muted">
+          {app.resumeFeedback?.summary || "Feedback pending from AI analysis."}
+        </p>
+        {(app.resumeFeedback?.suggestions || []).length > 0 && (
+          <p className="mt-1 max-w-xs text-xs text-text-muted">
+            Tip: {app.resumeFeedback.suggestions[0]}
+          </p>
+        )}
+      </td>
+      <td className="px-5 py-4">
+        <div className="flex flex-col gap-2 min-w-[150px]">
+          {/* Withdraw Buttons */}
+          {!["withdrawn", "hired", "offer", "rejected"].includes(app.status) && (
+            <div className="flex flex-col gap-1 items-start">
+              {canWithdraw ? (
+                <>
+                  <button
+                    onClick={() => onWithdrawClick(app)}
+                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition"
+                    style={{
+                      backgroundColor: "rgba(239, 68, 68, 0.1)",
+                      border: "0.5px solid rgba(239, 68, 68, 0.3)",
+                      color: "#fca5a5",
+                    }}
+                  >
+                    <Undo2 className="ti-arrow-back-up inline-block" size={13} />
+                    Withdraw
+                  </button>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold border mt-1 ${getTimerBadgeStyle(
+                      hoursLeft
+                    )}`}
+                  >
+                    {timeLeft}
+                  </span>
+                </>
+              ) : (
+                <button
+                  onClick={() => onWithdrawClick(app)}
+                  className="rounded-lg px-2.5 py-1 text-xs font-medium transition"
+                  style={{
+                    backgroundColor: "transparent",
+                    border: "0.5px solid rgba(255, 255, 255, 0.1)",
+                    color: "rgba(255, 255, 255, 0.4)",
+                  }}
+                >
+                  Contact to withdraw
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Decline Interview Button */}
+          {app.status === "interview_scheduled" && (
+            <button
+              onClick={() => onDeclineClick(app)}
+              className="flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 transition w-full"
+            >
+              <CalendarX size={13} />
+              Decline interview
+            </button>
+          )}
+
+          {/* Withdrawn State Messages */}
+          {isWithdrawn && (
+            <div className="text-xs text-text-muted space-y-0.5">
+              <p className="font-semibold text-slate-400 leading-tight">
+                Withdrawn by you on{" "}
+                {new Date(app.withdrawnAt || app.updatedAt).toLocaleDateString()}
+              </p>
+              <p className="text-[11px] leading-tight">This role is no longer in your pipeline</p>
+            </div>
+          )}
+        </div>
+      </td>
+    </motion.tr>
+  );
+};
+
 const CandidateDashboard = () => {
   const reduceMotion = useReducedMotion();
   const isMobile = useIsMobile();
@@ -71,6 +477,24 @@ const CandidateDashboard = () => {
   const [recommendationLoading, setRecommendationLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedApp, setExpandedApp] = useState(null);
+  const [withdrawApp, setWithdrawApp] = useState(null);
+  const [declineApp, setDeclineApp] = useState(null);
+
+  const handleWithdrawn = (appId, updatedFields) => {
+    const originalApps = [...applications];
+    setApplications(prev =>
+      prev.map(app => (app._id === appId ? { ...app, ...updatedFields } : app))
+    );
+    return () => setApplications(originalApps);
+  };
+
+  const handleDeclined = (appId, updatedFields) => {
+    const originalApps = [...applications];
+    setApplications(prev =>
+      prev.map(app => (app._id === appId ? { ...app, ...updatedFields } : app))
+    );
+    return () => setApplications(originalApps);
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -324,97 +748,15 @@ const CandidateDashboard = () => {
           >
             <AnimatePresence>
               {applications.map((app) => (
-                <motion.div
+                <ApplicationCard
                   key={app._id}
-                  variants={item}
-                  className="rounded-lg border border-border bg-surface-soft p-4"
-                >
-                  <div
-                    onClick={() =>
-                      setExpandedApp(expandedApp === app._id ? null : app._id)
-                    }
-                    className="cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-sm truncate">
-                          {app.job?.title || "Role"}
-                        </h3>
-                        <p className="text-xs text-text-muted truncate">
-                          {app.job?.company || "Company"}
-                        </p>
-                      </div>
-                      <motion.div
-                        animate={{ rotate: expandedApp === app._id ? 90 : 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <ChevronRight size={18} className="text-text-muted" />
-                      </motion.div>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 mb-3">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-1 text-xs font-medium capitalize text-primary">
-                        {app.status || "pending"}
-                      </span>
-                      <MatchScoreBadge score={app.matchScore || 0} />
-                    </div>
-
-                    <ScoreBar score={app.matchScore || 0} reduceMotion={reduceMotion} />
-                  </div>
-
-                  <AnimatePresence>
-                    {expandedApp === app._id && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="mt-3 space-y-3 border-t border-border pt-3"
-                      >
-                        <div>
-                          <p className="text-xs font-medium text-text-muted">
-                            Applied: {new Date(app.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-
-                        {app.interview?.scheduledAt && (
-                          <div>
-                            <p className="text-xs font-medium text-text">
-                              📅{" "}
-                              {new Date(app.interview.scheduledAt).toLocaleString()}
-                            </p>
-                            <p className="text-xs text-text-muted capitalize">
-                              {app.interview.mode || "video"} interview
-                            </p>
-                          </div>
-                        )}
-
-                        {app.matchExplanation?.summary && (
-                          <div>
-                            <p className="text-xs font-medium text-text-muted mb-1">
-                              Match Explanation
-                            </p>
-                            <p className="text-xs text-text-muted">
-                              {app.matchExplanation.summary}
-                            </p>
-                          </div>
-                        )}
-
-                        {app.resumeFeedback?.suggestions &&
-                          app.resumeFeedback.suggestions.length > 0 && (
-                            <div>
-                              <p className="text-xs font-medium text-text-muted mb-1">
-                                💡 AI Tip
-                              </p>
-                              <p className="text-xs text-text-muted">
-                                {app.resumeFeedback.suggestions[0]}
-                              </p>
-                            </div>
-                          )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
+                  app={app}
+                  expandedApp={expandedApp}
+                  setExpandedApp={setExpandedApp}
+                  onWithdrawClick={setWithdrawApp}
+                  onDeclineClick={setDeclineApp}
+                  reduceMotion={reduceMotion}
+                />
               ))}
             </AnimatePresence>
           </motion.div>
@@ -432,74 +774,19 @@ const CandidateDashboard = () => {
                   <th className="px-5 py-3">Interview</th>
                   <th className="px-5 py-3">AI Explanation</th>
                   <th className="px-5 py-3">AI Feedback</th>
+                  <th className="px-5 py-3">Actions</th>
                 </tr>
               </thead>
               <motion.tbody variants={container} initial="hidden" animate="show">
                 <AnimatePresence>
                   {applications.map((app) => (
-                    <motion.tr
+                    <ApplicationRow
                       key={app._id}
-                      variants={item}
-                      className="border-t border-border hover:bg-surface-soft/60"
-                    >
-                      <td className="px-5 py-4">
-                        <p className="font-medium">{app.job?.title || "Role"}</p>
-                        <p className="text-xs text-text-muted">{app.job?.company || "Company"}</p>
-                      </td>
-                      <td className="px-5 py-4 text-text-muted">
-                        {new Date(app.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="rounded-full bg-surface-soft px-2 py-1 text-xs font-medium capitalize text-text">
-                          {app.status || "pending"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <MatchScoreBadge score={app.matchScore || 0} />
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="w-28">
-                          <ScoreBar score={app.matchScore || 0} reduceMotion={reduceMotion} />
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        {app.interview?.scheduledAt ? (
-                          <div className="max-w-[180px] text-xs text-text-muted">
-                            <p className="font-medium text-text">{new Date(app.interview.scheduledAt).toLocaleString()}</p>
-                            <p className="capitalize">{app.interview.mode || "video"}</p>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-text-muted">Not scheduled</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="max-w-xs space-y-1 text-xs text-text-muted">
-                          <p className="font-medium text-text">
-                            {app.matchExplanation?.summary || "Explanation pending."}
-                          </p>
-                          {(app.matchExplanation?.matchedSkills || []).length > 0 && (
-                            <p>
-                              Matched: {app.matchExplanation.matchedSkills.slice(0, 3).join(", ")}
-                            </p>
-                          )}
-                          {(app.matchExplanation?.missingSkills || []).length > 0 && (
-                            <p>
-                              Missing: {app.matchExplanation.missingSkills.slice(0, 3).join(", ")}
-                            </p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <p className="max-w-xs text-xs text-text-muted">
-                          {app.resumeFeedback?.summary || "Feedback pending from AI analysis."}
-                        </p>
-                        {(app.resumeFeedback?.suggestions || []).length > 0 && (
-                          <p className="mt-1 max-w-xs text-xs text-text-muted">
-                            Tip: {app.resumeFeedback.suggestions[0]}
-                          </p>
-                        )}
-                      </td>
-                    </motion.tr>
+                      app={app}
+                      onWithdrawClick={setWithdrawApp}
+                      onDeclineClick={setDeclineApp}
+                      reduceMotion={reduceMotion}
+                    />
                   ))}
                 </AnimatePresence>
               </motion.tbody>
@@ -507,6 +794,20 @@ const CandidateDashboard = () => {
           </div>
         )}
       </section>
+
+      {/* Modals */}
+      <WithdrawModal
+        isOpen={!!withdrawApp}
+        onClose={() => setWithdrawApp(null)}
+        application={withdrawApp}
+        onWithdrawn={handleWithdrawn}
+      />
+      <DeclineInterviewModal
+        isOpen={!!declineApp}
+        onClose={() => setDeclineApp(null)}
+        application={declineApp}
+        onDeclined={handleDeclined}
+      />
     </motion.main>
   );
 };

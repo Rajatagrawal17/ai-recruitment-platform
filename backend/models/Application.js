@@ -136,8 +136,21 @@ const applicationSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "shortlisted", "accepted", "rejected"],
+      enum: ["pending", "shortlisted", "accepted", "rejected", "withdrawn", "interview_scheduled", "interview_declined"],
       default: "pending",
+    },
+    withdrawnAt: {
+      type: Date,
+    },
+    withdrawReason: {
+      type: String,
+    },
+    selfWithdrawn: {
+      type: Boolean,
+      default: false,
+    },
+    declineMessage: {
+      type: String,
     },
     interview: {
       scheduledAt: {

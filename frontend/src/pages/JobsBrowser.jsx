@@ -191,6 +191,8 @@ export default function JobsBrowser() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [trackerOpen, setTrackerOpen] = useState(false);
+  const [undoToast, setUndoToast] = useState(null);
+  const [undoProgress, setUndoProgress] = useState(100);
 
   const [sidebarOpen, setSidebarOpen] = useState({
     type: true,
@@ -406,7 +408,71 @@ export default function JobsBrowser() {
   const compareJobs = filteredJobs.filter((job) => compareIds.includes(job._id));
   const pendingApplications = candidateApplications.filter((application) => application.status === "pending").length;
 
-  function onApplySuccess() {
+  useEffect(() => {
+    if (!undoToast) return;
+
+    setUndoProgress(100);
+    const stepTime = 100;
+    const totalTime = 8000;
+    const decrement = (stepTime / totalTime) * 100;
+
+    const timer = setInterval(() => {
+      setUndoProgress((prev) => {
+        if (prev <= 0) {
+          clearInterval(timer);
+          setUndoToast(null);
+          return 0;
+        }
+        return prev - decrement;
+      });
+    }, stepTime);
+
+    return () => clearInterval(timer);
+  }, [undoToast]);
+
+  const handleUndo = async () => {
+    if (!undoToast) return;
+    const { appId } = undoToast;
+    setUndoToast(null);
+
+    // Optimistically remove application
+    setCandidateApplications((prev) => prev.filter((app) => app._id !== appId));
+
+    try {
+      const response = await API.delete(`/applications/${appId}`);
+      if (response.data.success) {
+        toast.success("Application cancelled");
+      } else {
+        throw new Error(response.data.message || "Failed to cancel application");
+      }
+    } catch (err) {
+      console.error("Error undoing application:", err);
+      toast.error(err.response?.data?.message || err.message || "Could not cancel application");
+      // Revert from backend if it fails
+      if (userId) {
+        getCandidateApplications()
+          .then((res) => setCandidateApplications(res.data.applications || []))
+          .catch(() => null);
+      }
+    }
+  };
+
+  function onApplySuccess(newApp) {
+    if (newApp) {
+      setCandidateApplications((prev) => {
+        if (prev.some((app) => app._id === newApp._id)) return prev;
+        return [newApp, ...prev];
+      });
+
+      const jobTitle = newApp.jobTitle || newApp.job?.title || "Position";
+      const company = newApp.company || newApp.job?.company || "Company";
+      setUndoToast({
+        appId: newApp._id,
+        jobTitle,
+        company
+      });
+    }
+
     if (viewMode === "matched" && isCandidate && userId) {
       getCandidateJobMatches(userId).then((res) => setMatchedJobs(res.data.recommendations || [])).catch(() => null);
     }
@@ -1194,6 +1260,56 @@ export default function JobsBrowser() {
               )}
             </AnimatePresence>
           </Dialog.Root>
+
+          {/* Undo Toast */}
+          {undoToast && (
+            <div style={{
+              position: 'fixed',
+              bottom: '90px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(15,15,26,0.95)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '12px',
+              padding: '12px 20px',
+              display: 'flex',
+              gap: '16px',
+              alignItems: 'center',
+              backdropFilter: 'blur(20px)',
+              zIndex: 9999
+            }}>
+              <span style={{ color: 'white', fontSize: '14px' }}>
+                Applied to {undoToast.jobTitle} at {undoToast.company}
+              </span>
+              <button
+                onClick={handleUndo}
+                style={{
+                  color: '#a5b4fc',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                Undo
+              </button>
+              <div style={{
+                width: '60px',
+                height: '3px',
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '2px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  width: undoProgress + '%',
+                  height: '100%',
+                  background: '#6366f1',
+                  transition: 'width 0.1s linear'
+                }} />
+              </div>
+            </div>
+          )}
 
         </div>
         </LayoutGroup>

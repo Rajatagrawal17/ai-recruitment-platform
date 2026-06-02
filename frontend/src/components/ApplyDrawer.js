@@ -299,11 +299,11 @@ function ApplyDrawer({ open, onOpenChange, job, onSuccess }) {
         form.append("resume", resumeFile);
       }
 
-      await applyToJob(form);
+      const response = await applyToJob(form);
       celebrateApply();
       setSubmitted(true);
       toast.success("Application submitted successfully.");
-      onSuccess?.();
+      onSuccess?.(response.data.application);
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || "Failed to submit application.");
     } finally {

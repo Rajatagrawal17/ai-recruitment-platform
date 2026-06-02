@@ -8,6 +8,9 @@ const {
   updateStatus,
   scheduleInterview,
   getMyApplications,
+  withdrawApplication,
+  canWithdrawApplication,
+  declineInterviewOrUpdate,
 } = require("../controllers/applicationController");
 
 const protect = require("../middleware/authMiddleware");
@@ -54,5 +57,10 @@ router.get(
   authorizeRoles("recruiter", "admin"),
   asyncHandler((req, res) => require("../controllers/applicationController").getApplicationTimeline(req, res))
 );
+
+// Candidate Application Withdraw System & Interview Decline Option
+router.delete("/:id", protect, asyncHandler(withdrawApplication));
+router.get("/:id/can-withdraw", protect, asyncHandler(canWithdrawApplication));
+router.patch("/:id", protect, asyncHandler(declineInterviewOrUpdate));
 
 module.exports = router;

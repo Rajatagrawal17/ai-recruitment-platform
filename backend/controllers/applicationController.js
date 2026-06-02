@@ -441,3 +441,206 @@ exports.getApplicationTimeline = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+/* =========================
+   WITHDRAW APPLICATION (CANDIDATE)
+========================= */
+exports.withdrawApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const application = await Application.findById(id);
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
+    if (application.candidate.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to withdraw this application",
+      });
+    }
+
+    if (application.status === "withdrawn") {
+      return res.status(400).json({
+        success: false,
+        message: "Already withdrawn",
+      });
+    }
+
+    if (["hired", "offer", "accepted"].includes(application.status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot withdraw at this stage",
+      });
+    }
+
+    const createdAt = new Date(application.createdAt);
+    const hoursElapsed = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+    const withinWindow = hoursElapsed <= 24;
+
+    application.status = "withdrawn";
+    application.withdrawnAt = new Date();
+    application.withdrawReason = req.body.reason || "Self withdrawn";
+    application.selfWithdrawn = true;
+
+    // append to timeline
+    application.timeline = application.timeline || [];
+    application.timeline.push({
+      type: "status_change",
+      author: req.user.name || req.user.email || "candidate",
+      authorId: req.user._id,
+      text: `Application withdrawn. Reason: ${application.withdrawReason}`,
+      meta: { status: "withdrawn" },
+      createdAt: new Date(),
+    });
+
+    await application.save();
+
+    // If recruiter email exists, send notification
+    try {
+      const appWithJob = await Application.findById(application._id).populate({
+        path: "job",
+        populate: { path: "createdBy", select: "email name" },
+      });
+      const recruiterEmail = appWithJob?.job?.createdBy?.email;
+      if (recruiterEmail) {
+        sendNotificationEmail({
+          to: recruiterEmail,
+          subject: `Application Withdrawn: ${appWithJob.job.title || "Position"}`,
+          heading: "Application Withdrawn",
+          message: `Candidate ${req.user.name || req.user.email} has withdrawn their application for the position of ${appWithJob.job.title || "Position"} at ${appWithJob.company || "your company"}.`,
+          ctaLabel: "Open Recruiter Dashboard",
+          ctaUrl: process.env.FRONTEND_URL || "http://localhost:3000/dashboard",
+        }).catch((err) => {
+          console.error("Recruiter withdrawal email notification failed:", err.message);
+        });
+      }
+    } catch (populateErr) {
+      console.warn("Failed to notify recruiter of withdrawal:", populateErr.message);
+    }
+
+    res.status(200).json({ success: true, withinWindow, application });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/* =========================
+   CAN WITHDRAW APPLICATION (CANDIDATE)
+========================= */
+exports.canWithdrawApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const application = await Application.findById(id);
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
+    if (application.candidate.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    const createdAt = new Date(application.createdAt);
+    const hoursElapsed = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+    const hoursLeft = Math.max(0, 24 - hoursElapsed);
+    const isLocked = ["withdrawn", "hired", "offer", "accepted", "rejected"].includes(application.status);
+    const canWithdraw = hoursLeft > 0 && !isLocked;
+
+    res.status(200).json({ success: true, canWithdraw, hoursLeft });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/* =========================
+   DECLINE INTERVIEW / PATCH APPLICATION (CANDIDATE)
+========================= */
+exports.declineInterviewOrUpdate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, declineMessage, reason } = req.body;
+
+    const application = await Application.findById(id);
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found",
+      });
+    }
+
+    if (application.candidate.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized",
+      });
+    }
+
+    if (status === "interview_declined") {
+      application.status = "interview_declined";
+      application.declineMessage = declineMessage || reason || "Candidate declined interview";
+
+      application.timeline = application.timeline || [];
+      application.timeline.push({
+        type: "status_change",
+        author: req.user.name || req.user.email || "candidate",
+        authorId: req.user._id,
+        text: `Interview declined. Reason: ${application.declineMessage}`,
+        meta: { status: "interview_declined" },
+        createdAt: new Date(),
+      });
+
+      await application.save();
+
+      // Notify recruiter
+      try {
+        const appWithJob = await Application.findById(application._id).populate({
+          path: "job",
+          populate: { path: "createdBy", select: "email name" },
+        });
+        const recruiterEmail = appWithJob?.job?.createdBy?.email;
+        if (recruiterEmail) {
+          sendNotificationEmail({
+            to: recruiterEmail,
+            subject: `Interview Declined: ${appWithJob.job.title || "Position"}`,
+            heading: "Interview Declined By Candidate",
+            message: `Candidate ${req.user.name || req.user.email} has declined the interview for ${appWithJob.job.title || "Position"} at ${appWithJob.company || "your company"}. Message: "${application.declineMessage}"`,
+            ctaLabel: "Open Recruiter Dashboard",
+            ctaUrl: process.env.FRONTEND_URL || "http://localhost:3000/dashboard",
+          }).catch((err) => {
+            console.error("Recruiter interview decline email notification failed:", err.message);
+          });
+        }
+      } catch (populateErr) {
+        console.warn("Failed to notify recruiter of interview decline:", populateErr.message);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Interview declined successfully",
+        application,
+      });
+    }
+
+    // fallback: general patch allowed attributes
+    if (status) {
+      application.status = status;
+    }
+    await application.save();
+
+    res.status(200).json({ success: true, application });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
